@@ -1,0 +1,19 @@
+{
+  "name": "mvolo-dashboard",
+  "version": "1.0.0",
+  "description": "Order attribution dashboard — syncs Shopify orders and attributes them to marketing channels",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "sync": "node -e \"require('dotenv').config(); require('./src/etl/sync').runSync()\"",
+    "get-token": "node src/setup/get-token.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "node-cron": "^3.0.3",
+    "open": "^8.4.2"
+  }
+}
