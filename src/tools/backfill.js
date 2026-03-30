@@ -1,24 +1,18 @@
 'use strict';
 
 /**
- * Backfill script — re-attributes all existing orders and corrects is_new_customer.
- *
- * What it does:
- *  1. Loads every order from the database.
- *  2. Re-runs attributeOrder() on each order's landing_site / referring_site to
- *     recompute first_touch, last_touch, and touch_path.
- *  3. For is_new_customer: among all orders grouped by customer_id, the one with
- *     the earliest created_at gets 1; every subsequent order for that customer gets 0.
- *     Orders without a customer_id are each treated as a new customer (value stays 1).
- *  4. Writes all changes in a single transaction.
- *  5. Prints a summary.
+ * Backfill script — re-attributes all existing orders and corrects is_new_customer,
+ * then enriches utm fields via ProfitMetrics pm_* note_attributes from Shopify.
  */
+
+require('dotenv').config();
 
 const chalk = require('chalk');
 const { initDb } = require('../db/schema');
 const { attributeOrder } = require('../etl/attribution');
+const { enrichFromProfitMetrics } = require('../connectors/profitmetrics');
 
-function run() {
+async function run() {
   const db = initDb();
 
   console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
@@ -42,13 +36,11 @@ function run() {
   }
 
   // ── 2. Compute is_new_customer per customer_id ─────────────────────────────
-  // Orders are already sorted by created_at ASC, so first occurrence = earliest.
   const seenCustomers = new Set();
-  const newCustomerMap = new Map(); // id → 1 or 0
+  const newCustomerMap = new Map();
 
   for (const order of orders) {
     if (!order.customer_id) {
-      // No customer_id: treat as new (can't determine returning status)
       newCustomerMap.set(order.id, 1);
     } else if (seenCustomers.has(order.customer_id)) {
       newCustomerMap.set(order.id, 0);
@@ -61,11 +53,11 @@ function run() {
   // ── 3. Re-attribute and update in a single transaction ─────────────────────
   const updateStmt = db.prepare(`
     UPDATE orders
-    SET channel        = @channel,
-        medium         = @medium,
-        first_touch    = @first_touch,
-        last_touch     = @last_touch,
-        touch_path     = @touch_path,
+    SET channel         = @channel,
+        medium          = @medium,
+        first_touch     = @first_touch,
+        last_touch      = @last_touch,
+        touch_path      = @touch_path,
         is_new_customer = @is_new_customer
     WHERE id = @id
   `);
@@ -73,7 +65,6 @@ function run() {
   let updatedAttribution = 0;
   let changedNewCustomer = 0;
 
-  // Track before-counts for the summary
   const beforeNew       = orders.filter((o) => o.is_new_customer === 1).length;
   const beforeReturning = orders.filter((o) => o.is_new_customer === 0).length;
 
@@ -84,9 +75,7 @@ function run() {
         landing_site:   order.landing_site,
         referring_site: order.referring_site,
       });
-
       const isNewCustomer = newCustomerMap.get(order.id) ?? 1;
-
       updateStmt.run({
         id:              order.id,
         channel:         attr.channel,
@@ -96,7 +85,6 @@ function run() {
         touch_path:      attr.touch_path,
         is_new_customer: isNewCustomer,
       });
-
       updatedAttribution++;
       if (order.is_new_customer !== isNewCustomer) changedNewCustomer++;
     }
@@ -107,7 +95,19 @@ function run() {
     process.exit(1);
   }
 
-  // ── 4. Summary ─────────────────────────────────────────────────────────────
+  // ── 4. ProfitMetrics pm_* enrichment via Shopify API ──────────────────────
+  console.log(chalk.white('  ProfitMetrics utm enrichment via Shopify…'));
+  try {
+    // dateFrom set to well before store launch to capture all orders
+    const pmResult = await enrichFromProfitMetrics(db, { dateFrom: '2020-01-01' });
+    console.log(chalk.green(
+      `  ✔ ProfitMetrics: ${pmResult.processed} orders verwerkt, ${pmResult.enriched} verrijkt met campaign/adset/ad IDs\n`
+    ));
+  } catch (err) {
+    console.warn(chalk.yellow(`  ⚠ ProfitMetrics enrichment overgeslagen: ${err.message}\n`));
+  }
+
+  // ── 5. Summary ─────────────────────────────────────────────────────────────
   const afterNew       = [...newCustomerMap.values()].filter((v) => v === 1).length;
   const afterReturning = [...newCustomerMap.values()].filter((v) => v === 0).length;
   const noCustomerId   = orders.filter((o) => !o.customer_id).length;
@@ -124,12 +124,8 @@ function run() {
   console.log(chalk.white(`  ${'Onbekend (geen customer_id)'.padEnd(30)} ${chalk.bold(noCustomerId)}`));
   console.log(chalk.white(`  ${'is_new_customer gewijzigd'.padEnd(30)} ${chalk.bold(changedNewCustomer)}`));
 
-  // Per-channel breakdown of first_touch distribution
   const touchBreakdown = db.prepare(`
-    SELECT first_touch, COUNT(*) as cnt
-    FROM orders
-    GROUP BY first_touch
-    ORDER BY cnt DESC
+    SELECT first_touch, COUNT(*) as cnt FROM orders GROUP BY first_touch ORDER BY cnt DESC
   `).all();
 
   if (touchBreakdown.length > 0) {
@@ -144,7 +140,16 @@ function run() {
     }
   }
 
+  // utm_campaign coverage
+  const withCampaign = db.prepare(`SELECT COUNT(*) as c FROM orders WHERE utm_campaign IS NOT NULL AND utm_campaign != ''`).get();
+  console.log('');
+  console.log(chalk.white.bold('  Campaign ID dekking'));
+  console.log(chalk.white(`  ${'Orders met utm_campaign'.padEnd(30)} ${chalk.bold(withCampaign.c)} / ${orders.length}`));
+
   console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
 }
 
-run();
+run().catch((err) => {
+  console.error(chalk.red(`\n  Fatal: ${err.message}\n`));
+  process.exit(1);
+});

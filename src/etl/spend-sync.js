@@ -11,9 +11,9 @@
  */
 
 const chalk = require('chalk');
-const { fetchMetaSpend }    = require('../connectors/meta-ads');
-const { fetchGoogleSpend }  = require('../connectors/google-ads');
-const { syncProfitData }    = require('../connectors/profitmetrics');
+const { fetchMetaSpend }          = require('../connectors/meta-ads');
+const { fetchGoogleSpend }        = require('../connectors/google-ads');
+const { enrichFromProfitMetrics } = require('../connectors/profitmetrics');
 
 /**
  * Returns YYYY-MM-DD string for n days ago.
@@ -73,12 +73,12 @@ async function runSpendSync(db, { dateFrom, dateTo } = {}) {
   }
   console.log(chalk.green(`  [spend-sync] Inserted ${allSpendRows.length} ad_spend rows`));
 
-  // ── 4. Sync ProfitMetrics profit data onto orders ────────────────────────────
+  // ── 4. Enrich orders with ProfitMetrics pm_* attribution via Shopify ────────
   try {
-    const pmResult = await syncProfitData(db, { dateFrom: from, dateTo: to });
-    console.log(chalk.green(`  [spend-sync] ProfitMetrics: fetched ${pmResult.fetched}, matched ${pmResult.matched} orders`));
+    const pmResult = await enrichFromProfitMetrics(db, { dateFrom: from, dateTo: to });
+    console.log(chalk.green(`  [spend-sync] ProfitMetrics attribution: processed ${pmResult.processed} orders, enriched ${pmResult.enriched}`));
   } catch (err) {
-    console.warn(chalk.yellow(`  [spend-sync] ProfitMetrics skipped: ${err.message}`));
+    console.warn(chalk.yellow(`  [spend-sync] ProfitMetrics enrichment skipped: ${err.message}`));
   }
 
   // ── 5. Rebuild daily_metrics for the date range ──────────────────────────────
