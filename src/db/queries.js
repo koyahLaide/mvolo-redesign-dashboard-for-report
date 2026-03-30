@@ -15,23 +15,42 @@ function getLastSyncedAt(db) {
 }
 
 /**
+ * Returns 1 if the given email has never placed an order in the DB, 0 otherwise.
+ * When email is null/empty, treats the customer as new.
+ *
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {string|null} email
+ * @returns {number} 1 = new, 0 = returning
+ */
+function checkIsNewCustomer(db, email) {
+  if (!email) return 1;
+  const row = db.prepare(`SELECT id FROM orders WHERE customer_email = ? LIMIT 1`).get(email);
+  return row ? 0 : 1;
+}
+
+/**
  * Inserts a single attributed order, skipping it if the id already exists.
  *
  * @param {import('node:sqlite').DatabaseSync} db
  * @param {Object} order
  * @param {Object} attribution
+ * @param {number} isNewCustomer - 1 if new, 0 if returning
  * @returns {boolean} true if the row was newly inserted
  */
-function insertOrder(db, order, attribution) {
+function insertOrder(db, order, attribution, isNewCustomer) {
   const stmt = db.prepare(`
     INSERT OR IGNORE INTO orders (
       id, order_number, created_at, total_price, financial_status,
       channel, medium, utm_source, utm_campaign, utm_content, utm_term,
-      landing_site, referring_site, source_name, synced_at
+      landing_site, referring_site, source_name, synced_at,
+      first_touch, last_touch, touch_path,
+      customer_email, customer_id, is_new_customer
     ) VALUES (
       @id, @order_number, @created_at, @total_price, @financial_status,
       @channel, @medium, @utm_source, @utm_campaign, @utm_content, @utm_term,
-      @landing_site, @referring_site, @source_name, @synced_at
+      @landing_site, @referring_site, @source_name, @synced_at,
+      @first_touch, @last_touch, @touch_path,
+      @customer_email, @customer_id, @is_new_customer
     )
   `);
 
@@ -51,6 +70,12 @@ function insertOrder(db, order, attribution) {
     referring_site: order.referring_site,
     source_name: order.source_name,
     synced_at: new Date().toISOString(),
+    first_touch: attribution.first_touch,
+    last_touch: attribution.last_touch,
+    touch_path: attribution.touch_path,
+    customer_email: order.customer_email,
+    customer_id: order.customer_id,
+    is_new_customer: isNewCustomer,
   });
 
   return result.changes > 0;
@@ -75,4 +100,4 @@ function logSync(db, { syncedAt, ordersFetched, ordersNew, status, error }) {
   });
 }
 
-module.exports = { getLastSyncedAt, insertOrder, logSync };
+module.exports = { getLastSyncedAt, insertOrder, logSync, checkIsNewCustomer };

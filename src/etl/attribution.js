@@ -31,19 +31,41 @@ function referrerContains(referringSite, fragments) {
   return fragments.some((f) => lower.includes(f));
 }
 
+// Own domains — referrals from these count as direct (browser back-nav, cart flows, etc.)
+const OWN_DOMAINS = ['mvolo.nl', 'mvolo.de', 'mvolo.eu', 'mvolo.com'];
+
+/**
+ * Detects first-touch channel from click-ID parameters in the landing URL.
+ * fbclid = Meta Ads paid click; gclid = Google Ads paid click.
+ * Falls back to the last-touch channel when no click ID is present.
+ *
+ * @param {URLSearchParams} params
+ * @param {string} lastTouchChannel
+ * @returns {string}
+ */
+function detectFirstTouch(params, lastTouchChannel) {
+  if (params.has('fbclid')) return 'meta_ads';
+  if (params.has('gclid')) return 'google_ads';
+  return lastTouchChannel;
+}
+
 /**
  * Determines the marketing channel and medium for a single Shopify order.
  *
  * Attribution priority (first match wins):
- *  1. utm_source=meta or facebook   → meta_ads / paid_social
- *  2. utm_source=google + cpc       → google_search / cpc
- *  3. utm_source=google + shopping  → google_shopping / shopping
- *  4. utm_source=awin               → awin_affiliate / affiliate
- *  5. utm_source=klaviyo            → email / email
- *  6. No UTM, referrer=search engine → organic_search / organic
- *  7. No UTM, referrer=social       → organic_social / organic
- *  8. No UTM, no referrer           → direct / direct
- *  9. Anything else                 → other / other
+ *  1.  utm_source=meta or facebook      → meta_ads / paid_social
+ *  2.  utm_source=google + cpc          → google_search / cpc
+ *  3.  utm_source=google + shopping     → google_shopping / shopping
+ *  4.  utm_source=awin                  → awin_affiliate / affiliate
+ *  5.  utm_source=klaviyo               → email / email
+ *  6.  utm_source=chatgpt.com           → chatgpt / referral
+ *  7.  No UTM, referrer=search engine   → organic_search / organic
+ *  8.  No UTM, referrer=social platform → organic_social / organic
+ *  9.  No UTM, referrer=linktr.ee       → organic_social / organic
+ * 10.  No UTM, referrer=ui.awin.com     → awin_affiliate / affiliate
+ * 11.  No UTM, referrer=own domain      → direct / direct
+ * 12.  No UTM, no referrer              → direct / direct
+ * 13.  Anything else                    → other / other
  *
  * @param {Object} order - Mapped order from shopify.js
  * @returns {Object} Attribution object
@@ -76,12 +98,24 @@ function attributeOrder(order) {
   } else if (utmSource === 'klaviyo') {
     channel = 'email';
     medium = 'email';
+  } else if (utmSource === 'chatgpt.com') {
+    channel = 'chatgpt';
+    medium = 'referral';
   } else if (!hasUtm && referrerContains(order.referring_site, ['google.', 'bing.', 'yahoo.', 'duckduckgo.'])) {
     channel = 'organic_search';
     medium = 'organic';
   } else if (!hasUtm && referrerContains(order.referring_site, ['instagram.', 'facebook.', 'tiktok.', 'linkedin.'])) {
     channel = 'organic_social';
     medium = 'organic';
+  } else if (!hasUtm && referrerContains(order.referring_site, ['linktr.ee'])) {
+    channel = 'organic_social';
+    medium = 'organic';
+  } else if (!hasUtm && referrerContains(order.referring_site, ['ui.awin.com'])) {
+    channel = 'awin_affiliate';
+    medium = 'affiliate';
+  } else if (!hasUtm && referrerContains(order.referring_site, OWN_DOMAINS)) {
+    channel = 'direct';
+    medium = 'direct';
   } else if (!hasUtm && !order.referring_site) {
     channel = 'direct';
     medium = 'direct';
@@ -90,6 +124,12 @@ function attributeOrder(order) {
     medium = 'other';
   }
 
+  const firstTouch = detectFirstTouch(params, channel);
+  const lastTouch = channel;
+  const touchPath = firstTouch !== lastTouch
+    ? JSON.stringify([firstTouch, lastTouch])
+    : JSON.stringify([firstTouch]);
+
   return {
     channel,
     medium,
@@ -97,6 +137,9 @@ function attributeOrder(order) {
     utm_campaign: utmCampaign,
     utm_content: utmContent,
     utm_term: utmTerm,
+    first_touch: firstTouch,
+    last_touch: lastTouch,
+    touch_path: touchPath,
   };
 }
 

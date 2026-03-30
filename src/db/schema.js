@@ -57,6 +57,19 @@ function initDb() {
     );
   `);
 
+  // Migrate: add new columns if they don't exist yet (SQLite has no ADD COLUMN IF NOT EXISTS)
+  const migrationColumns = [
+    'ALTER TABLE orders ADD COLUMN first_touch TEXT',
+    'ALTER TABLE orders ADD COLUMN last_touch TEXT',
+    'ALTER TABLE orders ADD COLUMN touch_path TEXT',
+    'ALTER TABLE orders ADD COLUMN customer_email TEXT',
+    'ALTER TABLE orders ADD COLUMN customer_id TEXT',
+    'ALTER TABLE orders ADD COLUMN is_new_customer INTEGER',
+  ];
+  for (const sql of migrationColumns) {
+    try { db.exec(sql); } catch { /* column already exists */ }
+  }
+
   _db = db;
   return db;
 }

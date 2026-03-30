@@ -2,7 +2,7 @@
 
 const chalk = require('chalk');
 const { initDb } = require('../db/schema');
-const { getLastSyncedAt, insertOrder, logSync } = require('../db/queries');
+const { getLastSyncedAt, insertOrder, logSync, checkIsNewCustomer } = require('../db/queries');
 const { fetchOrders } = require('../connectors/shopify');
 const { attributeOrder, summarizeAttribution } = require('./attribution');
 
@@ -44,7 +44,8 @@ async function runSync() {
     // Attribute and persist each order
     for (const order of orders) {
       const attribution = attributeOrder(order);
-      const isNew = insertOrder(db, order, attribution);
+      const isNewCustomer = checkIsNewCustomer(db, order.customer_email);
+      const isNew = insertOrder(db, order, attribution, isNewCustomer);
       if (isNew) ordersNew++;
       attributedOrders.push({ ...order, ...attribution });
     }

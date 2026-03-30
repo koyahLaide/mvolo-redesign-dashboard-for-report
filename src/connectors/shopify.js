@@ -32,6 +32,8 @@ function mapOrder(order) {
       price: parseFloat(li.price),
       quantity: li.quantity,
     })),
+    customer_email: order.email || order.customer?.email || null,
+    customer_id: order.customer?.id ? String(order.customer.id) : null,
   };
 }
 
@@ -65,6 +67,8 @@ async function fetchOrders({ createdAtMin } = {}) {
       'source_name',
       'note_attributes',
       'line_items',
+      'email',
+      'customer',
     ].join(','),
   };
 
