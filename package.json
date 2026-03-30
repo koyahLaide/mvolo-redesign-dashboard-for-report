@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "sync": "node -e \"require('dotenv').config(); require('./src/etl/sync').runSync()\"",
+    "spend-sync": "node -e \"require('dotenv').config(); const {initDb}=require('./src/db/schema'); const {runSpendSync}=require('./src/etl/spend-sync'); runSpendSync(initDb())\"",
     "get-token": "node src/setup/get-token.js"
   },
   "dependencies": {

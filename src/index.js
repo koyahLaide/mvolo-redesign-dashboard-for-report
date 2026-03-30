@@ -6,8 +6,10 @@ const cron = require('node-cron');
 const chalk = require('chalk');
 const { initDb } = require('./db/schema');
 const { runSync } = require('./etl/sync');
+const { runSpendSync } = require('./etl/spend-sync');
 
-const CRON_SCHEDULE = '0 */6 * * *'; // Every 6 hours
+const CRON_SCHEDULE       = '0 */6 * * *'; // Every 6 hours
+const SPEND_CRON_SCHEDULE = '0 2 * * *';   // Daily at 02:00
 
 function nextRunTime() {
   const now = new Date();
@@ -29,7 +31,7 @@ async function main() {
   // Run once immediately on startup
   await runSync();
 
-  // Schedule subsequent syncs every 6 hours
+  // Schedule subsequent order syncs every 6 hours
   cron.schedule(CRON_SCHEDULE, async () => {
     console.log(chalk.cyan(`\n  [cron] Scheduled sync triggered at ${new Date().toLocaleString()}`));
     try {
@@ -38,6 +40,16 @@ async function main() {
       console.error(chalk.red(`  [cron] Sync error: ${err.message}`));
     }
     console.log(chalk.gray(`  Next sync scheduled for: ${nextRunTime()}`));
+  });
+
+  // Schedule spend sync daily at 02:00
+  cron.schedule(SPEND_CRON_SCHEDULE, async () => {
+    console.log(chalk.cyan(`\n  [cron] Spend sync triggered at ${new Date().toLocaleString()}`));
+    try {
+      await runSpendSync(initDb());
+    } catch (err) {
+      console.error(chalk.red(`  [cron] Spend sync error: ${err.message}`));
+    }
   });
 
   console.log(chalk.gray(`  Cron active — next automatic sync at: ${nextRunTime()}`));

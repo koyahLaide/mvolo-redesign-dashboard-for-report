@@ -57,6 +57,38 @@ function initDb() {
     );
   `);
 
+  // ad_spend: one row per date × channel × campaign × adset
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ad_spend (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      date          TEXT NOT NULL,
+      channel       TEXT NOT NULL,
+      campaign_name TEXT,
+      adset_name    TEXT,
+      ad_name       TEXT,
+      spend         REAL DEFAULT 0,
+      impressions   INTEGER DEFAULT 0,
+      clicks        INTEGER DEFAULT 0,
+      purchases     INTEGER DEFAULT 0,
+      currency      TEXT DEFAULT 'EUR'
+    );
+
+    CREATE TABLE IF NOT EXISTS daily_metrics (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      date           TEXT NOT NULL,
+      channel        TEXT NOT NULL,
+      spend          REAL DEFAULT 0,
+      revenue        REAL DEFAULT 0,
+      profit         REAL DEFAULT 0,
+      orders         INTEGER DEFAULT 0,
+      new_customers  INTEGER DEFAULT 0,
+      roas           REAL DEFAULT 0,
+      poas           REAL DEFAULT 0,
+      cac            REAL DEFAULT 0,
+      UNIQUE(date, channel)
+    );
+  `);
+
   // Migrate: add new columns if they don't exist yet (SQLite has no ADD COLUMN IF NOT EXISTS)
   const migrationColumns = [
     'ALTER TABLE orders ADD COLUMN first_touch TEXT',
@@ -65,6 +97,9 @@ function initDb() {
     'ALTER TABLE orders ADD COLUMN customer_email TEXT',
     'ALTER TABLE orders ADD COLUMN customer_id TEXT',
     'ALTER TABLE orders ADD COLUMN is_new_customer INTEGER',
+    'ALTER TABLE orders ADD COLUMN profit REAL',
+    'ALTER TABLE orders ADD COLUMN profit_margin REAL',
+    'ALTER TABLE orders ADD COLUMN cost_of_goods REAL',
   ];
   for (const sql of migrationColumns) {
     try { db.exec(sql); } catch { /* column already exists */ }
