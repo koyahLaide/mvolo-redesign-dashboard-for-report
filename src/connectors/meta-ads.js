@@ -13,20 +13,21 @@
 
 const axios = require('axios');
 
-const BASE = 'https://graph.facebook.com/v20.0';
-const TOKEN = process.env.META_ACCESS_TOKEN;
-const ACCOUNT_ID = process.env.META_AD_ACCOUNT_ID;
+const BASE = 'https://graph.facebook.com/v19.0';
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * Fetches ad spend and conversions for a given date range at adset level.
+ * Fetches ad spend and conversions for the last 90 days at ad level.
  *
- * @param {string} dateFrom  YYYY-MM-DD
- * @param {string} dateTo    YYYY-MM-DD (inclusive)
+ * @param {string} [dateFrom]  YYYY-MM-DD (ignored when using date_preset)
+ * @param {string} [dateTo]    YYYY-MM-DD (ignored when using date_preset)
  * @returns {Promise<Array>} Normalised rows for the ad_spend table
  */
-async function fetchMetaSpend({ dateFrom, dateTo }) {
+async function fetchMetaSpend({ dateFrom, dateTo } = {}) {
+  const TOKEN      = process.env.META_ACCESS_TOKEN;
+  const ACCOUNT_ID = process.env.META_AD_ACCOUNT_ID;
+
   if (!TOKEN || !ACCOUNT_ID) {
     throw new Error('META_ACCESS_TOKEN and META_AD_ACCOUNT_ID must be set in .env');
   }
@@ -36,9 +37,9 @@ async function fetchMetaSpend({ dateFrom, dateTo }) {
 
   while (true) {
     const params = {
-      access_token:  TOKEN,
-      level:         'adset',
-      fields:        [
+      access_token:   TOKEN,
+      level:          'ad',
+      fields:         [
         'campaign_name',
         'adset_name',
         'ad_name',
@@ -48,15 +49,15 @@ async function fetchMetaSpend({ dateFrom, dateTo }) {
         'actions',
         'date_start',
       ].join(','),
-      time_range:    JSON.stringify({ since: dateFrom, until: dateTo }),
-      time_increment: 1,          // one row per day
-      limit:         500,
+      date_preset:    'last_90d',
+      time_increment: 1,          // one row per day per ad
+      limit:          500,
       ...(after ? { after } : {}),
     };
 
     let response;
     try {
-      response = await axios.get(`${BASE}/act_${ACCOUNT_ID}/insights`, { params });
+      response = await axios.get(`${BASE}/act_${ACCOUNT_ID}/insights`, { params }); // ACCOUNT_ID in closure
     } catch (err) {
       const msg = err.response?.data?.error?.message ?? err.message;
       throw new Error(`Meta API error: ${msg}`);

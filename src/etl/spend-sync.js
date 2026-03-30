@@ -171,3 +171,23 @@ async function runSpendSync(db, { dateFrom, dateTo } = {}) {
 }
 
 module.exports = { runSpendSync };
+
+// ── CLI entry point ───────────────────────────────────────────────────────────
+if (require.main === module) {
+  require('dotenv').config();
+  const { initDb } = require('../db/schema');
+  const db = initDb();
+
+  console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
+  console.log(chalk.cyan.bold('  Mvolo Dashboard — Spend Sync'));
+  console.log(chalk.cyan(`  ${new Date().toLocaleString()}`));
+  console.log(chalk.cyan('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
+
+  runSpendSync(db)
+    .then(() => { db.close(); process.exit(0); })
+    .catch((err) => {
+      console.error(chalk.red('\n[spend-sync] Fatal error:'), err.message);
+      db.close();
+      process.exit(1);
+    });
+}

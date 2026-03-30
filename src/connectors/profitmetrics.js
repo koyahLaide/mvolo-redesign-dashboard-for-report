@@ -21,10 +21,7 @@
 
 const axios = require('axios');
 
-const STORE       = process.env.SHOPIFY_STORE;
-const TOKEN       = process.env.SHOPIFY_TOKEN;
 const API_VERSION = '2024-01';
-const BASE_URL    = `https://${STORE}/admin/api/${API_VERSION}`;
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -63,9 +60,12 @@ function extractPmFields(noteAttributes) {
  * @returns {Promise<Object|null>}
  */
 async function fetchPmMetafield(orderId) {
+  const store   = process.env.SHOPIFY_STORE;
+  const token   = process.env.SHOPIFY_TOKEN;
+  const baseUrl = `https://${store}/admin/api/${API_VERSION}`;
   try {
-    const res = await axios.get(`${BASE_URL}/orders/${orderId}/metafields.json`, {
-      headers: { 'X-Shopify-Access-Token': TOKEN },
+    const res = await axios.get(`${baseUrl}/orders/${orderId}/metafields.json`, {
+      headers: { 'X-Shopify-Access-Token': token },
       params:  { namespace: 'profitmetrics', key: 'attribution' },
     });
     const mf = (res.data.metafields ?? []).find(
@@ -93,6 +93,10 @@ async function fetchPmMetafield(orderId) {
  * @returns {Promise<{processed: number, enriched: number}>}
  */
 async function enrichFromProfitMetrics(db, { fetchMetafields = false, dateFrom, dateTo } = {}) {
+  const STORE    = process.env.SHOPIFY_STORE;
+  const TOKEN    = process.env.SHOPIFY_TOKEN;
+  const BASE_URL = `https://${STORE}/admin/api/${API_VERSION}`;
+
   if (!STORE || !TOKEN) {
     throw new Error('SHOPIFY_STORE and SHOPIFY_TOKEN must be set in .env');
   }
