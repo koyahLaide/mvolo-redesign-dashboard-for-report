@@ -73,6 +73,19 @@ function initDb() {
       currency      TEXT DEFAULT 'EUR'
     );
 
+    CREATE TABLE IF NOT EXISTS visitor_sessions (
+      id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+      visitor_id               TEXT NOT NULL,
+      order_id                 TEXT,
+      session_count            INTEGER DEFAULT 0,
+      first_touch_date         TEXT,
+      last_touch_date          TEXT,
+      days_to_convert          REAL,
+      sessions_before_purchase INTEGER,
+      touch_path               TEXT,
+      created_at               TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS daily_metrics (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       date           TEXT NOT NULL,
@@ -100,6 +113,8 @@ function initDb() {
     'ALTER TABLE orders ADD COLUMN profit REAL',
     'ALTER TABLE orders ADD COLUMN profit_margin REAL',
     'ALTER TABLE orders ADD COLUMN cost_of_goods REAL',
+    'ALTER TABLE orders ADD COLUMN days_to_convert REAL',
+    'ALTER TABLE orders ADD COLUMN sessions_before_purchase INTEGER',
   ];
   for (const sql of migrationColumns) {
     try { db.exec(sql); } catch { /* column already exists */ }

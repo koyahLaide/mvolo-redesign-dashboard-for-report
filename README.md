@@ -42,6 +42,42 @@ SQLite database is stored at `data/mvolo.db`.
 - `orders` — one row per Shopify order with attribution fields
 - `sync_log` — audit log of every sync run
 
+## First-party Session Tracker
+
+Track the full customer journey (multi-touch, days to convert, sessions before purchase) by adding a lightweight script to your Shopify theme.
+
+### 1. Voeg toe aan `theme.liquid` (vóór `</body>`)
+
+```liquid
+<script src="https://dashboard-sigma-nine-85.vercel.app/tracker.js" defer></script>
+```
+
+### 2. Voeg toe aan de order confirmation page (`checkout.liquid` of `order-status.liquid`)
+
+```liquid
+<div id="pm-order" data-order-id="{{ order.id }}"></div>
+```
+
+Dit triggert automatisch het versturen van de sessiegeschiedenis naar de dashboard API zodra een klant een aankoop afrondt.
+
+### Hoe het werkt
+
+| Stap | Actie |
+|------|-------|
+| Paginabezoek met UTMs | Sessie opgeslagen in `localStorage` |
+| Externe referrer (bijv. Facebook) | Sessie opgeslagen in `localStorage` |
+| Order confirmation page | Volledige journey verstuurd naar `/api/track` |
+| Dashboard → Customer Journey | Toont gem. sessies + dagen per kanaal |
+
+- Bezoeker ID: anonieme UUID in `localStorage` (`mvolo_vid`)
+- Max 30 sessies per bezoeker bijgehouden
+- Data wordt niet gedeeld met derden
+
+### Scripttag (alternatief via Shopify Admin)
+
+Via **Online Store → Themes → Edit code → theme.liquid**, of via
+**Settings → Custom data → Scripts** (Shopify Plus).
+
 ## Environment variables
 
 | Variable | Description |
