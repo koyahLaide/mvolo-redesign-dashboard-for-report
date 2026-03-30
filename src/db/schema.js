@@ -86,6 +86,28 @@ function initDb() {
       created_at               TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS ga4_sessions (
+      id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+      date                 TEXT NOT NULL,
+      channel              TEXT NOT NULL,
+      sessions             INTEGER DEFAULT 0,
+      users                INTEGER DEFAULT 0,
+      new_users            INTEGER DEFAULT 0,
+      bounce_rate          REAL DEFAULT 0,
+      avg_session_duration REAL DEFAULT 0,
+      UNIQUE(date, channel)
+    );
+
+    CREATE TABLE IF NOT EXISTS ga4_journeys (
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      date             TEXT NOT NULL,
+      first_channel    TEXT NOT NULL,
+      session_channel  TEXT NOT NULL,
+      sessions         INTEGER DEFAULT 0,
+      users            INTEGER DEFAULT 0,
+      UNIQUE(date, first_channel, session_channel)
+    );
+
     CREATE TABLE IF NOT EXISTS journey_meta (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       date          TEXT NOT NULL,

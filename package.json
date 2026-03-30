@@ -10,6 +10,7 @@
     "get-token": "node src/setup/get-token.js"
   },
   "dependencies": {
+    "@google-analytics/data": "^5.2.1",
     "axios": "^1.6.7",
     "chalk": "^4.1.2",
     "dotenv": "^16.4.5",
