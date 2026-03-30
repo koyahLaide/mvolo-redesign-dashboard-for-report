@@ -34,6 +34,9 @@ function referrerContains(referringSite, fragments) {
 // Own domains — referrals from these count as direct (browser back-nav, cart flows, etc.)
 const OWN_DOMAINS = ['mvolo.nl', 'mvolo.de', 'mvolo.eu', 'mvolo.com'];
 
+// AI assistant domains — organic referrals from AI chatbots/assistants
+const AI_DOMAINS = ['chatgpt.com', 'perplexity.ai', 'claude.ai', 'gemini.google.com'];
+
 /**
  * Detects first-touch channel from click-ID parameters in the landing URL.
  * fbclid = Meta Ads paid click; gclid = Google Ads paid click.
@@ -53,19 +56,23 @@ function detectFirstTouch(params, lastTouchChannel) {
  * Determines the marketing channel and medium for a single Shopify order.
  *
  * Attribution priority (first match wins):
- *  1.  utm_source=meta or facebook      → meta_ads / paid_social
- *  2.  utm_source=google + cpc          → google_search / cpc
- *  3.  utm_source=google + shopping     → google_shopping / shopping
- *  4.  utm_source=awin                  → awin_affiliate / affiliate
- *  5.  utm_source=klaviyo               → email / email
- *  6.  utm_source=chatgpt.com           → chatgpt / referral
- *  7.  No UTM, referrer=search engine   → organic_search / organic
- *  8.  No UTM, referrer=social platform → organic_social / organic
- *  9.  No UTM, referrer=linktr.ee       → organic_social / organic
- * 10.  No UTM, referrer=ui.awin.com     → awin_affiliate / affiliate
- * 11.  No UTM, referrer=own domain      → direct / direct
- * 12.  No UTM, no referrer              → direct / direct
- * 13.  Anything else                    → other / other
+ *  1.  utm_source=meta or facebook          → meta_ads / paid_social
+ *  2.  utm_source=google + cpc              → google_search / cpc
+ *  3.  utm_source=google + shopping         → google_shopping / shopping
+ *  4.  utm_source=awin                      → awin_affiliate / affiliate
+ *  5.  utm_source=klaviyo                   → email / email
+ *  6.  utm_source=chatgpt.com               → ai_referral / ai_referral
+ *  7.  No UTM, referrer=search engine       → organic_search / organic
+ *  8.  No UTM, referrer=social platform     → organic_social / organic
+ *  9.  No UTM, referrer=linktr.ee           → organic_social / organic
+ * 10.  No UTM, referrer=AI assistant domain → ai_referral / ai_referral
+ * 11.  No UTM, referrer=ui.awin.com         → awin_affiliate / affiliate
+ * 12.  No UTM, referrer=own domain          → direct / direct
+ * 13.  No UTM, no referrer                  → direct / direct
+ * 14.  Anything else                        → other / other
+ *
+ * first_touch and last_touch are always set — never null.
+ * When no click ID is present, first_touch equals last_touch (= channel).
  *
  * @param {Object} order - Mapped order from shopify.js
  * @returns {Object} Attribution object
@@ -99,8 +106,8 @@ function attributeOrder(order) {
     channel = 'email';
     medium = 'email';
   } else if (utmSource === 'chatgpt.com') {
-    channel = 'chatgpt';
-    medium = 'referral';
+    channel = 'ai_referral';
+    medium = 'ai_referral';
   } else if (!hasUtm && referrerContains(order.referring_site, ['google.', 'bing.', 'yahoo.', 'duckduckgo.'])) {
     channel = 'organic_search';
     medium = 'organic';
@@ -110,6 +117,9 @@ function attributeOrder(order) {
   } else if (!hasUtm && referrerContains(order.referring_site, ['linktr.ee'])) {
     channel = 'organic_social';
     medium = 'organic';
+  } else if (!hasUtm && referrerContains(order.referring_site, AI_DOMAINS)) {
+    channel = 'ai_referral';
+    medium = 'ai_referral';
   } else if (!hasUtm && referrerContains(order.referring_site, ['ui.awin.com'])) {
     channel = 'awin_affiliate';
     medium = 'affiliate';
@@ -124,22 +134,25 @@ function attributeOrder(order) {
     medium = 'other';
   }
 
-  const firstTouch = detectFirstTouch(params, channel);
-  const lastTouch = channel;
-  const touchPath = firstTouch !== lastTouch
+  // first_touch and last_touch are always non-null strings.
+  // first_touch uses the click-ID override (fbclid/gclid) when present;
+  // otherwise it equals the channel (same as last_touch).
+  const lastTouch  = channel;
+  const firstTouch = detectFirstTouch(params, lastTouch);
+  const touchPath  = firstTouch !== lastTouch
     ? JSON.stringify([firstTouch, lastTouch])
     : JSON.stringify([firstTouch]);
 
   return {
     channel,
     medium,
-    utm_source: utmSource || null,
+    utm_source:   utmSource || null,
     utm_campaign: utmCampaign,
-    utm_content: utmContent,
-    utm_term: utmTerm,
-    first_touch: firstTouch,
-    last_touch: lastTouch,
-    touch_path: touchPath,
+    utm_content:  utmContent,
+    utm_term:     utmTerm,
+    first_touch:  firstTouch,
+    last_touch:   lastTouch,
+    touch_path:   touchPath,
   };
 }
 
