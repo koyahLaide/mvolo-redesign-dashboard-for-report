@@ -76,6 +76,7 @@ async function fetchOrderPage(page) {
     params: {
       'fulfilment-method': 'ALL',
       status:              'ALL',
+      'page-size':         50,
       page,
     },
   });
@@ -97,33 +98,38 @@ async function fetchOrderDetail(orderId) {
 function mapBolOrder(detail) {
   const items = detail.orderItems ?? [];
 
-  const totalAmount = items.reduce(
-    (sum, item) => sum + (parseFloat(item.unitPrice?.amount ?? item.unitPrice ?? 0) * (item.quantity ?? 1)),
-    0
-  );
+  // Use totalPrice per item (already quantity-adjusted) when available,
+  // otherwise fall back to unitPrice × quantity.
+  // Bol returns amounts in euros (not cents).
+  const totalAmount = items.reduce((sum, item) => {
+    const lineTotal = item.totalPrice ?? (parseFloat(item.unitPrice ?? 0) * (item.quantity ?? 1));
+    return sum + lineTotal;
+  }, 0);
 
   const shipment = detail.shipmentDetails ?? {};
 
+  // orderPlacedDateTime is the correct field (orderDate does not exist in v10)
+  const createdAt = detail.orderPlacedDateTime ?? detail.orderDate ?? new Date().toISOString();
+
   return {
-    id:            `bol_${detail.orderId}`,
-    order_number:  String(detail.orderId),
-    created_at:    detail.orderDate ?? new Date().toISOString(),
-    total_price:   Math.round(totalAmount * 100) / 100,
-    financial_status: 'paid',  // Bol orders are always paid on placement
-    landing_site:  null,
-    referring_site: null,
-    source_name:   'bol',
-    note_attributes: [],
+    id:               `bol_${detail.orderId}`,
+    order_number:     String(detail.orderId),
+    created_at:       createdAt,
+    total_price:      Math.round(totalAmount * 100) / 100,
+    financial_status: 'paid',
+    landing_site:     null,
+    referring_site:   null,
+    source_name:      'bol',
+    note_attributes:  [],
     line_items: items.map((item) => ({
       product_id: item.product?.ean ?? null,
       title:      item.product?.title ?? 'Onbekend product',
-      price:      parseFloat(item.unitPrice?.amount ?? item.unitPrice ?? 0),
+      price:      parseFloat(item.unitPrice ?? 0),
       quantity:   item.quantity ?? 1,
     })),
     customer_email: null,
     customer_id:    null,
     marketplace:    'bol',
-    // Shipping country for reference
     shipping_country: shipment.countryCode ?? null,
   };
 }
