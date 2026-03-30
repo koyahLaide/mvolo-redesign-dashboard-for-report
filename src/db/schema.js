@@ -86,6 +86,20 @@ function initDb() {
       created_at               TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS journey_meta (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      date          TEXT NOT NULL,
+      channel       TEXT NOT NULL,
+      campaign_name TEXT,
+      purchases_1d  INTEGER DEFAULT 0,
+      purchases_7d  INTEGER DEFAULT 0,
+      purchases_28d INTEGER DEFAULT 0,
+      revenue_1d    REAL DEFAULT 0,
+      revenue_7d    REAL DEFAULT 0,
+      revenue_28d   REAL DEFAULT 0,
+      UNIQUE(date, channel, campaign_name)
+    );
+
     CREATE TABLE IF NOT EXISTS daily_metrics (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       date           TEXT NOT NULL,
