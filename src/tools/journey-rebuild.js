@@ -207,88 +207,103 @@ async function rebuildMetaWindows(db) {
 
   const BASE = 'https://graph.facebook.com/v19.0';
 
-  // Ensure table migration ran
-  try { db.exec('ALTER TABLE journey_meta ADD COLUMN purchases_1d INTEGER DEFAULT 0'); } catch {}
+  /**
+   * Fetch all pages for one attribution window.
+   * When a single window is requested, Meta puts the count in actions[].value.
+   * Using separate calls per window gives true per-window figures.
+   */
+  async function fetchWindow(windowName) {
+    const byKey = new Map(); // "date||campaign_name" → { purchases, revenue }
+    let after = null;
 
-  const rows = [];
-  let after  = null;
+    while (true) {
+      const params = {
+        access_token:               TOKEN,
+        level:                      'campaign',
+        fields:                     'campaign_name,date_start,actions,action_values',
+        action_attribution_windows: windowName,   // single string, not array
+        date_preset:                'last_90d',
+        time_increment:             1,
+        limit:                      500,
+        ...(after ? { after } : {}),
+      };
 
-  while (true) {
-    const params = {
-      access_token:              TOKEN,
-      level:                     'campaign',
-      fields:                    [
-        'campaign_name',
-        'date_start',
-        'spend',
-        'actions',
-        'action_values',
-      ].join(','),
-      action_attribution_windows: JSON.stringify(['1d_click', '7d_click', '28d_click']),
-      date_preset:               'last_90d',
-      time_increment:            1,
-      limit:                     500,
-      ...(after ? { after } : {}),
-    };
+      let response;
+      try {
+        response = await axios.get(`${BASE}/act_${ACCOUNT_ID}/insights`, { params });
+      } catch (err) {
+        const msg = err.response?.data?.error?.message ?? err.message;
+        console.warn(chalk.yellow(`  Meta API error [${windowName}]: ${msg}`));
+        break;
+      }
 
-    let response;
-    try {
-      response = await axios.get(`${BASE}/act_${ACCOUNT_ID}/insights`, { params });
-    } catch (err) {
-      const msg = err.response?.data?.error?.message ?? err.message;
-      console.warn(chalk.yellow(`  Meta API error: ${msg}`));
-      break;
-    }
-
-    const data = response.data.data ?? [];
-
-    for (const row of data) {
-      const actions      = row.actions ?? [];
-      const actionValues = row.action_values ?? [];
-
-      // purchases per window
-      const purchases = (window) =>
-        actions
-          .filter((a) => (a.action_type === 'purchase' || a.action_type === 'omni_purchase'))
-          .reduce((s, a) => {
-            // When action_attribution_windows is set, each action has _1d_click, _7d_click, _28d_click suffixed values
-            const key = `${window}`;
-            return s + Number(a[key] ?? (window === '1d_click' ? a['1d_click'] : window === '7d_click' ? a['7d_click'] : a['28d_click']) ?? 0);
-          }, 0);
-
-      const revenue = (window) =>
-        actionValues
+      for (const row of (response.data.data ?? [])) {
+        const key = `${row.date_start}||${row.campaign_name ?? ''}`;
+        const purchases = (row.actions ?? [])
           .filter((a) => a.action_type === 'purchase' || a.action_type === 'omni_purchase')
-          .reduce((s, a) => s + Number(a[window] ?? 0), 0);
+          .reduce((s, a) => s + Number(a.value ?? 0), 0);
+        const revenue = (row.action_values ?? [])
+          .filter((a) => a.action_type === 'purchase' || a.action_type === 'omni_purchase')
+          .reduce((s, a) => s + Number(a.value ?? 0), 0);
 
-      rows.push({
-        date:          row.date_start,
-        channel:       'meta_ads',
-        campaign_name: row.campaign_name ?? null,
-        purchases_1d:  Math.round(purchases('1d_click')),
-        purchases_7d:  Math.round(purchases('7d_click')),
-        purchases_28d: Math.round(purchases('28d_click')),
-        revenue_1d:    Math.round(revenue('1d_click') * 100) / 100,
-        revenue_7d:    Math.round(revenue('7d_click') * 100) / 100,
-        revenue_28d:   Math.round(revenue('28d_click') * 100) / 100,
-      });
+        byKey.set(key, {
+          date:          row.date_start,
+          campaign_name: row.campaign_name ?? null,
+          purchases:     Math.round(purchases),
+          revenue:       Math.round(revenue * 100) / 100,
+        });
+      }
+
+      const paging = response.data.paging;
+      if (paging?.next && paging?.cursors?.after) {
+        after = paging.cursors.after;
+        await delay(400);
+      } else {
+        break;
+      }
     }
 
-    const paging = response.data.paging;
-    if (paging?.next && paging?.cursors?.after) {
-      after = paging.cursors.after;
-      await delay(400);
-    } else {
-      break;
-    }
+    return byKey;
   }
 
-  if (rows.length === 0) {
+  console.log(chalk.white('  Fetching 1d_click window…'));
+  const map1d  = await fetchWindow('1d_click');
+  await delay(600);
+  console.log(chalk.white('  Fetching 7d_click window…'));
+  const map7d  = await fetchWindow('7d_click');
+  await delay(600);
+  console.log(chalk.white('  Fetching 28d_click window…'));
+  const map28d = await fetchWindow('28d_click');
+
+  if (map28d.size === 0 && map7d.size === 0 && map1d.size === 0) {
     console.log(chalk.yellow('  No Meta attribution data returned'));
     return;
   }
 
-  // Clear last 90d and re-insert
+  // Merge all keys across the three windows
+  const allKeys = new Set([...map1d.keys(), ...map7d.keys(), ...map28d.keys()]);
+
+  const rows = [];
+  for (const key of allKeys) {
+    const r1  = map1d.get(key)  ?? { purchases: 0, revenue: 0 };
+    const r7  = map7d.get(key)  ?? { purchases: 0, revenue: 0 };
+    const r28 = map28d.get(key) ?? map7d.get(key) ?? map1d.get(key);
+    if (!r28) continue;
+
+    rows.push({
+      date:          r28.date,
+      channel:       'meta_ads',
+      campaign_name: r28.campaign_name,
+      purchases_1d:  r1.purchases,
+      purchases_7d:  r7.purchases,
+      purchases_28d: r28.purchases,
+      revenue_1d:    r1.revenue,
+      revenue_7d:    r7.revenue,
+      revenue_28d:   r28.revenue,
+    });
+  }
+
+  // Clear and re-insert
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 90);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
@@ -304,7 +319,10 @@ async function rebuildMetaWindows(db) {
   `);
   for (const r of rows) insert.run(r);
 
-  console.log(chalk.green(`  Done — ${rows.length} rows inserted into journey_meta`));
+  const total1d  = rows.reduce((s, r) => s + r.purchases_1d,  0);
+  const total7d  = rows.reduce((s, r) => s + r.purchases_7d,  0);
+  const total28d = rows.reduce((s, r) => s + r.purchases_28d, 0);
+  console.log(chalk.green(`  Done — ${rows.length} rows | 1d: ${total1d} / 7d: ${total7d} / 28d: ${total28d} aankopen`));
 }
 
 // ── C. Repeat purchase analysis ───────────────────────────────────────────────
