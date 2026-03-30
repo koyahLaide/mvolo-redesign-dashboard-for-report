@@ -44,13 +44,13 @@ function insertOrder(db, order, attribution, isNewCustomer) {
       channel, medium, utm_source, utm_campaign, utm_content, utm_term,
       landing_site, referring_site, source_name, synced_at,
       first_touch, last_touch, touch_path,
-      customer_email, customer_id, is_new_customer
+      customer_email, customer_id, is_new_customer, marketplace
     ) VALUES (
       @id, @order_number, @created_at, @total_price, @financial_status,
       @channel, @medium, @utm_source, @utm_campaign, @utm_content, @utm_term,
       @landing_site, @referring_site, @source_name, @synced_at,
       @first_touch, @last_touch, @touch_path,
-      @customer_email, @customer_id, @is_new_customer
+      @customer_email, @customer_id, @is_new_customer, @marketplace
     )
   `);
 
@@ -76,6 +76,7 @@ function insertOrder(db, order, attribution, isNewCustomer) {
     customer_email: order.customer_email,
     customer_id: order.customer_id,
     is_new_customer: isNewCustomer,
+    marketplace: order.marketplace ?? 'shopify',
   });
 
   return result.changes > 0;

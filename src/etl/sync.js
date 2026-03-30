@@ -3,7 +3,8 @@
 const chalk = require('chalk');
 const { initDb } = require('../db/schema');
 const { getLastSyncedAt, insertOrder, logSync, checkIsNewCustomer } = require('../db/queries');
-const { fetchOrders } = require('../connectors/shopify');
+const { fetchOrders }   = require('../connectors/shopify');
+const { fetchBolOrders } = require('../connectors/bol');
 const { attributeOrder, summarizeAttribution } = require('./attribution');
 
 /**
@@ -36,19 +37,51 @@ async function runSync() {
       console.log(chalk.yellow('  No previous sync found — fetching all orders.\n'));
     }
 
-    const orders = await fetchOrders({ createdAtMin: lastSync || undefined });
-    ordersFetched = orders.length;
+    // ── Shopify ────────────────────────────────────────────────────────────────
+    const shopifyOrders = await fetchOrders({ createdAtMin: lastSync || undefined });
+    ordersFetched += shopifyOrders.length;
+    console.log(chalk.white(`  Orders fetched from Shopify: ${chalk.bold(shopifyOrders.length)}`));
 
-    console.log(chalk.white(`  Orders fetched from Shopify: ${chalk.bold(ordersFetched)}\n`));
-
-    // Attribute and persist each order
-    for (const order of orders) {
+    for (const order of shopifyOrders) {
       const attribution = attributeOrder(order);
       const isNewCustomer = checkIsNewCustomer(db, order.customer_email);
       const isNew = insertOrder(db, order, attribution, isNewCustomer);
       if (isNew) ordersNew++;
       attributedOrders.push({ ...order, ...attribution });
     }
+
+    // ── Bol.com ────────────────────────────────────────────────────────────────
+    let bolFetched = 0;
+    let bolNew = 0;
+    try {
+      const bolOrders = await fetchBolOrders();
+      bolFetched = bolOrders.length;
+      console.log(chalk.white(`  Orders fetched from Bol.com: ${chalk.bold(bolFetched)}`));
+
+      const bolAttribution = {
+        channel:      'bol_marketplace',
+        medium:       'marketplace',
+        utm_source:   'bol',
+        utm_campaign: null,
+        utm_content:  null,
+        utm_term:     null,
+        first_touch:  'bol_marketplace',
+        last_touch:   'bol_marketplace',
+        touch_path:   JSON.stringify(['bol_marketplace']),
+      };
+
+      for (const order of bolOrders) {
+        const isNew = insertOrder(db, order, bolAttribution, 1);
+        if (isNew) { bolNew++; ordersNew++; }
+        attributedOrders.push({ ...order, ...bolAttribution });
+      }
+
+      ordersFetched += bolFetched;
+    } catch (err) {
+      console.warn(chalk.yellow(`  Bol.com sync skipped: ${err.message}`));
+    }
+
+    console.log('');
 
     // Summarise by channel
     const summary = summarizeAttribution(attributedOrders);

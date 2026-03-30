@@ -115,6 +115,7 @@ function initDb() {
     'ALTER TABLE orders ADD COLUMN cost_of_goods REAL',
     'ALTER TABLE orders ADD COLUMN days_to_convert REAL',
     'ALTER TABLE orders ADD COLUMN sessions_before_purchase INTEGER',
+    "ALTER TABLE orders ADD COLUMN marketplace TEXT DEFAULT 'shopify'",
   ];
   for (const sql of migrationColumns) {
     try { db.exec(sql); } catch { /* column already exists */ }
