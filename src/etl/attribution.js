@@ -34,6 +34,56 @@ function referrerContains(referringSite, fragments) {
 // Own domains — referrals from these count as direct (browser back-nav, cart flows, etc.)
 const OWN_DOMAINS = ['mvolo.nl', 'mvolo.de', 'mvolo.eu', 'mvolo.com'];
 
+/**
+ * For orders with channel='direct', categorises the likely origin into a sub-channel:
+ *  - 'direct_typed'   → own-domain referrer or homepage landing with no referrer
+ *  - 'dark_social'    → no referrer, product/collection landing (shared via DM/WhatsApp)
+ *  - 'email_no_utm'   → email-domain referrer or /email/ in landing path
+ *  - 'direct_unknown' → everything else (includes potential iOS private, meta no-utm)
+ *
+ * Note: 'meta_no_utm' is applied as a second pass in backfill.js (requires ad_spend DB access).
+ *
+ * @param {Object} order - { landing_site, referring_site }
+ * @returns {string}
+ */
+function getDirectSubchannel(order) {
+  const landing  = order.landing_site  || '';
+  const referrer = (order.referring_site || '').toLowerCase();
+
+  // Own-domain referral → internal navigation, treat as typed direct
+  if (referrer && OWN_DOMAINS.some((d) => referrer.includes(d))) {
+    return 'direct_typed';
+  }
+
+  // Email-client referrer
+  if (referrer && /mail\.|gmail\.com|yahoo\.com|outlook\.|hotmail\.com/i.test(referrer)) {
+    return 'email_no_utm';
+  }
+
+  // Parse landing page path
+  let landingPath = '/';
+  try {
+    const url = landing.startsWith('http') ? landing : `https://placeholder.com${landing}`;
+    landingPath = new URL(url).pathname.toLowerCase();
+  } catch { /* ignore */ }
+
+  // Email in landing path
+  if (/\/email\//i.test(landingPath)) {
+    return 'email_no_utm';
+  }
+
+  // Homepage landing → typed / bookmark
+  const isHomepage = /^\/(nl\/|en\/|de\/|eu\/)?$/.test(landingPath);
+  if (isHomepage) return 'direct_typed';
+
+  // Product or collection page with no referrer → dark social (shared via DM/WhatsApp/Telegram)
+  if (/\/(products?|collections?|shop)\//i.test(landingPath)) {
+    return 'dark_social';
+  }
+
+  return 'direct_unknown';
+}
+
 // AI assistant domains — organic referrals from AI chatbots/assistants
 const AI_DOMAINS = ['chatgpt.com', 'perplexity.ai', 'claude.ai', 'gemini.google.com'];
 
@@ -125,10 +175,10 @@ function attributeOrder(order) {
     medium = 'affiliate';
   } else if (!hasUtm && referrerContains(order.referring_site, OWN_DOMAINS)) {
     channel = 'direct';
-    medium = 'direct';
+    medium  = 'direct';
   } else if (!hasUtm && !order.referring_site) {
     channel = 'direct';
-    medium = 'direct';
+    medium  = 'direct';
   } else {
     channel = 'other';
     medium = 'other';
@@ -143,16 +193,20 @@ function attributeOrder(order) {
     ? JSON.stringify([firstTouch, lastTouch])
     : JSON.stringify([firstTouch]);
 
+  // Direct sub-channel — only populated for direct orders
+  const direct_subchannel = channel === 'direct' ? getDirectSubchannel(order) : null;
+
   return {
     channel,
     medium,
-    utm_source:   utmSource || null,
-    utm_campaign: utmCampaign,
-    utm_content:  utmContent,
-    utm_term:     utmTerm,
-    first_touch:  firstTouch,
-    last_touch:   lastTouch,
-    touch_path:   touchPath,
+    utm_source:       utmSource || null,
+    utm_campaign:     utmCampaign,
+    utm_content:      utmContent,
+    utm_term:         utmTerm,
+    first_touch:      firstTouch,
+    last_touch:       lastTouch,
+    touch_path:       touchPath,
+    direct_subchannel,
   };
 }
 
@@ -170,4 +224,4 @@ function summarizeAttribution(orders) {
   }, {});
 }
 
-module.exports = { attributeOrder, summarizeAttribution };
+module.exports = { attributeOrder, summarizeAttribution, getDirectSubchannel };

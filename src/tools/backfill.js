@@ -28,6 +28,15 @@ async function run() {
     ORDER BY created_at ASC
   `).all();
 
+  // ── 1b. Load Meta ad-spend dates for meta_no_utm detection ─────────────────
+  let metaSpendSet = new Set();
+  try {
+    const metaSpendRows = db.prepare(`
+      SELECT DISTINCT date FROM ad_spend WHERE channel = 'meta_ads' AND spend > 0
+    `).all();
+    for (const r of metaSpendRows) metaSpendSet.add(r.date);
+  } catch { /* ad_spend table may not exist yet */ }
+
   console.log(chalk.white(`  Orders in database: ${chalk.bold(orders.length)}\n`));
 
   if (orders.length === 0) {
@@ -53,12 +62,13 @@ async function run() {
   // ── 3. Re-attribute and update in a single transaction ─────────────────────
   const updateStmt = db.prepare(`
     UPDATE orders
-    SET channel         = @channel,
-        medium          = @medium,
-        first_touch     = @first_touch,
-        last_touch      = @last_touch,
-        touch_path      = @touch_path,
-        is_new_customer = @is_new_customer
+    SET channel           = @channel,
+        medium            = @medium,
+        first_touch       = @first_touch,
+        last_touch        = @last_touch,
+        touch_path        = @touch_path,
+        is_new_customer   = @is_new_customer,
+        direct_subchannel = @direct_subchannel
     WHERE id = @id
   `);
 
@@ -76,14 +86,29 @@ async function run() {
         referring_site: order.referring_site,
       });
       const isNewCustomer = newCustomerMap.get(order.id) ?? 1;
+
+      // Determine direct_subchannel; upgrade 'direct_unknown' to 'meta_no_utm'
+      // when Meta had spend on or the day before the order date.
+      let directSubchannel = attr.direct_subchannel;
+      if (directSubchannel === 'direct_unknown' && metaSpendSet.size > 0 && order.created_at) {
+        const orderDate = order.created_at.slice(0, 10);
+        const d = new Date(orderDate);
+        d.setDate(d.getDate() - 1);
+        const prevDate = d.toISOString().slice(0, 10);
+        if (metaSpendSet.has(orderDate) || metaSpendSet.has(prevDate)) {
+          directSubchannel = 'meta_no_utm';
+        }
+      }
+
       updateStmt.run({
-        id:              order.id,
-        channel:         attr.channel,
-        medium:          attr.medium,
-        first_touch:     attr.first_touch,
-        last_touch:      attr.last_touch,
-        touch_path:      attr.touch_path,
-        is_new_customer: isNewCustomer,
+        id:                order.id,
+        channel:           attr.channel,
+        medium:            attr.medium,
+        first_touch:       attr.first_touch,
+        last_touch:        attr.last_touch,
+        touch_path:        attr.touch_path,
+        is_new_customer:   isNewCustomer,
+        direct_subchannel: directSubchannel,
       });
       updatedAttribution++;
       if (order.is_new_customer !== isNewCustomer) changedNewCustomer++;
