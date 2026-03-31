@@ -5,7 +5,7 @@ const { initDb } = require('../db/schema');
 const { getLastSyncedAt, insertOrder, logSync, checkIsNewCustomer } = require('../db/queries');
 const { fetchOrders }    = require('../connectors/shopify');
 const { fetchBolOrders } = require('../connectors/bol');
-const { fetchGA4Sessions, fetchGA4TopPages, fetchGA4Journeys } = require('../connectors/ga4');
+const { fetchGA4Sessions, fetchGA4TopPages, fetchGA4Journeys, fetchGA4PageFunnel, fetchGA4ClarityEvents } = require('../connectors/ga4');
 const { attributeOrder, summarizeAttribution } = require('./attribution');
 
 /**
@@ -125,6 +125,61 @@ async function runSync() {
             (@date, @first_channel, @session_channel, @sessions, @users)
         `);
         for (const row of ga4Journeys) insertJourney.run(row);
+      }
+
+      // Funnel: page-level sessions per funnel step
+      try {
+        const funnelRows = await fetchGA4PageFunnel({ dateFrom: ga4DateFrom, dateTo: ga4DateTo });
+        if (funnelRows.length > 0) {
+          db.prepare(`DELETE FROM ga4_funnel WHERE date >= ? AND date <= ?`).run(ga4DateFrom, ga4DateTo);
+          const insertFunnel = db.prepare(`
+            INSERT OR REPLACE INTO ga4_funnel (date, step, sessions, users)
+            VALUES (@date, @step, @sessions, @users)
+          `);
+          for (const row of funnelRows) insertFunnel.run(row);
+          console.log(chalk.white(`  GA4 funnel rows stored: ${chalk.bold(funnelRows.length)}`));
+        }
+      } catch (err) {
+        console.warn(chalk.yellow(`  GA4 funnel sync skipped: ${err.message}`));
+      }
+
+      // Clarity events from GA4 (rage clicks, dead clicks)
+      try {
+        const clarityRows = await fetchGA4ClarityEvents({ dateFrom: ga4DateFrom, dateTo: ga4DateTo });
+        if (clarityRows.length > 0) {
+          db.prepare(`DELETE FROM clarity_events WHERE date >= ? AND date <= ?`).run(ga4DateFrom, ga4DateTo);
+          const insertClarity = db.prepare(`
+            INSERT OR REPLACE INTO clarity_events (date, page, event_type, count, channel)
+            VALUES (@date, @page, @event_type, @count, @channel)
+          `);
+          for (const row of clarityRows) insertClarity.run(row);
+          console.log(chalk.white(`  Clarity events stored: ${chalk.bold(clarityRows.length)}`));
+
+          // Mark visitor_sessions with rage/dead click flags based on date+channel match
+          db.prepare(`
+            UPDATE visitor_sessions
+            SET had_rage_click = 1
+            WHERE order_id IN (
+              SELECT o.id FROM orders o
+              WHERE DATE(o.created_at) IN (
+                SELECT DISTINCT date FROM clarity_events WHERE event_type = 'rage_click'
+              )
+            )
+          `).run();
+
+          db.prepare(`
+            UPDATE visitor_sessions
+            SET had_dead_click = 1
+            WHERE order_id IN (
+              SELECT o.id FROM orders o
+              WHERE DATE(o.created_at) IN (
+                SELECT DISTINCT date FROM clarity_events WHERE event_type = 'dead_click'
+              )
+            )
+          `).run();
+        }
+      } catch (err) {
+        console.warn(chalk.yellow(`  Clarity events sync skipped: ${err.message}`));
       }
 
     } catch (err) {

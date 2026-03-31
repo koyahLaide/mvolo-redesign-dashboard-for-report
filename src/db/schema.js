@@ -136,6 +136,25 @@ function initDb() {
       cac            REAL DEFAULT 0,
       UNIQUE(date, channel)
     );
+
+    CREATE TABLE IF NOT EXISTS ga4_funnel (
+      id       INTEGER PRIMARY KEY AUTOINCREMENT,
+      date     TEXT NOT NULL,
+      step     TEXT NOT NULL,
+      sessions INTEGER DEFAULT 0,
+      users    INTEGER DEFAULT 0,
+      UNIQUE(date, step)
+    );
+
+    CREATE TABLE IF NOT EXISTS clarity_events (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      date       TEXT NOT NULL,
+      page       TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      count      INTEGER DEFAULT 0,
+      channel    TEXT,
+      UNIQUE(date, page, event_type)
+    );
   `);
 
   // Migrate: add new columns if they don't exist yet (SQLite has no ADD COLUMN IF NOT EXISTS)
@@ -153,6 +172,11 @@ function initDb() {
     'ALTER TABLE orders ADD COLUMN sessions_before_purchase INTEGER',
     "ALTER TABLE orders ADD COLUMN marketplace TEXT DEFAULT 'shopify'",
     'ALTER TABLE orders ADD COLUMN direct_subchannel TEXT',
+    // visitor_sessions clarity enrichment
+    'ALTER TABLE visitor_sessions ADD COLUMN had_rage_click INTEGER DEFAULT 0',
+    'ALTER TABLE visitor_sessions ADD COLUMN had_dead_click INTEGER DEFAULT 0',
+    'ALTER TABLE visitor_sessions ADD COLUMN scroll_depth REAL DEFAULT 0',
+    'ALTER TABLE visitor_sessions ADD COLUMN clarity_session_id TEXT',
   ];
   for (const sql of migrationColumns) {
     try { db.exec(sql); } catch { /* column already exists */ }
