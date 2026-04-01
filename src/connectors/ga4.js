@@ -39,7 +39,8 @@ function daysAgo(n) {
 }
 
 /**
- * Fetches session + user data per channel group for the last 30 days.
+ * Fetches session + user data per channel group for the last 365 days,
+ * plus conversion event counts (purchase, begin_checkout, add_to_cart).
  *
  * @param {{ dateFrom?: string, dateTo?: string }} options
  * @returns {Promise<Array<{
@@ -50,15 +51,19 @@ function daysAgo(n) {
  *   newUsers: number,
  *   bounceRate: number,
  *   avgSessionDuration: number,
+ *   purchases: number,
+ *   begin_checkouts: number,
+ *   add_to_carts: number,
  * }>>}
  */
 async function fetchGA4Sessions({ dateFrom, dateTo } = {}) {
   const { client, propertyId } = getClient();
 
-  const from = dateFrom ?? daysAgo(30);
+  const from = dateFrom ?? daysAgo(365);
   const to   = dateTo   ?? daysAgo(0);
 
-  const [response] = await client.runReport({
+  // ── Call 1: sessions per day × channel ────────────────────────────────────
+  const [sessResp] = await client.runReport({
     property: `properties/${propertyId}`,
     dateRanges: [{ startDate: from, endDate: to }],
     dimensions: [
@@ -73,29 +78,68 @@ async function fetchGA4Sessions({ dateFrom, dateTo } = {}) {
       { name: 'averageSessionDuration' },
     ],
     orderBys: [{ dimension: { dimensionName: 'date' }, desc: false }],
-    limit: 10000,
+    limit: 50000,
   });
 
-  const rows = response.rows ?? [];
+  // ── Call 2: conversion events per day × channel ───────────────────────────
+  const CONV_EVENTS = ['purchase', 'begin_checkout', 'add_to_cart'];
+  const eventMap = {};  // `${date}|${channel}|${eventName}` → count
 
-  return rows.map((row) => {
+  try {
+    const [evtResp] = await client.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [{ startDate: from, endDate: to }],
+      dimensions: [
+        { name: 'date' },
+        { name: 'sessionDefaultChannelGroup' },
+        { name: 'eventName' },
+      ],
+      metrics: [{ name: 'eventCount' }],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'eventName',
+          inListFilter: { values: CONV_EVENTS },
+        },
+      },
+      limit: 50000,
+    });
+
+    for (const row of (evtResp.rows ?? [])) {
+      const d = row.dimensionValues ?? [];
+      const rawDate = d[0]?.value ?? '';
+      const date = rawDate.length === 8
+        ? `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
+        : rawDate;
+      const key = `${date}|${d[1]?.value ?? 'unknown'}|${d[2]?.value ?? ''}`;
+      eventMap[key] = parseInt(row.metricValues?.[0]?.value ?? '0', 10);
+    }
+  } catch (err) {
+    // Conversion events may not exist yet — non-fatal
+    console.warn(`  [ga4] conversion events skipped: ${err.message}`);
+  }
+
+  // ── Merge ─────────────────────────────────────────────────────────────────
+  return (sessResp.rows ?? []).map((row) => {
     const dims    = row.dimensionValues ?? [];
     const metrics = row.metricValues   ?? [];
-
     const rawDate = dims[0]?.value ?? '';
-    // GA4 returns date as YYYYMMDD — convert to YYYY-MM-DD
     const date = rawDate.length === 8
       ? `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
       : rawDate;
+    const channel = dims[1]?.value ?? 'unknown';
+    const prefix  = `${date}|${channel}|`;
 
     return {
       date,
-      channel:             dims[1]?.value ?? 'unknown',
-      sessions:            parseInt(metrics[0]?.value ?? '0', 10),
-      users:               parseInt(metrics[1]?.value ?? '0', 10),
-      newUsers:            parseInt(metrics[2]?.value ?? '0', 10),
-      bounceRate:          parseFloat(metrics[3]?.value ?? '0'),
-      avgSessionDuration:  parseFloat(metrics[4]?.value ?? '0'),
+      channel,
+      sessions:           parseInt(metrics[0]?.value ?? '0', 10),
+      users:              parseInt(metrics[1]?.value ?? '0', 10),
+      newUsers:           parseInt(metrics[2]?.value ?? '0', 10),
+      bounceRate:         parseFloat(metrics[3]?.value ?? '0'),
+      avgSessionDuration: parseFloat(metrics[4]?.value ?? '0'),
+      purchases:          eventMap[`${prefix}purchase`]       ?? 0,
+      begin_checkouts:    eventMap[`${prefix}begin_checkout`] ?? 0,
+      add_to_carts:       eventMap[`${prefix}add_to_cart`]    ?? 0,
     };
   });
 }
@@ -109,7 +153,7 @@ async function fetchGA4Sessions({ dateFrom, dateTo } = {}) {
 async function fetchGA4TopPages({ dateFrom, dateTo, limit = 25 } = {}) {
   const { client, propertyId } = getClient();
 
-  const from = dateFrom ?? daysAgo(30);
+  const from = dateFrom ?? daysAgo(365);
   const to   = dateTo   ?? daysAgo(0);
 
   const [response] = await client.runReport({
@@ -143,7 +187,7 @@ async function fetchGA4TopPages({ dateFrom, dateTo, limit = 25 } = {}) {
 async function fetchGA4Journeys({ dateFrom, dateTo } = {}) {
   const { client, propertyId } = getClient();
 
-  const from = dateFrom ?? daysAgo(90);
+  const from = dateFrom ?? daysAgo(365);
   const to   = dateTo   ?? daysAgo(0);
 
   const [response] = await client.runReport({
@@ -205,7 +249,7 @@ function classifyFunnelStep(path) {
  */
 async function fetchGA4PageFunnel({ dateFrom, dateTo } = {}) {
   const { client, propertyId } = getClient();
-  const from = dateFrom ?? daysAgo(30);
+  const from = dateFrom ?? daysAgo(365);
   const to   = dateTo   ?? daysAgo(0);
 
   const [response] = await client.runReport({
@@ -247,28 +291,92 @@ async function fetchGA4PageFunnel({ dateFrom, dateTo } = {}) {
 }
 
 /**
- * Fetches Clarity-related events from GA4.
- * Clarity can forward rage-click and dead-click events to GA4 as custom events.
- * Falls back gracefully if no such events are configured.
+ * Fetches ALL event names from GA4 (no filter) and logs them — useful for
+ * discovering the exact names Clarity uses when forwarding events.
  *
- * Event names tried: 'rage_click', 'dead_click', 'clarity_rage_click', 'clarity_dead_click'
+ * @param {{ dateFrom?: string, dateTo?: string }} options
+ * @returns {Promise<Array<{ eventName: string, count: number }>>}
+ */
+async function fetchAllEventNames({ dateFrom, dateTo } = {}) {
+  const { client, propertyId } = getClient();
+  const from = dateFrom ?? daysAgo(365);
+  const to   = dateTo   ?? daysAgo(0);
+
+  const [response] = await client.runReport({
+    property: `properties/${propertyId}`,
+    dateRanges: [{ startDate: from, endDate: to }],
+    dimensions: [{ name: 'eventName' }],
+    metrics:    [{ name: 'eventCount' }],
+    orderBys:   [{ metric: { metricName: 'eventCount' }, desc: true }],
+    limit: 200,
+  });
+
+  const results = (response.rows ?? []).map((row) => ({
+    eventName: row.dimensionValues?.[0]?.value ?? '',
+    count:     parseInt(row.metricValues?.[0]?.value ?? '0', 10),
+  }));
+
+  // ── Log alle unieke event namen ───────────────────────────────────────────
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`  GA4 event namen (${from} → ${to})`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  for (const r of results) {
+    console.log(`  ${r.eventName.padEnd(45)} ${String(r.count).padStart(8)}`);
+  }
+  console.log(`  Totaal: ${results.length} unieke event namen`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  return results;
+}
+
+/**
+ * Fetches Clarity-related events from GA4.
+ * First logs ALL event names so you can see what Clarity is actually sending.
+ * Then filters to known Clarity rage/dead-click event name patterns.
  *
  * @param {{ dateFrom?: string, dateTo?: string }} options
  * @returns {Promise<Array<{ date: string, page: string, event_type: string, count: number, channel: string }>>}
  */
-async function fetchGA4ClarityEvents({ dateFrom, dateTo } = {}) {
+async function fetchClarityEvents({ dateFrom, dateTo } = {}) {
   const { client, propertyId } = getClient();
-  const from = dateFrom ?? daysAgo(30);
+  const from = dateFrom ?? daysAgo(365);
   const to   = dateTo   ?? daysAgo(0);
 
-  // We request eventName × pagePath × sessionDefaultChannelGroup
-  // then filter by known Clarity event names
-  const CLARITY_EVENTS = new Set([
+  // ── Stap 1: log alle event namen zodat we de exacte Clarity namen zien ────
+  let allEventNames = [];
+  try {
+    allEventNames = await fetchAllEventNames({ dateFrom: from, dateTo: to });
+  } catch (err) {
+    console.warn(`  [ga4] fetchAllEventNames mislukt: ${err.message}`);
+  }
+
+  // ── Stap 2: bepaal welke event namen Clarity-gerelateerd zijn ─────────────
+  // Standaard Clarity event namen + alles dat 'clarity', 'rage', 'dead' bevat
+  const KNOWN_CLARITY = new Set([
     'rage_click', 'dead_click',
     'clarity_rage_click', 'clarity_dead_click',
     'ms_clarity_rage_click', 'ms_clarity_dead_click',
   ]);
 
+  const clarityNames = allEventNames
+    .map((r) => r.eventName)
+    .filter((n) => {
+      const lower = n.toLowerCase();
+      return KNOWN_CLARITY.has(lower)
+        || lower.includes('clarity')
+        || lower.includes('rage')
+        || lower.includes('dead_click');
+    });
+
+  if (clarityNames.length === 0) {
+    console.log('  [ga4] Geen Clarity event namen gevonden in GA4.');
+    console.log('  → Zorg dat Clarity events naar GA4 worden gestuurd of pas KNOWN_CLARITY aan.\n');
+    return [];
+  }
+
+  console.log(`  [ga4] Clarity event namen gevonden: ${clarityNames.join(', ')}\n`);
+
+  // ── Stap 3: haal gefilterde events op ────────────────────────────────────
   let response;
   try {
     [response] = await client.runReport({
@@ -284,14 +392,15 @@ async function fetchGA4ClarityEvents({ dateFrom, dateTo } = {}) {
       dimensionFilter: {
         filter: {
           fieldName: 'eventName',
-          inListFilter: { values: [...CLARITY_EVENTS] },
+          inListFilter: { values: clarityNames },
         },
       },
       orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
-      limit: 5000,
+      limit: 10000,
     });
-  } catch {
-    return []; // no such events configured in GA4
+  } catch (err) {
+    console.warn(`  [ga4] Clarity events query mislukt: ${err.message}`);
+    return [];
   }
 
   const rows = [];
@@ -303,7 +412,6 @@ async function fetchGA4ClarityEvents({ dateFrom, dateTo } = {}) {
       ? `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
       : rawDate;
     const eventName = dims[1]?.value ?? '';
-    // Normalise event type
     const event_type = eventName.toLowerCase().includes('rage') ? 'rage_click'
       : eventName.toLowerCase().includes('dead') ? 'dead_click'
       : eventName.toLowerCase();
@@ -319,4 +427,13 @@ async function fetchGA4ClarityEvents({ dateFrom, dateTo } = {}) {
   return rows;
 }
 
-module.exports = { fetchGA4Sessions, fetchGA4TopPages, fetchGA4Journeys, fetchGA4PageFunnel, fetchGA4ClarityEvents };
+module.exports = {
+  fetchGA4Sessions,
+  fetchGA4TopPages,
+  fetchGA4Journeys,
+  fetchGA4PageFunnel,
+  fetchClarityEvents,
+  fetchAllEventNames,
+  // backwards-compat alias used in sync.js
+  fetchGA4ClarityEvents: fetchClarityEvents,
+};
