@@ -2,11 +2,11 @@
 
 require('dotenv').config();
 
-const { DatabaseSync } = require('node:sqlite');
+const Database = require('better-sqlite3');
 const path = require('path');
 
 const DB_PATH = path.resolve(__dirname, '../../data/mvolo.db');
-const db = new DatabaseSync(DB_PATH, { readonly: true });
+const db = new Database(DB_PATH, { readonly: true });
 
 const orders = db
   .prepare(`SELECT id, order_number, landing_site, referring_site FROM orders WHERE channel = 'other' ORDER BY id`)
