@@ -1,0 +1,91 @@
+name: Sync & Deploy
+
+on:
+  schedule:
+    - cron: '0 0,6,12,18 * * *'   # every 6 hours
+  workflow_dispatch:                  # manual trigger
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── 1. Checkout root repo ───────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Node ───────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Restore DB from previous run ────────────────────────────────────
+      - name: Restore database artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mvolo-db
+          path: data/
+        continue-on-error: true   # first run has no artifact yet
+
+      # ── 4. Install dependencies ─────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 5. Write .env from secrets ──────────────────────────────────────────
+      - name: Create .env
+        run: |
+          cat > .env <<EOF
+          SHOPIFY_STORE=${{ secrets.SHOPIFY_STORE }}
+          SHOPIFY_TOKEN=${{ secrets.SHOPIFY_TOKEN }}
+          META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}
+          META_AD_ACCOUNT_ID=${{ secrets.META_AD_ACCOUNT_ID }}
+          GA4_PROPERTY_ID=${{ secrets.GA4_PROPERTY_ID }}
+          GA4_CLIENT_EMAIL=${{ secrets.GA4_CLIENT_EMAIL }}
+          GA4_PRIVATE_KEY=${{ secrets.GA4_PRIVATE_KEY }}
+          BOL_CLIENT_ID=${{ secrets.BOL_CLIENT_ID }}
+          BOL_CLIENT_SECRET=${{ secrets.BOL_CLIENT_SECRET }}
+          SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+          TRIPLEWHALE_API_KEY=${{ secrets.TRIPLEWHALE_API_KEY }}
+          EOF
+
+      # ── 6. Run ETL sync ─────────────────────────────────────────────────────
+      - name: Run sync
+        run: node src/index.js sync
+
+      # ── 7. Run ad spend sync (optional — skip if no token) ──────────────────
+      - name: Run spend sync
+        run: node src/index.js sync-spend
+        continue-on-error: true
+
+      # ── 8. Upload updated DB as artifact ────────────────────────────────────
+      - name: Upload database artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvolo-db
+          path: data/mvolo.db
+          retention-days: 30
+          overwrite: true
+
+      # ── 9. Copy DB into dashboard ───────────────────────────────────────────
+      - name: Copy DB to dashboard
+        run: |
+          mkdir -p dashboard/data
+          cp data/mvolo.db dashboard/data/mvolo.db
+
+      # ── 10. Install dashboard deps ──────────────────────────────────────────
+      - name: Install dashboard dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      # ── 11. Deploy to Vercel ────────────────────────────────────────────────
+      - name: Deploy to Vercel
+        working-directory: dashboard
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npx vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
