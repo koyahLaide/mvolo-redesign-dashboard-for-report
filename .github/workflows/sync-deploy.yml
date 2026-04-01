@@ -10,6 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    env:
+      SHOPIFY_STORE: ${{ secrets.SHOPIFY_STORE }}
+      SHOPIFY_TOKEN: ${{ secrets.SHOPIFY_TOKEN }}
+      AWIN_API_KEY: ${{ secrets.AWIN_API_KEY }}
+      AWIN_ADVERTISER_ID: ${{ secrets.AWIN_ADVERTISER_ID }}
+      META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+      META_AD_ACCOUNT_ID: ${{ secrets.META_AD_ACCOUNT_ID }}
+      BOL_CLIENT_ID: ${{ secrets.BOL_CLIENT_ID }}
+      BOL_CLIENT_SECRET: ${{ secrets.BOL_CLIENT_SECRET }}
+      GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+      GA4_CLIENT_EMAIL: ${{ secrets.GA4_CLIENT_EMAIL }}
+      GA4_PRIVATE_KEY: ${{ secrets.GA4_PRIVATE_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
     steps:
       # ── 1. Checkout root repo ───────────────────────────────────────────────
       - name: Checkout
@@ -22,13 +37,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # ── 3. Restore DB from previous run ────────────────────────────────────
+      # ── 3. Restore DB from previous run (skip on first run) ─────────────────
       - name: Restore database artifact
         uses: actions/download-artifact@v4
         with:
           name: mvolo-db
           path: data/
-        continue-on-error: true   # first run has no artifact yet
+        continue-on-error: true
 
       # ── 4. Install dependencies ─────────────────────────────────────────────
       - name: Install dependencies
@@ -40,13 +55,15 @@ jobs:
           cat > .env <<EOF
           SHOPIFY_STORE=${{ secrets.SHOPIFY_STORE }}
           SHOPIFY_TOKEN=${{ secrets.SHOPIFY_TOKEN }}
+          AWIN_API_KEY=${{ secrets.AWIN_API_KEY }}
+          AWIN_ADVERTISER_ID=${{ secrets.AWIN_ADVERTISER_ID }}
           META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}
           META_AD_ACCOUNT_ID=${{ secrets.META_AD_ACCOUNT_ID }}
+          BOL_CLIENT_ID=${{ secrets.BOL_CLIENT_ID }}
+          BOL_CLIENT_SECRET=${{ secrets.BOL_CLIENT_SECRET }}
           GA4_PROPERTY_ID=${{ secrets.GA4_PROPERTY_ID }}
           GA4_CLIENT_EMAIL=${{ secrets.GA4_CLIENT_EMAIL }}
           GA4_PRIVATE_KEY=${{ secrets.GA4_PRIVATE_KEY }}
-          BOL_CLIENT_ID=${{ secrets.BOL_CLIENT_ID }}
-          BOL_CLIENT_SECRET=${{ secrets.BOL_CLIENT_SECRET }}
           SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
           ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           TRIPLEWHALE_API_KEY=${{ secrets.TRIPLEWHALE_API_KEY }}
