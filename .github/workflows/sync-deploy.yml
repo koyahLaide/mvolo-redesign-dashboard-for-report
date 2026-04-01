@@ -35,7 +35,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
 
       # ── 3. Restore DB from previous run (skip on first run) ─────────────────
       - name: Restore database artifact
