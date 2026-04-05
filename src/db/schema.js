@@ -155,6 +155,21 @@ function initDb() {
       channel    TEXT,
       UNIQUE(date, page, event_type)
     );
+
+    CREATE TABLE IF NOT EXISTS clarity_insights (
+      id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+      fetched_at           TEXT NOT NULL,
+      num_of_days          INTEGER NOT NULL,
+      metric               TEXT NOT NULL,
+      dimension_key        TEXT NOT NULL,
+      dimension_value      TEXT NOT NULL,
+      sessions             INTEGER DEFAULT 0,
+      subtotal             REAL DEFAULT 0,
+      pages_views          INTEGER DEFAULT 0,
+      sessions_with_pct    REAL DEFAULT 0,
+      sessions_without_pct REAL DEFAULT 0,
+      UNIQUE(fetched_at, metric, dimension_key, dimension_value)
+    );
   `);
 
   // Migrate: add new columns if they don't exist yet (SQLite has no ADD COLUMN IF NOT EXISTS)

@@ -6,6 +6,7 @@ const { getLastSyncedAt, insertOrder, logSync, checkIsNewCustomer } = require('.
 const { fetchOrders }    = require('../connectors/shopify');
 const { fetchBolOrders } = require('../connectors/bol');
 const { fetchGA4Sessions, fetchGA4TopPages, fetchGA4Journeys, fetchGA4PageFunnel, fetchGA4ClarityEvents } = require('../connectors/ga4');
+const { fetchClarityByChannel, fetchClarityByUrl } = require('../connectors/clarity');
 const { attributeOrder, summarizeAttribution } = require('./attribution');
 
 /**
@@ -184,6 +185,36 @@ async function runSync() {
 
     } catch (err) {
       console.warn(chalk.yellow(`  GA4 sync skipped: ${err.message}`));
+    }
+
+    // ── Clarity (direct API) ──────────────────────────────────────────────────
+    try {
+      if (!process.env.CLARITY_API_TOKEN) throw new Error('CLARITY_API_TOKEN niet ingesteld');
+
+      const insertInsight = db.prepare(`
+        INSERT OR REPLACE INTO clarity_insights
+          (fetched_at, num_of_days, metric, dimension_key, dimension_value,
+           sessions, subtotal, pages_views, sessions_with_pct, sessions_without_pct)
+        VALUES
+          (@fetched_at, @num_of_days, @metric, @dimension_key, @dimension_value,
+           @sessions, @subtotal, @pages_views, @sessions_with_pct, @sessions_without_pct)
+      `);
+
+      const byChannel = await fetchClarityByChannel(3);
+      if (byChannel.length > 0) {
+        const upsertMany = db.transaction((rows) => { for (const r of rows) insertInsight.run(r); });
+        upsertMany(byChannel);
+        console.log(chalk.white(`  Clarity channel insights stored: ${chalk.bold(byChannel.length)} rows`));
+      }
+
+      const byUrl = await fetchClarityByUrl(3);
+      if (byUrl.length > 0) {
+        const upsertMany = db.transaction((rows) => { for (const r of rows) insertInsight.run(r); });
+        upsertMany(byUrl);
+        console.log(chalk.white(`  Clarity URL insights stored: ${chalk.bold(byUrl.length)} rows`));
+      }
+    } catch (err) {
+      console.warn(chalk.yellow(`  Clarity sync skipped: ${err.message}`));
     }
 
     console.log('');

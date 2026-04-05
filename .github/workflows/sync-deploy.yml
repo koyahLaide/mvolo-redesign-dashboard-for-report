@@ -24,6 +24,7 @@ jobs:
       GA4_PRIVATE_KEY: ${{ secrets.GA4_PRIVATE_KEY }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
 
     steps:
       # ── 1. Checkout root repo ───────────────────────────────────────────────
