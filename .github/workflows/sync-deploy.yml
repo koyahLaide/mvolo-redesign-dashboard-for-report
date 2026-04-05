@@ -30,21 +30,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── 2. Setup Node ───────────────────────────────────────────────────────
+      # ── 2. Cache database ───────────────────────────────────────────────────
+      - name: Cache database
+        uses: actions/cache@v4
+        with:
+          path: data/mvolo.db
+          key: mvolo-db-${{ github.run_number }}
+          restore-keys: |
+            mvolo-db-
+
+      # ── 3. Create data directory ────────────────────────────────────────────
+      - name: Create data directory
+        run: mkdir -p data
+
+      # ── 4. Setup Node ───────────────────────────────────────────────────────
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      # ── 3. Restore DB from previous run (skip on first run) ─────────────────
-      - name: Restore database artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: mvolo-db
-          path: data/
-        continue-on-error: true
-
-      # ── 4. Install dependencies ─────────────────────────────────────────────
+      # ── 5. Install dependencies ─────────────────────────────────────────────
       - name: Install dependencies
         run: npm ci
 
@@ -77,16 +82,7 @@ jobs:
         run: node src/index.js sync-spend
         continue-on-error: true
 
-      # ── 8. Upload updated DB as artifact ────────────────────────────────────
-      - name: Upload database artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mvolo-db
-          path: data/mvolo.db
-          retention-days: 30
-          overwrite: true
-
-      # ── 9. Copy DB into dashboard ───────────────────────────────────────────
+      # ── 8. Copy DB into dashboard ───────────────────────────────────────────
       - name: Copy DB to dashboard
         run: |
           mkdir -p dashboard/data
