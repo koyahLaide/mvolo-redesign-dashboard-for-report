@@ -125,19 +125,16 @@ async function run() {
   const db = initDb();
 
   console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-  console.log(chalk.cyan.bold('  Mvolo Dashboard — Bol.com Backfill (90d)'));
+  console.log(chalk.cyan.bold('  Mvolo Dashboard — Bol.com Backfill (heel jaar)'));
   console.log(chalk.cyan(`  ${new Date().toLocaleString()}`));
   console.log(chalk.cyan('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
 
-  // Delete all existing Bol orders so we can re-import with correct dates
-  const deleted = db.prepare("DELETE FROM orders WHERE marketplace = 'bol'").run();
-  console.log(chalk.yellow(`  Verwijderd ${deleted.changes} bestaande Bol orders (datum was onjuist)\n`));
+  // Geen delete — INSERT OR IGNORE zodat bestaande orders veilig zijn
+  console.log(chalk.gray('  Bestaande orders blijven staan (INSERT OR IGNORE)\n'));
 
-  // cutoff = 90 days ago
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 90);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
-  console.log(chalk.white(`  Ophalen orders vanaf ${cutoffStr} …\n`));
+  // cutoff = 1 januari van het huidige jaar
+  const cutoffStr = `${new Date().getFullYear()}-01-01`;
+  console.log(chalk.white(`  Ophalen orders vanaf ${cutoffStr} (heel dit jaar) …\n`));
 
   let page        = 1;
   let totalFound  = 0;

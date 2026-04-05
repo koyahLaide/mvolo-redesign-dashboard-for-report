@@ -140,7 +140,7 @@ function attributeOrder(order) {
 
   let channel, medium;
 
-  if (utmSource === 'meta' || utmSource === 'facebook') {
+  if (utmSource === 'meta' || utmSource === 'facebook' || utmSource === 'fb') {
     channel = 'meta_ads';
     medium = 'paid_social';
   } else if (utmSource === 'google' && utmMedium === 'cpc') {
