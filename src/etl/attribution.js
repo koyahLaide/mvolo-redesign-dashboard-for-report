@@ -109,7 +109,8 @@ function detectFirstTouch(params, lastTouchChannel) {
  *  1.  utm_source=meta or facebook          → meta_ads / paid_social
  *  2.  utm_source=google + cpc              → google_search / cpc
  *  3.  utm_source=google + shopping         → google_shopping / shopping
- *  4.  utm_source=awin                      → awin_affiliate / affiliate
+ *  4.  utm_source=ascendiaprime           → ascendia_affiliate / affiliate
+ *  5.  utm_source=awin                      → awin_affiliate / affiliate
  *  5.  utm_source=klaviyo                   → email / email
  *  6.  utm_source=chatgpt.com               → ai_referral / ai_referral
  *  7.  No UTM, referrer=search engine       → organic_search / organic
@@ -149,6 +150,9 @@ function attributeOrder(order) {
   } else if (utmSource === 'google' && utmMedium === 'shopping') {
     channel = 'google_shopping';
     medium = 'shopping';
+  } else if (utmSource === 'ascendiaprime') {
+    channel = 'ascendia_affiliate';
+    medium = 'affiliate';
   } else if (utmSource === 'awin') {
     channel = 'awin_affiliate';
     medium = 'affiliate';
