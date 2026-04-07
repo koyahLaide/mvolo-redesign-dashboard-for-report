@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/geo',       label: 'Geo' },
   { href: '/attributie', label: 'Attributie' },
   { href: '/inventory',  label: 'Voorraad' },
+  { href: '/klaviyo',    label: 'Klaviyo' },
 ];
 
 export default function Nav() {
