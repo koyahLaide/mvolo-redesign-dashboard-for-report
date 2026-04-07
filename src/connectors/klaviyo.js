@@ -131,7 +131,7 @@ async function fetchMetricAggregate({ metricId, dateFrom, dateTo }) {
 async function fetchMetrics() {
   if (!API_KEY) throw new Error('KLAVIYO_API_KEY niet ingesteld');
 
-  const res = await axios.get(`${BASE_URL}/metrics/?page[size]=100`, {
+  const res = await axios.get(`${BASE_URL}/metrics/`, {
     headers: headers(),
   });
 
