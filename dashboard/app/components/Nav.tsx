@@ -9,6 +9,7 @@ const LINKS = [
   { href: '/journey', label: 'Customer Journey' },
   { href: '/geo',       label: 'Geo' },
   { href: '/attributie', label: 'Attributie' },
+  { href: '/inventory',  label: 'Voorraad' },
 ];
 
 export default function Nav() {
