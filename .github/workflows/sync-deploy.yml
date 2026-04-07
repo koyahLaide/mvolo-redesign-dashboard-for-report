@@ -25,6 +25,7 @@ jobs:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
+      KLAVIYO_API_KEY: ${{ secrets.KLAVIYO_API_KEY }}
 
     steps:
       # ── 1. Checkout root repo ───────────────────────────────────────────────
@@ -72,6 +73,7 @@ jobs:
           SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
           ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           TRIPLEWHALE_API_KEY=${{ secrets.TRIPLEWHALE_API_KEY }}
+          KLAVIYO_API_KEY=${{ secrets.KLAVIYO_API_KEY }}
           EOF
 
       # ── 6. Run ETL sync ─────────────────────────────────────────────────────
