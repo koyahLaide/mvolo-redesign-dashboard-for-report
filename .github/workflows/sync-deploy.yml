@@ -31,6 +31,8 @@ jobs:
       # ── 1. Checkout root repo ───────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # ── 2. Cache database ───────────────────────────────────────────────────
       - name: Cache database
