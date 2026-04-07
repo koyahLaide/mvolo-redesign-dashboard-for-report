@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const period = searchParams.get('period') ?? 'all';
 
-  const wasmPath = require.resolve('sql.js/dist/sql-wasm.wasm');
+  const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
   try {
     const SQL = await initSqlJs({ locateFile: () => wasmPath });
     const fileBuffer = fs.readFileSync(DB_PATH);
