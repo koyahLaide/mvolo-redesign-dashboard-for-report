@@ -18,6 +18,8 @@ interface Order {
   utm_term: string | null;
   is_new_customer: number | null;
   marketplace: string | null;
+  device_type: string | null;
+  browser_language: string | null;
 }
 
 interface SessionEntry {
@@ -144,6 +146,8 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
               { label: 'Klant', value: order.is_new_customer === 1 ? 'Nieuw' : 'Terugkerend' },
               { label: 'Platform', value: order.marketplace === 'bol' ? 'Bol.com' : 'Shopify' },
               { label: 'Datum', value: new Date(order.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) },
+              { label: 'Device', value: order.device_type ? order.device_type.charAt(0).toUpperCase() + order.device_type.slice(1) : '—' },
+              { label: 'Taal', value: order.browser_language ?? '—' },
             ].map(kpi => (
               <div key={kpi.label} className="bg-gray-800/60 rounded-xl px-4 py-3 border border-gray-700/40">
                 <p className="text-xs text-gray-500">{kpi.label}</p>

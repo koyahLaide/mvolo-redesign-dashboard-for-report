@@ -71,7 +71,8 @@ export async function GET(request: Request) {
       SELECT
         id, order_number, created_at, total_price,
         channel, first_touch, last_touch,
-        utm_campaign, utm_content, utm_term, is_new_customer, marketplace
+        utm_campaign, utm_content, utm_term, is_new_customer, marketplace,
+        device_type, browser_language
       FROM orders ${searchClause}
       ORDER BY ${sort} ${dir}
       LIMIT ${PAGE_SIZE} OFFSET ${offset}
