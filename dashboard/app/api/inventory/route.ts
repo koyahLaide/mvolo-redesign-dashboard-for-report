@@ -16,7 +16,7 @@ function rowsToObjects(result: any) {
 
 export async function GET() {
   try {
-    const wasmPath = require.resolve('sql.js/dist/sql-wasm.wasm');
+    const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
     const SQL = await initSqlJs({ locateFile: () => wasmPath });
     const db = new SQL.Database(fs.readFileSync(DB_PATH));
 
