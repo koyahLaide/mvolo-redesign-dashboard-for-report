@@ -4,40 +4,19 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/track
  *
- * Receives visitor session history from tracker.js on order completion.
- * Stores in a SQLite sessions DB in /tmp (persists within a warm Vercel instance).
+ * Ontvangt visitor session history van tracker.js bij order completion.
+ * Schrijft naar Google Sheet als tussenliggende opslag.
+ * GitHub Actions sync leest de Sheet en merged in de hoofd DB.
  *
- * Body: { visitor_id: string, order_id: string | null, session_history: SessionEntry[] }
- *
- * Architecture note: /tmp is not shared between Vercel function instances.
- * Data here is best-effort. For persistent storage, migrate to Vercel Postgres / Turso.
+ * Body: { visitor_id, order_id, session_history }
  */
 
-import fs from 'fs';
-import path from 'path';
-import initSqlJs from 'sql.js';
+import { google } from 'googleapis';
 
-const SESSIONS_DB_PATH = '/tmp/mvolo_sessions.db';
-const WASM_PATH = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
+const SHEET_ID  = '1wKGs1Zfa912D-5jH3HUdPgeynP4hAYCdP4EwQsosf8g';
+const TAB_NAME  = 'Sessions';
 
-interface SessionEntry {
-  ts: string;
-  p: string;
-  ref: string | null;
-  src: string | null;
-  med: string | null;
-  cmp: string | null;
-  cnt: string | null;
-  trm: string | null;
-}
-
-interface TrackPayload {
-  visitor_id: string;
-  order_id: string | null;
-  session_history: SessionEntry[];
-}
-
-// CORS headers — tracker.js runs on mvolo.nl
+// CORS — tracker.js draait op mvolo.nl
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -48,81 +27,91 @@ export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS });
 }
 
+async function getSheetsClient() {
+  const auth = new google.auth.GoogleAuth({
+    credentials: {
+      client_email: process.env.GA4_CLIENT_EMAIL,
+      private_key:  (process.env.GA4_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+    },
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  return google.sheets({ version: 'v4', auth });
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as TrackPayload;
+    const body = await request.json();
     const { visitor_id, order_id, session_history } = body;
 
     if (!visitor_id || !Array.isArray(session_history) || session_history.length === 0) {
       return Response.json({ ok: false, error: 'invalid payload' }, { status: 400, headers: CORS });
     }
 
-    // ── Init sessions DB ───────────────────────────────────────────────────────
-    const SQL = await initSqlJs({ locateFile: () => WASM_PATH });
-
-    let db: InstanceType<typeof SQL.Database>;
-    if (fs.existsSync(SESSIONS_DB_PATH)) {
-      db = new SQL.Database(fs.readFileSync(SESSIONS_DB_PATH));
-    } else {
-      db = new SQL.Database();
-    }
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS visitor_sessions (
-        id                       INTEGER PRIMARY KEY AUTOINCREMENT,
-        visitor_id               TEXT NOT NULL,
-        order_id                 TEXT,
-        session_count            INTEGER DEFAULT 0,
-        first_touch_date         TEXT,
-        last_touch_date          TEXT,
-        days_to_convert          REAL,
-        sessions_before_purchase INTEGER,
-        touch_path               TEXT,
-        created_at               TEXT DEFAULT (datetime('now'))
-      )
-    `);
-
-    // ── Derive metrics ─────────────────────────────────────────────────────────
-    const sorted    = [...session_history].sort((a, b) => a.ts.localeCompare(b.ts));
+    // ── Verwerk sessie data ────────────────────────────────────────────────────
+    const sorted    = [...session_history].sort((a: any, b: any) => a.ts.localeCompare(b.ts));
     const first     = sorted[0];
     const last      = sorted[sorted.length - 1];
-    const firstDate = first.ts.slice(0, 10);
-    const lastDate  = last.ts.slice(0, 10);
 
     const msPerDay      = 86_400_000;
     const daysToConvert = first.ts && last.ts
       ? Math.round((new Date(last.ts).getTime() - new Date(first.ts).getTime()) / msPerDay * 10) / 10
       : 0;
 
-    // Build touch path: unique ordered sources
+    // Touch path: unieke ordered sources
     const touchPath: string[] = [];
     for (const s of sorted) {
       const src = s.src || (s.ref ? 'referral' : 'direct');
       if (touchPath[touchPath.length - 1] !== src) touchPath.push(src);
     }
 
-    db.run(
-      `INSERT INTO visitor_sessions
-         (visitor_id, order_id, session_count, first_touch_date, last_touch_date,
-          days_to_convert, sessions_before_purchase, touch_path)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        visitor_id,
-        order_id ?? null,
-        session_history.length,
-        firstDate,
-        lastDate,
-        daysToConvert,
-        session_history.length,
-        JSON.stringify(touchPath),
-      ]
-    );
+    // Volledige session history als JSON voor analyse
+    const sessionJson = JSON.stringify(session_history);
 
-    // ── Persist DB back to /tmp ────────────────────────────────────────────────
-    fs.writeFileSync(SESSIONS_DB_PATH, Buffer.from(db.export()));
-    db.close();
+    // ── Schrijf naar Google Sheet ──────────────────────────────────────────────
+    const sheets = await getSheetsClient();
+
+    // Zorg dat de header rij bestaat
+    await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range:         `${TAB_NAME}!A1`,
+    }).catch(async () => {
+      // Tab bestaat nog niet — maak header aan
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range:         `${TAB_NAME}!A1`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[
+            'received_at', 'visitor_id', 'order_id', 'session_count',
+            'first_touch_date', 'last_touch_date', 'days_to_convert',
+            'touch_path', 'session_history'
+          ]],
+        },
+      });
+    });
+
+    // Voeg rij toe
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range:         `${TAB_NAME}!A:I`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[
+          new Date().toISOString(),
+          visitor_id,
+          order_id ?? '',
+          session_history.length,
+          first.ts.slice(0, 10),
+          last.ts.slice(0, 10),
+          daysToConvert,
+          JSON.stringify(touchPath),
+          sessionJson,
+        ]],
+      },
+    });
 
     return Response.json({ ok: true }, { headers: CORS });
+
   } catch (err) {
     console.error('[/api/track] Error:', err);
     return Response.json(

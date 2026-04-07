@@ -84,6 +84,11 @@ jobs:
 
       # ── 7. Run ad spend sync (optional — skip if no token) ──────────────────
       - name: Run spend sync
+        run: node src/scripts/sync-sessions.js
+        continue-on-error: true
+
+      # ── 7b. Run spend sync ──────────────────────────────────────────────
+      - name: Run spend sync
         run: node src/index.js sync-spend
         continue-on-error: true
 
