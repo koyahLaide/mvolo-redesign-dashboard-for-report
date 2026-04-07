@@ -8,6 +8,13 @@ const API_VERSION = '2024-01';
 const BASE_URL = `https://${STORE}/admin/api/${API_VERSION}`;
 
 // Respect Shopify's rate limit: max 2 calls/second for REST
+function detectDevice(ua) {
+  if (!ua) return 'unknown';
+  if (/iPhone|Android|Mobile/i.test(ua)) return 'mobile';
+  if (/iPad|Tablet/i.test(ua)) return 'tablet';
+  return 'desktop';
+}
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -34,6 +41,8 @@ function mapOrder(order) {
     })),
     customer_email: order.email || order.customer?.email || null,
     customer_id: order.customer?.id ? String(order.customer.id) : null,
+    device_type: detectDevice(order.client_details?.user_agent),
+    browser_language: order.client_details?.accept_language ?? null,
     shipping_city: order.shipping_address?.city ?? null,
     shipping_country: order.shipping_address?.country_code ?? null,
   };
@@ -70,6 +79,7 @@ async function fetchOrders({ createdAtMin } = {}) {
       'note_attributes',
       'line_items',
       'email',
+      'client_details',
       'shipping_address',
       'customer',
     ].join(','),

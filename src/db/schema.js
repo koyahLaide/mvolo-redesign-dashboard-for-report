@@ -207,6 +207,8 @@ function initDb() {
     'ALTER TABLE orders ADD COLUMN direct_subchannel TEXT',
     'ALTER TABLE orders ADD COLUMN shipping_city TEXT',
     'ALTER TABLE orders ADD COLUMN shipping_country TEXT',
+    'ALTER TABLE orders ADD COLUMN device_type TEXT',
+    'ALTER TABLE orders ADD COLUMN browser_language TEXT',
     // visitor_sessions clarity enrichment
     'ALTER TABLE visitor_sessions ADD COLUMN had_rage_click INTEGER DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN had_dead_click INTEGER DEFAULT 0',

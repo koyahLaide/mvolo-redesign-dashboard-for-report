@@ -45,14 +45,14 @@ function insertOrder(db, order, attribution, isNewCustomer) {
       landing_site, referring_site, source_name, synced_at,
       first_touch, last_touch, touch_path,
       customer_email, customer_id, is_new_customer, marketplace,
-      shipping_city, shipping_country
+      shipping_city, shipping_country, device_type, browser_language
     ) VALUES (
       @id, @order_number, @created_at, @total_price, @financial_status,
       @channel, @medium, @utm_source, @utm_campaign, @utm_content, @utm_term,
       @landing_site, @referring_site, @source_name, @synced_at,
       @first_touch, @last_touch, @touch_path,
       @customer_email, @customer_id, @is_new_customer, @marketplace,
-      @shipping_city, @shipping_country
+      @shipping_city, @shipping_country, @device_type, @browser_language
     )
   `);
 
@@ -81,6 +81,8 @@ function insertOrder(db, order, attribution, isNewCustomer) {
     marketplace:      order.marketplace ?? 'shopify',
     shipping_city:    order.shipping_city    ?? null,
     shipping_country: order.shipping_country ?? null,
+    device_type: order.device_type ?? null,
+    browser_language: order.browser_language ?? null,
   });
 
   return result.changes > 0;
