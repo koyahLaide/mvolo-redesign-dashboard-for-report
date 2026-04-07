@@ -7,6 +7,7 @@ const LINKS = [
   { href: '/',        label: 'Dashboard' },
   { href: '/orders',  label: 'Alle Orders' },
   { href: '/journey', label: 'Customer Journey' },
+  { href: '/geo',     label: 'Geo' },
 ];
 
 export default function Nav() {
