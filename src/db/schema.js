@@ -170,6 +170,24 @@ function initDb() {
       sessions_without_pct REAL DEFAULT 0,
       UNIQUE(fetched_at, metric, dimension_key, dimension_value)
     );
+
+    CREATE TABLE IF NOT EXISTS klaviyo_campaigns (
+      id        TEXT PRIMARY KEY,
+      name      TEXT,
+      status    TEXT,
+      sent_at   TEXT,
+      subject   TEXT,
+      synced_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS klaviyo_flows (
+      id           TEXT PRIMARY KEY,
+      name         TEXT,
+      status       TEXT,
+      created      TEXT,
+      trigger_type TEXT,
+      synced_at    TEXT
+    );
   `);
 
   // Migrate: add new columns if they don't exist yet (SQLite has no ADD COLUMN IF NOT EXISTS)
