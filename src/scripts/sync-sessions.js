@@ -70,6 +70,10 @@ async function syncSessions() {
     });
     rows = res.data.values ?? [];
   } catch (err) {
+    if (err.message.includes('Unable to parse range')) {
+      console.log(chalk.gray('  [sessions] Tab bestaat nog niet — geen sessies om te synchen.'));
+      return;
+    }
     console.warn(chalk.yellow(`  [sessions] Sheet lezen mislukt: ${err.message}`));
     return;
   }
