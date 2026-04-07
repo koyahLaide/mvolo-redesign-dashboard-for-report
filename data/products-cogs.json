@@ -1,0 +1,38 @@
+{
+  "products": [
+    { "name": "Double head infrared", "sku": "8720892083647", "cogs_sea": 34.53, "cogs_air": 42.08, "air_allowed": true },
+    { "name": "Single head infrared", "sku": "8720892083685", "cogs_sea": 28.23, "cogs_air": 35.78, "air_allowed": true },
+    { "name": "Elite Series 106", "sku": "8721249157035", "cogs_sea": 35.05, "cogs_air": 42.20, "air_allowed": true },
+    { "name": "Elite Series 206", "sku": "8721249157080", "cogs_sea": 61.92, "cogs_air": 85.92, "air_allowed": true },
+    { "name": "Elite Series 306", "sku": "8721249157028", "cogs_sea": 77.35, "cogs_air": 99.35, "air_allowed": true },
+    { "name": "Elite Series 506", "sku": "8721249157066", "cogs_sea": 144.36, "cogs_air": null, "air_allowed": false },
+    { "name": "EMS Gua Sha", "sku": "8721249157103", "cogs_sea": 9.54, "cogs_air": 16.69, "air_allowed": true },
+    { "name": "LED Face Mask", "sku": "8721249157073", "cogs_sea": 51.52, "cogs_air": 53.52, "air_allowed": true },
+    { "name": "LED Face Mask Lite", "sku": "8721249157271", "cogs_sea": 25.30, "cogs_air": 30.30, "air_allowed": true },
+    { "name": "Infrarood Bulb", "sku": "8721249157059", "cogs_sea": 11.42, "cogs_air": null, "air_allowed": false },
+    { "name": "Circadian Rode Bulb", "sku": "8721249157318", "cogs_sea": 8.65, "cogs_air": 9.65, "air_allowed": true },
+    { "name": "Stellar Beam", "sku": "8721249157127", "cogs_sea": 26.09, "cogs_air": 33.44, "air_allowed": true },
+    { "name": "TDP Lamp", "sku": "8721249157110", "cogs_sea": 75.21, "cogs_air": null, "air_allowed": false },
+    { "name": "Infrarood Sauna Deken", "sku": "8721249157042", "cogs_sea": 118.02, "cogs_air": 181.52, "air_allowed": false },
+    { "name": "Infrarood Rugband", "sku": "8721249157011", "cogs_sea": 41.79, "cogs_air": 48.94, "air_allowed": true },
+    { "name": "ReliefTorch", "sku": "8720892083630", "cogs_sea": 11.78, "cogs_air": 24.93, "air_allowed": true },
+    { "name": "Platinum Series 6000", "sku": "8721249157172", "cogs_sea": 178.23, "cogs_air": null, "air_allowed": false },
+    { "name": "Platinum Series 7000", "sku": "8721249157233", "cogs_sea": 284.16, "cogs_air": null, "air_allowed": false },
+    { "name": "Platinum Series 8000", "sku": "8721249157240", "cogs_sea": 722.92, "cogs_air": null, "air_allowed": false },
+    { "name": "Lucent Rise", "sku": "8721249157196", "cogs_sea": 9.14, "cogs_air": 16.29, "air_allowed": true },
+    { "name": "Lucent Bright", "sku": "8721249157189", "cogs_sea": 14.14, "cogs_air": 21.29, "air_allowed": true },
+    { "name": "Lucent Charger", "sku": "8721249157202", "cogs_sea": 14.56, "cogs_air": 21.71, "air_allowed": true },
+    { "name": "Daglichtbril Pro", "sku": "8721249157226", "cogs_sea": 28.46, "cogs_air": 36.61, "air_allowed": true },
+    { "name": "Lichttherapie Bril", "sku": "8721249157264", "cogs_sea": 28.12, "cogs_air": 29.12, "air_allowed": true },
+    { "name": "RLT Cap", "sku": "8721249157325", "cogs_sea": 44.37, "cogs_air": 49.37, "air_allowed": true },
+    { "name": "RLT Portable", "sku": "8721249157301", "cogs_sea": 15.24, "cogs_air": 20.24, "air_allowed": true },
+    { "name": "Infrarood Mini", "sku": "8721249157295", "cogs_sea": 7.89, "cogs_air": 15.24, "air_allowed": true },
+    { "name": "Leeslamp PRO", "sku": "8721249157004", "cogs_sea": 20.97, "cogs_air": 28.12, "air_allowed": true }
+  ],
+  "lead_times": {
+    "production_days": 14,
+    "sea_days": 49,
+    "air_days": 10
+  },
+  "safety_stock_days": 14
+}
