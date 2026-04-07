@@ -82,13 +82,14 @@ jobs:
       - name: Run sync
         run: node src/index.js sync
 
-      # ── 7. Run ad spend sync (optional — skip if no token) ──────────────────
-      - name: Run spend sync
+      # ── 7. Sync visitor sessions van Google Sheet ─────────────────────────
+      - name: Sync sessions
         run: node src/scripts/sync-sessions.js
         continue-on-error: true
 
-      # ── 7b. Run spend sync ──────────────────────────────────────────────
+      # ── 8. Run ad spend sync ────────────────────────────────────────────────
       - name: Run spend sync
+        run: node src/index.js sync-spend
         run: node src/index.js sync-spend
         continue-on-error: true
 
