@@ -88,14 +88,30 @@ export async function GET(request: Request) {
       LIMIT 10
     `);
 
+
+    // Heatmap: alle combinaties van first_touch x last_touch
+    const heatmapResult = db.exec(`
+      SELECT
+        first_touch,
+        channel AS last_touch,
+        COUNT(*) AS orders,
+        ROUND(SUM(total_price), 0) AS revenue
+      FROM orders
+      WHERE first_touch IS NOT NULL
+        ${dateFilter}
+      GROUP BY first_touch, channel
+      ORDER BY orders DESC
+    `);
+
     db.close();
 
     const assisted = assistedResult.length ? rowsToObjects(assistedResult[0]) : [];
+    const heatmap = heatmapResult.length ? rowsToObjects(heatmapResult[0]) : [];
     const byChannel = byChannelResult.length ? rowsToObjects(byChannelResult[0]) : [];
     const touchSummary = touchSummaryResult.length ? rowsToObjects(touchSummaryResult[0])[0] : null;
     const paths = pathsResult.length ? rowsToObjects(pathsResult[0]) : [];
 
-    return NextResponse.json({ assisted, byChannel, touchSummary, paths });
+    return NextResponse.json({ assisted, byChannel, touchSummary, paths, heatmap });
 
   } catch (err: any) {
     console.error('Assisted API error:', err.message);
