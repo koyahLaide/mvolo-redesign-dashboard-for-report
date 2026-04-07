@@ -142,7 +142,8 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
           {/* Order samenvatting */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Bedrag', value: formatEuro(order.total_price) },
+              { label: 'Bedrag incl. BTW', value: formatEuro(order.total_price) },
+              { label: 'Bedrag excl. BTW', value: formatEuro(order.total_price / 1.21) },
               { label: 'Klant', value: order.is_new_customer === 1 ? 'Nieuw' : 'Terugkerend' },
               { label: 'Platform', value: order.marketplace === 'bol' ? 'Bol.com' : 'Shopify' },
               { label: 'Datum', value: new Date(order.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) },
