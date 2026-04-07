@@ -8,6 +8,7 @@ const { fetchBolOrders } = require('../connectors/bol');
 const { fetchGA4Sessions, fetchGA4TopPages, fetchGA4Journeys, fetchGA4PageFunnel, fetchGA4ClarityEvents } = require('../connectors/ga4');
 const { fetchClarityByChannel, fetchClarityByUrl } = require('../connectors/clarity');
 const { attributeOrder, summarizeAttribution } = require('./attribution');
+const { fetchKlaviyoData } = require('../connectors/klaviyo');
 
 /**
  * Runs a full ETL cycle:
@@ -156,7 +157,6 @@ async function runSync() {
           for (const row of clarityRows) insertClarity.run(row);
           console.log(chalk.white(`  Clarity events stored: ${chalk.bold(clarityRows.length)}`));
 
-          // Mark visitor_sessions with rage/dead click flags based on date+channel match
           db.prepare(`
             UPDATE visitor_sessions
             SET had_rage_click = 1
@@ -217,6 +217,50 @@ async function runSync() {
       console.warn(chalk.yellow(`  Clarity sync skipped: ${err.message}`));
     }
 
+    // ── Klaviyo ───────────────────────────────────────────────────────────────
+    try {
+      if (!process.env.KLAVIYO_API_KEY) throw new Error('KLAVIYO_API_KEY niet ingesteld');
+
+      const klaviyoData = await fetchKlaviyoData();
+
+      // Campaigns opslaan
+      if (klaviyoData.campaigns.length > 0) {
+        const insertCampaign = db.prepare(`
+          INSERT OR REPLACE INTO klaviyo_campaigns
+            (id, name, status, sent_at, subject, synced_at)
+          VALUES
+            (@id, @name, @status, @sent_at, @subject, @synced_at)
+        `);
+        const upsertCampaigns = db.transaction((rows) => {
+          for (const r of rows) insertCampaign.run({ ...r, synced_at: syncedAt });
+        });
+        upsertCampaigns(klaviyoData.campaigns);
+        console.log(chalk.white(`  Klaviyo campaigns synced: ${chalk.bold(klaviyoData.campaigns.length)}`));
+      }
+
+      // Flows opslaan
+      if (klaviyoData.flows.length > 0) {
+        const insertFlow = db.prepare(`
+          INSERT OR REPLACE INTO klaviyo_flows
+            (id, name, status, created, trigger_type, synced_at)
+          VALUES
+            (@id, @name, @status, @created, @trigger_type, @synced_at)
+        `);
+        const upsertFlows = db.transaction((rows) => {
+          for (const r of rows) insertFlow.run({ ...r, synced_at: syncedAt });
+        });
+        upsertFlows(klaviyoData.flows);
+        console.log(chalk.white(`  Klaviyo flows synced: ${chalk.bold(klaviyoData.flows.length)}`));
+      }
+
+      if (klaviyoData.subscriberCount !== null) {
+        console.log(chalk.white(`  Klaviyo subscribers: ${chalk.bold(klaviyoData.subscriberCount)}`));
+      }
+
+    } catch (err) {
+      console.warn(chalk.yellow(`  Klaviyo sync skipped: ${err.message}`));
+    }
+
     console.log('');
 
     // Summarise by channel
@@ -236,15 +280,18 @@ async function runSync() {
       const total = attributedOrders.length || 1;
 
       const channelColors = {
-        meta_ads:       chalk.magenta,
-        google_search:  chalk.blue,
-        google_shopping: chalk.cyan,
-        awin_affiliate: chalk.yellow,
-        email:          chalk.green,
-        organic_search: chalk.greenBright,
-        organic_social: chalk.magentaBright,
-        direct:         chalk.white,
-        other:          chalk.gray,
+        meta_ads:            chalk.magenta,
+        google_search:       chalk.blue,
+        google_shopping:     chalk.cyan,
+        awin_affiliate:      chalk.yellow,
+        ascendia_affiliate:  chalk.yellowBright,
+        email:               chalk.green,
+        organic_search:      chalk.greenBright,
+        organic_social:      chalk.magentaBright,
+        bol_marketplace:     chalk.blueBright,
+        direct:              chalk.white,
+        ai_referral:         chalk.cyanBright,
+        other:               chalk.gray,
       };
 
       for (const [channel, count] of Object.entries(summary).sort((a, b) => b[1] - a[1])) {
@@ -252,7 +299,7 @@ async function runSync() {
         const bar = '█'.repeat(Math.round(count / total * 20));
         const color = channelColors[channel] || chalk.white;
         console.log(
-          `  ${color(channel.padEnd(20))}  ${String(count).padStart(4)} orders  ${chalk.gray(pct.padStart(5) + '%')}  ${color(bar)}`
+          `  ${color(channel.padEnd(22))}  ${String(count).padStart(4)} orders  ${chalk.gray(pct.padStart(5) + '%')}  ${color(bar)}`
         );
       }
     }
