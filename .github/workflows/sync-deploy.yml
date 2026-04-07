@@ -87,7 +87,12 @@ jobs:
         run: node src/scripts/backfill-order-items.js
         continue-on-error: true
 
-      # ── 7b. Sync visitor sessions van Google Sheet ──────────────────────────
+      # ── 7b. Sync Klaviyo metrics ────────────────────────────────────────────
+      - name: Sync Klaviyo metrics
+        run: node src/scripts/sync-klaviyo-metrics.js
+        continue-on-error: true
+
+      # ── 7c. Sync visitor sessions van Google Sheet ──────────────────────────
       - name: Sync sessions
         run: node src/scripts/sync-sessions.js
         continue-on-error: true
