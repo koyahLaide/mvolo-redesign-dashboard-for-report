@@ -82,7 +82,12 @@ jobs:
       - name: Run sync
         run: node src/index.js sync
 
-      # ── 7. Sync visitor sessions van Google Sheet ─────────────────────────
+      # ── 7. Sync order items (SKU velocity) ─────────────────────────────────
+      - name: Sync order items
+        run: node src/scripts/backfill-order-items.js
+        continue-on-error: true
+
+      # ── 7b. Sync visitor sessions van Google Sheet ──────────────────────────
       - name: Sync sessions
         run: node src/scripts/sync-sessions.js
         continue-on-error: true
