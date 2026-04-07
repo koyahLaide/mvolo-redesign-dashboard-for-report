@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import fs from 'fs';
+import path from 'path';
 import initSqlJs from 'sql.js';
 import { DB_PATH } from '../../../lib/db-path';
 
@@ -17,8 +18,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const period = searchParams.get('period') ?? '30';
 
+  const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
   try {
-    const SQL = await initSqlJs();
+    const SQL = await initSqlJs({ locateFile: () => wasmPath });
     const fileBuffer = fs.readFileSync(DB_PATH);
     const db = new SQL.Database(fileBuffer);
 
