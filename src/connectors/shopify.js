@@ -34,6 +34,8 @@ function mapOrder(order) {
     })),
     customer_email: order.email || order.customer?.email || null,
     customer_id: order.customer?.id ? String(order.customer.id) : null,
+    shipping_city: order.shipping_address?.city ?? null,
+    shipping_country: order.shipping_address?.country_code ?? null,
   };
 }
 
@@ -68,6 +70,7 @@ async function fetchOrders({ createdAtMin } = {}) {
       'note_attributes',
       'line_items',
       'email',
+      'shipping_address',
       'customer',
     ].join(','),
   };

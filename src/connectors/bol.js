@@ -47,7 +47,7 @@ async function getAccessToken() {
   );
 
   _token    = res.data.access_token;
-  _tokenExp = Date.now() + (res.data.expires_in ?? 300) * 1000; // default 5 min
+  _tokenExp = Date.now() + (res.data.expires_in ?? 300) * 1000;
   return _token;
 }
 
@@ -57,8 +57,8 @@ async function getAccessToken() {
 async function authHeaders() {
   const token = await getAccessToken();
   return {
-    Authorization: `Bearer ${token}`,
-    Accept:        ACCEPT,
+    Authorization:  `Bearer ${token}`,
+    Accept:         ACCEPT,
     'Content-Type': ACCEPT,
   };
 }
@@ -98,9 +98,6 @@ async function fetchOrderDetail(orderId) {
 function mapBolOrder(detail) {
   const items = detail.orderItems ?? [];
 
-  // Use totalPrice per item (already quantity-adjusted) when available,
-  // otherwise fall back to unitPrice × quantity.
-  // Bol returns amounts in euros (not cents).
   const totalAmount = items.reduce((sum, item) => {
     const lineTotal = item.totalPrice ?? (parseFloat(item.unitPrice ?? 0) * (item.quantity ?? 1));
     return sum + lineTotal;
@@ -108,7 +105,6 @@ function mapBolOrder(detail) {
 
   const shipment = detail.shipmentDetails ?? {};
 
-  // orderPlacedDateTime is the correct field (orderDate does not exist in v10)
   const createdAt = detail.orderPlacedDateTime ?? detail.orderDate ?? new Date().toISOString();
 
   return {
@@ -127,9 +123,10 @@ function mapBolOrder(detail) {
       price:      parseFloat(item.unitPrice ?? 0),
       quantity:   item.quantity ?? 1,
     })),
-    customer_email: null,
-    customer_id:    null,
-    marketplace:    'bol',
+    customer_email:   null,
+    customer_id:      null,
+    marketplace:      'bol',
+    shipping_city:    shipment.cityName    ?? null,
     shipping_country: shipment.countryCode ?? null,
   };
 }
@@ -161,7 +158,6 @@ async function fetchBolOrders() {
 
     if (!Array.isArray(summaries) || summaries.length === 0) break;
 
-    // Fetch full detail for each order
     for (const summary of summaries) {
       try {
         const detail = await fetchOrderDetail(summary.orderId);
@@ -169,10 +165,9 @@ async function fetchBolOrders() {
       } catch (err) {
         console.warn(`  [bol] Skipping order ${summary.orderId}: ${err.message}`);
       }
-      await delay(200); // respect rate limits
+      await delay(200);
     }
 
-    // Bol returns max 50 per page; fewer than 50 = last page
     if (summaries.length < 50) break;
     page++;
     await delay(500);
