@@ -187,6 +187,8 @@ function initDb() {
     'ALTER TABLE orders ADD COLUMN sessions_before_purchase INTEGER',
     "ALTER TABLE orders ADD COLUMN marketplace TEXT DEFAULT 'shopify'",
     'ALTER TABLE orders ADD COLUMN direct_subchannel TEXT',
+    'ALTER TABLE orders ADD COLUMN shipping_city TEXT',
+    'ALTER TABLE orders ADD COLUMN shipping_country TEXT',
     // visitor_sessions clarity enrichment
     'ALTER TABLE visitor_sessions ADD COLUMN had_rage_click INTEGER DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN had_dead_click INTEGER DEFAULT 0',
