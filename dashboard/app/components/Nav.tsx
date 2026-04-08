@@ -14,7 +14,8 @@ const LINKS = [
   { href: '/insights',        label: 'Insights' },
   { href: '/email-intelligence', label: 'Email' },
   { href: '/prijzen',  label: 'Prijzen' },
-  { href: '/cohort',   label: 'Cohort' },
+  { href: '/cohort',    label: 'Cohort' },
+  { href: '/strategie', label: 'Strategie' },
 ];
 
 export default function Nav() {
