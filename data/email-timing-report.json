@@ -1,0 +1,1586 @@
+{
+  "generated_at": "2026-04-08T08:35:32.596Z",
+  "campaign_performance": [
+    {
+      "id": "01KN9S0KHJFZSVX0RPVV7BXART",
+      "name": "Paasvoordeel - scarcity",
+      "send_time": "2026-04-03T17:45:00+00:00",
+      "send_date": "2026-04-03",
+      "send_hour": 17,
+      "send_day": 5,
+      "send_day_nl": "Vrijdag",
+      "total_orders_3d": 16,
+      "total_revenue_3d": 2348,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-04-03",
+          "orders": 4,
+          "revenue": 365.25
+        },
+        {
+          "day": 1,
+          "date": "2026-04-04",
+          "orders": 9,
+          "revenue": 1687.1
+        },
+        {
+          "day": 2,
+          "date": "2026-04-05",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2026-04-06",
+          "orders": 3,
+          "revenue": 295.95
+        }
+      ]
+    },
+    {
+      "id": "01KEYHP1FNTG7Y7GN4HE6NBY8B",
+      "name": "Campaign Jan 14, 2026, 11:20 PM",
+      "send_time": "2026-01-14T19:00:00+00:00",
+      "send_date": "2026-01-14",
+      "send_hour": 19,
+      "send_day": 3,
+      "send_day_nl": "Woensdag",
+      "total_orders_3d": 18,
+      "total_revenue_3d": 2245,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-01-14",
+          "orders": 9,
+          "revenue": 1598.6
+        },
+        {
+          "day": 1,
+          "date": "2026-01-15",
+          "orders": 6,
+          "revenue": 265.4
+        },
+        {
+          "day": 2,
+          "date": "2026-01-16",
+          "orders": 1,
+          "revenue": 167.4
+        },
+        {
+          "day": 3,
+          "date": "2026-01-17",
+          "orders": 2,
+          "revenue": 213.4
+        }
+      ]
+    },
+    {
+      "id": "01KKS0AJWDJZ1BQFJDPCDH8J5Q",
+      "name": "E-mailcampagne - 15 mrt 2026, 14:02",
+      "send_time": "2026-03-15T19:03:59.927639+00:00",
+      "send_date": "2026-03-15",
+      "send_hour": 19,
+      "send_day": 0,
+      "send_day_nl": "Zondag",
+      "total_orders_3d": 21,
+      "total_revenue_3d": 1921,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-03-15",
+          "orders": 8,
+          "revenue": 516.2
+        },
+        {
+          "day": 1,
+          "date": "2026-03-16",
+          "orders": 11,
+          "revenue": 1107.24
+        },
+        {
+          "day": 2,
+          "date": "2026-03-17",
+          "orders": 1,
+          "revenue": 149
+        },
+        {
+          "day": 3,
+          "date": "2026-03-18",
+          "orders": 1,
+          "revenue": 149
+        }
+      ]
+    },
+    {
+      "id": "01KMR2CZV7VQ4PRVV9NHQ7CEH8",
+      "name": "Paasvoordeel",
+      "send_time": "2026-03-27T16:42:01.372135+00:00",
+      "send_date": "2026-03-27",
+      "send_hour": 16,
+      "send_day": 5,
+      "send_day_nl": "Vrijdag",
+      "total_orders_3d": 11,
+      "total_revenue_3d": 1509,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-03-27",
+          "orders": 2,
+          "revenue": 348.3
+        },
+        {
+          "day": 1,
+          "date": "2026-03-28",
+          "orders": 1,
+          "revenue": 149
+        },
+        {
+          "day": 2,
+          "date": "2026-03-29",
+          "orders": 4,
+          "revenue": 506
+        },
+        {
+          "day": 3,
+          "date": "2026-03-29",
+          "orders": 4,
+          "revenue": 506
+        }
+      ]
+    },
+    {
+      "id": "01KKSFNW3YYCA3NBZKBKWDWYFK",
+      "name": "Flash sale - VIP",
+      "send_time": "2026-03-17T19:45:00+00:00",
+      "send_date": "2026-03-17",
+      "send_hour": 19,
+      "send_day": 2,
+      "send_day_nl": "Dinsdag",
+      "total_orders_3d": 8,
+      "total_revenue_3d": 1255,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-03-17",
+          "orders": 1,
+          "revenue": 149
+        },
+        {
+          "day": 1,
+          "date": "2026-03-18",
+          "orders": 1,
+          "revenue": 149
+        },
+        {
+          "day": 2,
+          "date": "2026-03-19",
+          "orders": 1,
+          "revenue": 149
+        },
+        {
+          "day": 3,
+          "date": "2026-03-20",
+          "orders": 5,
+          "revenue": 808.1
+        }
+      ]
+    },
+    {
+      "id": "01KHZQ439NP8C1JKFQASCH6ZRP",
+      "name": "E-mailcampagne - 21 feb 2026, 10:04",
+      "send_time": "2026-02-21T10:04:00+00:00",
+      "send_date": "2026-02-21",
+      "send_hour": 10,
+      "send_day": 6,
+      "send_day_nl": "Zaterdag",
+      "total_orders_3d": 4,
+      "total_revenue_3d": 609,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-02-21",
+          "orders": 1,
+          "revenue": 99
+        },
+        {
+          "day": 1,
+          "date": "2026-02-22",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2026-02-23",
+          "orders": 2,
+          "revenue": 244.74
+        },
+        {
+          "day": 3,
+          "date": "2026-02-24",
+          "orders": 1,
+          "revenue": 265.3
+        }
+      ]
+    },
+    {
+      "id": "01KDWFYN7GSQDPX1SREM78J5F2",
+      "name": "New Year Campaign",
+      "send_time": "2026-01-01T10:12:04.548563+00:00",
+      "send_date": "2026-01-01",
+      "send_hour": 10,
+      "send_day": 4,
+      "send_day_nl": "Donderdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-01-01",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-01-02",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2026-01-03",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2026-01-04",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KCE6V0AVRPATBPWCY3BC9312",
+      "name": "Circadian Series Rode Bulb",
+      "send_time": "2025-12-20T13:30:00+00:00",
+      "send_date": "2025-12-20",
+      "send_hour": 13,
+      "send_day": 6,
+      "send_day_nl": "Zaterdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-12-20",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-12-21",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-12-22",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-12-23",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KCH94CDMZ1FRREB14FDMXE2E",
+      "name": "Christmas Campaign",
+      "send_time": "2025-12-16T10:56:39.475782+00:00",
+      "send_date": "2025-12-16",
+      "send_hour": 10,
+      "send_day": 2,
+      "send_day_nl": "Dinsdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-12-16",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-12-17",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-12-18",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-12-19",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KBWECNCNSH911NGTAZ8ZWN9Y",
+      "name": "Product Launch (Circadian Bulb)",
+      "send_time": "2025-12-07T13:25:16.335495+00:00",
+      "send_date": "2025-12-07",
+      "send_hour": 13,
+      "send_day": 0,
+      "send_day_nl": "Zondag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-12-07",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-12-08",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-12-09",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-12-10",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KBSZPSMFJAXKCX48R0AY4FPV",
+      "name": "Campaign Dec 6, 2025, 10:03 PM",
+      "send_time": "2025-12-06T14:19:55.502610+00:00",
+      "send_date": "2025-12-06",
+      "send_hour": 14,
+      "send_day": 6,
+      "send_day_nl": "Zaterdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-12-06",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-12-07",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-12-08",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-12-09",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KBD0SJ8VZ80SP4SK2GPDQ37A",
+      "name": "Cyber Monday Starts Now!",
+      "send_time": "2025-12-01T19:00:00.184000+00:00",
+      "send_date": "2025-12-01",
+      "send_hour": 19,
+      "send_day": 1,
+      "send_day_nl": "Maandag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-12-01",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-12-02",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-12-03",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-12-04",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KB5E25VAYT1E9NXTF4M04486",
+      "name": "Last Chance",
+      "send_time": "2025-11-30T08:51:22.603117+00:00",
+      "send_date": "2025-11-30",
+      "send_hour": 8,
+      "send_day": 0,
+      "send_day_nl": "Zondag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-11-30",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-12-01",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-12-02",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-12-03",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KB4ZVQXNQXJ1JH397W6VWCRD",
+      "name": "Final Chance",
+      "send_time": "2025-11-28T13:46:48.537513+00:00",
+      "send_date": "2025-11-28",
+      "send_hour": 13,
+      "send_day": 5,
+      "send_day_nl": "Vrijdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-11-28",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-11-29",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-11-30",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-12-01",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KAVA0QY0ATA5JR5NJVFT1K1W",
+      "name": "Campaign Nov 25, 2025, 12:06 AM",
+      "send_time": "2025-11-24T16:27:57.237107+00:00",
+      "send_date": "2025-11-24",
+      "send_hour": 16,
+      "send_day": 1,
+      "send_day_nl": "Maandag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-11-24",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-11-25",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-11-26",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-11-27",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KAJMT2RG8YJZ6QV2P8WQA1G4",
+      "name": "Black Friday Teaser",
+      "send_time": "2025-11-21T20:00:00.141000+00:00",
+      "send_date": "2025-11-21",
+      "send_hour": 20,
+      "send_day": 5,
+      "send_day_nl": "Vrijdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-11-21",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-11-22",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-11-23",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-11-24",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KABVVFAQA6CP184CSFSAM35V",
+      "name": "Black Friday Pre Order 50%",
+      "send_time": "2025-11-18T16:29:39.756232+00:00",
+      "send_date": "2025-11-18",
+      "send_hour": 16,
+      "send_day": 2,
+      "send_day_nl": "Dinsdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-11-18",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-11-19",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-11-20",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-11-21",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01KA14BZCMS6ZQJ8AY3FFG0GPZ",
+      "name": "Campaign Nov 14, 2025, 8:07 PM",
+      "send_time": "2025-11-14T12:42:09.453761+00:00",
+      "send_date": "2025-11-14",
+      "send_hour": 12,
+      "send_day": 5,
+      "send_day_nl": "Vrijdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-11-14",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-11-15",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-11-16",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-11-17",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01K88B9SKPGYQFGDTBNK6YE1DQ",
+      "name": "10.27.25",
+      "send_time": "2025-10-27T11:30:00+00:00",
+      "send_date": "2025-10-27",
+      "send_hour": 11,
+      "send_day": 1,
+      "send_day_nl": "Maandag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-10-27",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-10-28",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-10-29",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-10-30",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01K81G4JZA0QYTNVEHB0ADAZVN",
+      "name": "10.25.25",
+      "send_time": "2025-10-25T11:30:00+00:00",
+      "send_date": "2025-10-25",
+      "send_hour": 11,
+      "send_day": 6,
+      "send_day_nl": "Zaterdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-10-25",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-10-26",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-10-27",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-10-28",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01K7V7SZ2MB8Y0237ZB1770ZAY",
+      "name": "10.21.25",
+      "send_time": "2025-10-21T14:00:00+00:00",
+      "send_date": "2025-10-21",
+      "send_hour": 14,
+      "send_day": 2,
+      "send_day_nl": "Dinsdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-10-21",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-10-22",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-10-23",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-10-24",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01K40J5K8X4CY1BVEDMQNT63Q9",
+      "name": "[Follow-up] Blogs august - Aug 30, 2025 at 10:39 PM",
+      "send_time": "2025-09-02T10:15:00+00:00",
+      "send_date": "2025-09-02",
+      "send_hour": 10,
+      "send_day": 2,
+      "send_day_nl": "Dinsdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-09-02",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-09-03",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-09-04",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-09-05",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01K3YBBG1HEM0BGNTE9PXND5Y3",
+      "name": "Blogs august - Aug 30, 2025 at 10:39 PM",
+      "send_time": "2025-08-31T10:15:00+00:00",
+      "send_date": "2025-08-31",
+      "send_hour": 10,
+      "send_day": 0,
+      "send_day_nl": "Zondag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-08-31",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-09-01",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-09-02",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-09-03",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01K2W1ZWA8DK48KT86E5HGRJK2",
+      "name": "[Follow-up] Summer sale",
+      "send_time": "2025-08-19T12:58:02+00:00",
+      "send_date": "2025-08-19",
+      "send_hour": 12,
+      "send_day": 2,
+      "send_day_nl": "Dinsdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-08-19",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-08-20",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-08-21",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-08-22",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01K2S3CEYG2733PBRKVQ4CK5KM",
+      "name": "Summer sale",
+      "send_time": "2025-08-17T12:58:02+00:00",
+      "send_date": "2025-08-17",
+      "send_hour": 12,
+      "send_day": 0,
+      "send_day_nl": "Zondag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-08-17",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-08-18",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-08-19",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-08-20",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01K043NG16SQD3WPZ5ZXEMTYZ9",
+      "name": "Elite Series 106/206/306 and Led Face Mask",
+      "send_time": "2025-07-14T17:30:00+00:00",
+      "send_date": "2025-07-14",
+      "send_hour": 17,
+      "send_day": 1,
+      "send_day_nl": "Maandag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-07-14",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-07-15",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-07-16",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-07-17",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01JVY4APA9QB2YST3NYCHR3X9D",
+      "name": "Email Campaign - May 23, 2025, 4:30 PM",
+      "send_time": "2025-05-23T08:46:06+00:00",
+      "send_date": "2025-05-23",
+      "send_hour": 8,
+      "send_day": 5,
+      "send_day_nl": "Vrijdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-05-23",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-05-24",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-05-25",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-05-26",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01JVPHRSHE9BQD98HD7Z77Z17P",
+      "name": "Email Campaign - May 20, 2025, 5:52 PM",
+      "send_time": "2025-05-20T09:59:32+00:00",
+      "send_date": "2025-05-20",
+      "send_hour": 9,
+      "send_day": 2,
+      "send_day_nl": "Dinsdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-05-20",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-05-21",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-05-22",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-05-23",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01JPWTGF1ZAK7P4SBAT6G7SVSV",
+      "name": "[Follow-up] Email Campaign - Mar 21, 2025 at 2:24 PM",
+      "send_time": "2025-03-23T16:52:00+00:00",
+      "send_date": "2025-03-23",
+      "send_hour": 16,
+      "send_day": 0,
+      "send_day_nl": "Zondag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-03-23",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-03-24",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-03-25",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-03-26",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01JPWE09RRDX0G2BRMQENWXQN8",
+      "name": "Email Campaign - Mar 21, 2025 at 2:24 PM",
+      "send_time": "2025-03-21T16:52:00+00:00",
+      "send_date": "2025-03-21",
+      "send_hour": 16,
+      "send_day": 5,
+      "send_day_nl": "Vrijdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2025-03-21",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2025-03-22",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2025-03-23",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2025-03-24",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01JCXP84MHT39VY9XRENYAY3XS",
+      "name": "Email Campaign - Nov 17, 2024 at 7:30 PM",
+      "send_time": "2024-11-18T11:00:00+00:00",
+      "send_date": "2024-11-18",
+      "send_hour": 11,
+      "send_day": 1,
+      "send_day_nl": "Maandag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2024-11-18",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2024-11-19",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2024-11-20",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2024-11-21",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01JCJJ4YVQT6TR900QJ60RK9NN",
+      "name": "Email Campaign - Nov 13, 2024 at 11:47 AM",
+      "send_time": "2024-11-13T11:31:50+00:00",
+      "send_date": "2024-11-13",
+      "send_hour": 11,
+      "send_day": 3,
+      "send_day_nl": "Woensdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2024-11-13",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2024-11-14",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2024-11-15",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2024-11-16",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01J0THA8XRBK3EMKNCH4MNKJQ8",
+      "name": "Email Campaign - Jun 20, 2024 at 11:57 AM",
+      "send_time": "2024-06-20T10:17:31+00:00",
+      "send_date": "2024-06-20",
+      "send_hour": 10,
+      "send_day": 4,
+      "send_day_nl": "Donderdag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2024-06-20",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2024-06-21",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2024-06-22",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2024-06-23",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01HSTP0N1SYW0WFVX5VFXMTTY2",
+      "name": "EARTHING MAT INCLUDING CUSHION- Mar 25, 2024, 4:30 PM",
+      "send_time": "2024-03-25T11:36:31+00:00",
+      "send_date": "2024-03-25",
+      "send_hour": 11,
+      "send_day": 1,
+      "send_day_nl": "Maandag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2024-03-25",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2024-03-26",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2024-03-27",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2024-03-28",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01HSTNM11D1MNRHKHB6KRBEVW7",
+      "name": "airduster- Mar 25, 2024, 4:23 PM",
+      "send_time": "2024-03-25T11:27:09+00:00",
+      "send_date": "2024-03-25",
+      "send_hour": 11,
+      "send_day": 1,
+      "send_day_nl": "Maandag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2024-03-25",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2024-03-26",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2024-03-27",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2024-03-28",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    },
+    {
+      "id": "01HST8H1N360A4DQPG1P3Y1MM3",
+      "name": "AIR DUSTER X PRO- Mar 25, 2024, 12:33 PM",
+      "send_time": "2024-03-25T07:55:47+00:00",
+      "send_date": "2024-03-25",
+      "send_hour": 7,
+      "send_day": 1,
+      "send_day_nl": "Maandag",
+      "total_orders_3d": 0,
+      "total_revenue_3d": 0,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2024-03-25",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 1,
+          "date": "2024-03-26",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 2,
+          "date": "2024-03-27",
+          "orders": 0,
+          "revenue": 0
+        },
+        {
+          "day": 3,
+          "date": "2024-03-28",
+          "orders": 0,
+          "revenue": 0
+        }
+      ]
+    }
+  ],
+  "dow_stats": [
+    {
+      "dow": 1,
+      "dag": "Maandag",
+      "sent": 392,
+      "opened": 620,
+      "clicked": 69,
+      "orders": 50,
+      "revenue": 6990,
+      "open_rate": 158,
+      "click_rate": 18,
+      "rev_per_email": 17.83
+    },
+    {
+      "dow": 4,
+      "dag": "Donderdag",
+      "sent": 477,
+      "opened": 501,
+      "clicked": 40,
+      "orders": 43,
+      "revenue": 5364,
+      "open_rate": 105,
+      "click_rate": 8,
+      "rev_per_email": 11.24
+    },
+    {
+      "dow": 3,
+      "dag": "Woensdag",
+      "sent": 787,
+      "opened": 623,
+      "clicked": 82,
+      "orders": 47,
+      "revenue": 6784,
+      "open_rate": 79,
+      "click_rate": 10,
+      "rev_per_email": 8.62
+    },
+    {
+      "dow": 6,
+      "dag": "Zaterdag",
+      "sent": 886,
+      "opened": 768,
+      "clicked": 80,
+      "orders": 42,
+      "revenue": 7266,
+      "open_rate": 87,
+      "click_rate": 9,
+      "rev_per_email": 8.2
+    },
+    {
+      "dow": 2,
+      "dag": "Dinsdag",
+      "sent": 738,
+      "opened": 532,
+      "clicked": 40,
+      "orders": 39,
+      "revenue": 5927,
+      "open_rate": 72,
+      "click_rate": 5,
+      "rev_per_email": 8.03
+    },
+    {
+      "dow": 5,
+      "dag": "Vrijdag",
+      "sent": 1918,
+      "opened": 895,
+      "clicked": 74,
+      "orders": 42,
+      "revenue": 6735,
+      "open_rate": 47,
+      "click_rate": 4,
+      "rev_per_email": 3.51
+    },
+    {
+      "dow": 0,
+      "dag": "Zondag",
+      "sent": 875,
+      "opened": 606,
+      "clicked": 71,
+      "orders": 29,
+      "revenue": 2848,
+      "open_rate": 69,
+      "click_rate": 8,
+      "rev_per_email": 3.26
+    }
+  ],
+  "segment_data": {
+    "new_customers": {
+      "cnt": 574,
+      "aov": 159.86,
+      "revenue": 91760.21
+    },
+    "returning_customers": {
+      "cnt": 39,
+      "aov": 108.69,
+      "revenue": 4239.07
+    },
+    "by_channel": [
+      {
+        "channel": "direct",
+        "nieuw": 331,
+        "terugkerend": 28,
+        "aov_terugkerend": 104.74
+      },
+      {
+        "channel": "meta_ads",
+        "nieuw": 34,
+        "terugkerend": 4,
+        "aov_terugkerend": 152.67
+      },
+      {
+        "channel": "organic_search",
+        "nieuw": 110,
+        "terugkerend": 3,
+        "aov_terugkerend": 141.21
+      },
+      {
+        "channel": "email",
+        "nieuw": 5,
+        "terugkerend": 3,
+        "aov_terugkerend": 62.8
+      },
+      {
+        "channel": "awin_affiliate",
+        "nieuw": 69,
+        "terugkerend": 1,
+        "aov_terugkerend": 83.58
+      },
+      {
+        "channel": "other",
+        "nieuw": 7,
+        "terugkerend": 0,
+        "aov_terugkerend": null
+      },
+      {
+        "channel": "organic_social",
+        "nieuw": 11,
+        "terugkerend": 0,
+        "aov_terugkerend": null
+      },
+      {
+        "channel": "bol_marketplace",
+        "nieuw": 4,
+        "terugkerend": 0,
+        "aov_terugkerend": null
+      }
+    ]
+  },
+  "top_skus_email": [
+    {
+      "sku": "8720892083647",
+      "title": "Dubbele Infraroodlamp voor spieren en gewrichten",
+      "sold": 3
+    },
+    {
+      "sku": "8721249157073",
+      "title": "LED Gezichtsmasker met Nek voor huid en decolleté",
+      "sold": 2
+    },
+    {
+      "sku": "8720892083630",
+      "title": "ReliefTorch",
+      "sold": 1
+    },
+    {
+      "sku": "8721249157035",
+      "title": "Elite series 106",
+      "sold": 1
+    },
+    {
+      "sku": "8721249157103",
+      "title": "EMS Skinsculpt Gua sha",
+      "sold": 1
+    }
+  ],
+  "top_skus_direct": [
+    {
+      "sku": "8721249157028",
+      "title": "Elite Series 306 voor huid, herstel en dagelijkse routine",
+      "sold": 11,
+      "revenue": 2302.3
+    },
+    {
+      "sku": "8720892083647",
+      "title": "Dubbele Infraroodlamp voor spieren en gewrichten",
+      "sold": 8,
+      "revenue": 1092
+    },
+    {
+      "sku": "8721249157073",
+      "title": "LED Gezichtsmasker met Nek voor huid en decolleté",
+      "sold": 6,
+      "revenue": 907.23
+    },
+    {
+      "sku": "8721249157226",
+      "title": "Daglicht bril PRO",
+      "sold": 7,
+      "revenue": 693
+    },
+    {
+      "sku": "8721249157110",
+      "title": "TDP lamp",
+      "sold": 3,
+      "revenue": 597.2
+    },
+    {
+      "sku": "8721249157318",
+      "title": "Circadian series Rode bulb e27",
+      "sold": 14,
+      "revenue": 252.25
+    },
+    {
+      "sku": "8721249157271",
+      "title": "Mvolo LED Gezichtsmasker – Professioneel LED Masker – Huidverbetering & Anti-Aging Lichttherapie – Rood Licht Therapie –",
+      "sold": 4,
+      "revenue": 236
+    },
+    {
+      "sku": "8721249157127",
+      "title": "Stellar Beam",
+      "sold": 2,
+      "revenue": 222.6
+    },
+    {
+      "sku": "8720892083630",
+      "title": "ReliefTorch",
+      "sold": 4,
+      "revenue": 146.35
+    },
+    {
+      "sku": "8720892083685",
+      "title": "Enkele kop infraroodlamp",
+      "sold": 1,
+      "revenue": 99
+    }
+  ],
+  "recommendations": {
+    "best_day": "Maandag",
+    "best_times": [
+      "10:00-12:00",
+      "16:00-18:00"
+    ],
+    "best_campaign_type": "Scarcity/urgentie met follow-up",
+    "segment_focus": {
+      "new": "Welcome Series + product education",
+      "returning": "Cross-sell + VIP + scarcity campaigns"
+    }
+  }
+}
