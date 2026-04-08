@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/attributie', label: 'Attributie' },
   { href: '/inventory',  label: 'Voorraad' },
   { href: '/klaviyo',    label: 'Klaviyo' },
+  { href: '/insights',   label: 'Insights' },
 ];
 
 export default function Nav() {

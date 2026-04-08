@@ -1,171 +1,208 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+import { NextResponse } from 'next/server';
 import fs from 'fs';
-import initSqlJs from 'sql.js';
 import path from 'path';
+import initSqlJs from 'sql.js';
 import { DB_PATH } from '../../../lib/db-path';
 
-const WEEKDAY_NL = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
-
-function rowsToObjects(result: { columns: string[]; values: unknown[][] }): unknown[] {
-  return result.values.map((row) =>
-    Object.fromEntries(result.columns.map((col, i) => [col, row[i]]))
+function rowsToObjects(result: any) {
+  if (!result || !result.columns) return [];
+  return result.values.map((row: any[]) =>
+    Object.fromEntries(result.columns.map((col: string, i: number) => [col, row[i]]))
   );
 }
 
-function fmt(v: number) {
-  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(v);
-}
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const period = searchParams.get('period') ?? '30';
+  const dateFilter = `AND date >= date('now', '-${parseInt(period)} days')`;
+  const orderFilter = `AND created_at >= date('now', '-${parseInt(period)} days')`;
 
-function pct(part: number, total: number) {
-  return total > 0 ? Math.round((part / total) * 100) : 0;
-}
-
-export async function GET() {
   try {
-    if (!fs.existsSync(DB_PATH)) {
-      return Response.json({ insights: [] });
-    }
-
     const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
     const SQL = await initSqlJs({ locateFile: () => wasmPath });
     const db = new SQL.Database(fs.readFileSync(DB_PATH));
 
-    const migrations = [
-      'ALTER TABLE orders ADD COLUMN is_new_customer INTEGER',
-    ];
-    for (const sql of migrations) {
-      try { db.run(sql); } catch { /* already exists */ }
+    // ── 1. Email impact vergelijking ─────────────────────────────────────────
+    // Klaviyo metric (werkelijke email-driven orders)
+    const klaviyoTotals = db.exec(`
+      SELECT SUM(count) as orders, ROUND(SUM(revenue), 2) as revenue
+      FROM klaviyo_metrics
+      WHERE metric_name = 'ordered_product' ${dateFilter}
+    `);
+    const klaviyo = rowsToObjects(klaviyoTotals[0] ?? {})[0] ?? { orders: 0, revenue: 0 };
+
+    // UTM-gebaseerde email attributie
+    const utmEmail = db.exec(`
+      SELECT COUNT(*) as orders, ROUND(SUM(total_price), 2) as revenue
+      FROM orders
+      WHERE channel = 'email' ${orderFilter}
+    `);
+    const utm = rowsToObjects(utmEmail[0] ?? {})[0] ?? { orders: 0, revenue: 0 };
+
+    // Dark social gap
+    const hiddenOrders  = Math.max(0, (klaviyo.orders ?? 0) - (utm.orders ?? 0));
+    const hiddenRevenue = Math.max(0, (klaviyo.revenue ?? 0) - (utm.revenue ?? 0));
+
+    // ── 2. Email per dag trend (Klaviyo vs UTM) ──────────────────────────────
+    const klaviyoDailyResult = db.exec(`
+      SELECT date,
+        SUM(CASE WHEN metric_name = 'ordered_product' THEN count   ELSE 0 END) as kl_orders,
+        SUM(CASE WHEN metric_name = 'ordered_product' THEN revenue ELSE 0 END) as kl_revenue,
+        SUM(CASE WHEN metric_name = 'received_email'  THEN count   ELSE 0 END) as sent,
+        SUM(CASE WHEN metric_name = 'opened_email'    THEN count   ELSE 0 END) as opened,
+        SUM(CASE WHEN metric_name = 'clicked_email'   THEN count   ELSE 0 END) as clicked
+      FROM klaviyo_metrics
+      WHERE metric_name IN ('ordered_product','received_email','opened_email','clicked_email')
+        ${dateFilter}
+      GROUP BY date
+      ORDER BY date ASC
+    `);
+    const emailTrend = klaviyoDailyResult.length ? rowsToObjects(klaviyoDailyResult[0]) : [];
+
+    // UTM orders per dag
+    const utmDailyResult = db.exec(`
+      SELECT DATE(created_at) as date, COUNT(*) as orders, ROUND(SUM(total_price), 2) as revenue
+      FROM orders
+      WHERE channel = 'email' ${orderFilter}
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `);
+    const utmDaily = utmDailyResult.length ? rowsToObjects(utmDailyResult[0]) : [];
+
+    // Merge email trend met UTM
+    const utmByDate: Record<string, any> = {};
+    utmDaily.forEach((r: any) => { utmByDate[r.date] = r; });
+    const emailTrendMerged = emailTrend.map((r: any) => ({
+      ...r,
+      utm_orders:  utmByDate[r.date]?.orders ?? 0,
+      utm_revenue: utmByDate[r.date]?.revenue ?? 0,
+    }));
+
+    // ── 3. Kanaal breakdown (alle orders) ────────────────────────────────────
+    const channelResult = db.exec(`
+      SELECT channel, COUNT(*) as orders, ROUND(SUM(total_price), 2) as revenue
+      FROM orders
+      WHERE 1=1 ${orderFilter}
+      GROUP BY channel ORDER BY orders DESC
+    `);
+    const channelBreakdown = channelResult.length ? rowsToObjects(channelResult[0]) : [];
+
+    // ── 4. Voorraad × kanaal alerts ──────────────────────────────────────────
+    // Haal Shopify inventory op
+    const shopifyRes = await fetch(
+      `https://${process.env.SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants`,
+      { headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_TOKEN! } }
+    );
+    const shopifyData = await shopifyRes.json();
+    const inventory: Record<string, { title: string; stock: number; price: number }> = {};
+    for (const p of shopifyData.products ?? []) {
+      for (const v of p.variants ?? []) {
+        if (v.sku) inventory[String(v.sku)] = { title: p.title, stock: v.inventory_quantity, price: parseFloat(v.price) };
+      }
     }
 
-    // ── Raw data ─────────────────────────────────────────────────────────────
-    const chResult = db.exec(`
-      SELECT
-        channel,
-        COUNT(*) as orders,
-        ROUND(SUM(total_price), 2) as revenue,
-        ROUND(AVG(total_price), 2) as avg_value
-      FROM orders
-      GROUP BY channel
+    // COGS data
+    const cogsPath = path.join(process.cwd(), 'data', 'products-cogs.json');
+    const cogsData = JSON.parse(fs.readFileSync(cogsPath, 'utf-8'));
+
+    // Verkoop velocity per SKU (30d)
+    const velocityResult = db.exec(`
+      SELECT sku, SUM(quantity) * 1.0 / ${parseInt(period)} as daily
+      FROM order_items
+      WHERE order_date >= date('now', '-${parseInt(period)} days') AND sku != ''
+      GROUP BY sku
+    `);
+    const velocity: Record<string, number> = {};
+    if (velocityResult.length) rowsToObjects(velocityResult[0]).forEach((r: any) => { velocity[r.sku] = r.daily; });
+
+    // Welke kanalen adverteren actief? (orders per kanaal per SKU)
+    const activeChannelsResult = db.exec(`
+      SELECT oi.sku, o.channel, COUNT(*) as orders
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      WHERE o.created_at >= date('now', '-30 days')
+        AND oi.sku != ''
+        AND o.channel IN ('meta_ads', 'google_ads', 'google_search', 'awin_affiliate', 'ascendia_affiliate', 'email')
+      GROUP BY oi.sku, o.channel
       ORDER BY orders DESC
     `);
-    const channels = chResult.length ? rowsToObjects(chResult[0]) as {
-      channel: string; orders: number; revenue: number; avg_value: number;
-    }[] : [];
+    const activeChannels = activeChannelsResult.length ? rowsToObjects(activeChannelsResult[0]) : [];
 
-    const totResult = db.exec(`SELECT COUNT(*) as total, SUM(total_price) as rev FROM orders`);
-    const tot = totResult.length ? rowsToObjects(totResult[0])[0] as { total: number; rev: number } : { total: 0, rev: 0 };
-    const globalAvg = tot.total > 0 ? tot.rev / tot.total : 0;
+    // Bouw alerts: kritieke producten die nog actief geadverteerd worden
+    const { lead_times, safety_stock_days } = cogsData;
+    const sea_lead = lead_times.production_days + lead_times.sea_days + safety_stock_days;
 
-    const wdResult = db.exec(`
-      SELECT strftime('%w', created_at) as wd, COUNT(*) as orders, ROUND(SUM(total_price), 2) as revenue
-      FROM orders GROUP BY wd ORDER BY revenue DESC LIMIT 1
-    `);
-    const bestWd = wdResult.length ? rowsToObjects(wdResult[0])[0] as { wd: string; orders: number; revenue: number } : null;
+    const stockAlerts: any[] = [];
+    for (const p of cogsData.products) {
+      const inv = inventory[p.sku];
+      if (!inv) continue;
 
-    const wdCountResult = db.exec(`
-      SELECT strftime('%w', created_at) as wd, COUNT(DISTINCT DATE(created_at)) as day_count
-      FROM orders GROUP BY wd
-    `);
-    const wdCounts: Record<string, number> = {};
-    if (wdCountResult.length) {
-      (rowsToObjects(wdCountResult[0]) as Record<string, unknown>[]).forEach((r) => {
-        wdCounts[String(r.wd)] = Number(r.day_count);
+      const stock    = inv.stock;
+      const vel      = velocity[p.sku] || 0;
+      const days_left = vel > 0 ? Math.round(stock / vel) : (stock > 0 ? 999 : 0);
+      const isUrgent = stock <= 0 || (vel > 0 && days_left < sea_lead);
+
+      if (!isUrgent) continue;
+
+      // Zoek actieve kanalen voor dit product
+      const channels = activeChannels.filter((r: any) => r.sku === p.sku);
+
+      stockAlerts.push({
+        name:          p.name,
+        sku:           p.sku,
+        stock,
+        days_left:     days_left > 900 ? null : days_left,
+        velocity:      Math.round(vel * 100) / 100,
+        active_channels: channels,
+        urgency:       stock <= 0 ? 'KRITIEK' : days_left < 30 ? 'URGENT' : 'BESTEL',
+        cogs_sea:      p.cogs_sea,
+        price:         inv.price,
+        margin:        p.cogs_sea && inv.price > 0 ? Math.round(((inv.price - p.cogs_sea) / inv.price) * 100) : null,
       });
     }
 
-    const hrResult = db.exec(`
-      SELECT strftime('%H', created_at) as hr, COUNT(*) as orders
-      FROM orders GROUP BY hr ORDER BY orders DESC LIMIT 1
-    `);
-    const bestHr = hrResult.length ? rowsToObjects(hrResult[0])[0] as { hr: string; orders: number } : null;
+    stockAlerts.sort((a, b) => {
+      const o = { KRITIEK: 0, URGENT: 1, BESTEL: 2 };
+      return (o[a.urgency as keyof typeof o] ?? 9) - (o[b.urgency as keyof typeof o] ?? 9);
+    });
 
-    const newCustResult = db.exec(`
-      SELECT
-        SUM(CASE WHEN is_new_customer = 1 THEN 1 ELSE 0 END) as nieuwe,
-        SUM(CASE WHEN is_new_customer = 0 THEN 1 ELSE 0 END) as terugkerend
+    // ── 5. Top campaigns met orders ──────────────────────────────────────────
+    const campaignResult = db.exec(`
+      SELECT utm_campaign, COUNT(*) as orders, ROUND(SUM(total_price), 2) as revenue
       FROM orders
+      WHERE channel = 'email' AND utm_campaign IS NOT NULL ${orderFilter}
+      GROUP BY utm_campaign
+      ORDER BY revenue DESC
+      LIMIT 10
     `);
-    const cust = newCustResult.length ? rowsToObjects(newCustResult[0])[0] as { nieuwe: number; terugkerend: number } : null;
+    const topCampaigns = campaignResult.length ? rowsToObjects(campaignResult[0]) : [];
 
     db.close();
 
-    // ── Generate insights ─────────────────────────────────────────────────────
-    const insights: { text: string }[] = [];
+    return NextResponse.json({
+      emailImpact: {
+        klaviyo_orders:  klaviyo.orders  ?? 0,
+        klaviyo_revenue: klaviyo.revenue ?? 0,
+        utm_orders:      utm.orders      ?? 0,
+        utm_revenue:     utm.revenue     ?? 0,
+        hidden_orders:   hiddenOrders,
+        hidden_revenue:  hiddenRevenue,
+        attribution_gap: klaviyo.revenue > 0
+          ? Math.round((hiddenRevenue / klaviyo.revenue) * 100)
+          : 0,
+      },
+      emailTrend: emailTrendMerged,
+      channelBreakdown,
+      stockAlerts,
+      topCampaigns,
+      period,
+    });
 
-    if (channels.length > 0 && tot.total > 0) {
-      const top = channels[0];
-      const topPct = pct(top.orders, tot.total);
-      insights.push({
-        text: `${label(top.channel)} is je grootste kanaal met ${topPct}% van alle orders (${top.orders} orders, ${fmt(top.revenue)} omzet).`,
-      });
-
-      // Channel with highest avg order value
-      const byAvg = [...channels].sort((a, b) => b.avg_value - a.avg_value);
-      const highAvg = byAvg[0];
-      const diffPct = globalAvg > 0 ? Math.round(((highAvg.avg_value - globalAvg) / globalAvg) * 100) : 0;
-      if (highAvg.channel !== top.channel && diffPct > 0) {
-        insights.push({
-          text: `${label(highAvg.channel)} klanten besteden gemiddeld ${fmt(highAvg.avg_value)} per order — ${diffPct}% boven het overall gemiddelde van ${fmt(globalAvg)}.`,
-        });
-      }
-
-      // Lowest avg order value channel (with significant volume)
-      const significant = channels.filter(c => c.orders >= 5);
-      if (significant.length >= 2) {
-        const lowAvg = [...significant].sort((a, b) => a.avg_value - b.avg_value)[0];
-        const highestAvg = [...significant].sort((a, b) => b.avg_value - a.avg_value)[0];
-        if (lowAvg.channel !== highestAvg.channel) {
-          const ratio = highestAvg.avg_value > 0 ? Math.round((highestAvg.avg_value / lowAvg.avg_value) * 10) / 10 : 1;
-          insights.push({
-            text: `${label(highestAvg.channel)} orders zijn ${ratio}× meer waard dan ${label(lowAvg.channel)} orders (${fmt(highestAvg.avg_value)} vs ${fmt(lowAvg.avg_value)} gem. orderwaarde).`,
-          });
-        }
-      }
-    }
-
-    // Best weekday
-    if (bestWd) {
-      const dayName = WEEKDAY_NL[Number(bestWd.wd)] ?? '?';
-      const count = wdCounts[bestWd.wd] ?? 1;
-      const avgRevPerDay = count > 0 ? bestWd.revenue / count : bestWd.revenue;
-      insights.push({
-        text: `${dayName} is je beste dag: gemiddeld ${fmt(avgRevPerDay)} omzet per ${dayName.toLowerCase()}.`,
-      });
-    }
-
-    // Best hour
-    if (bestHr) {
-      const hr = Number(bestHr.hr);
-      insights.push({
-        text: `De meeste orders komen binnen tussen ${hr}:00 en ${hr + 1}:00 uur (${bestHr.orders} orders in die tijdslot).`,
-      });
-    }
-
-    // New vs returning
-    if (cust && (cust.nieuwe + cust.terugkerend) > 0) {
-      const total = cust.nieuwe + cust.terugkerend;
-      const retPct = pct(cust.terugkerend, total);
-      const newPct = pct(cust.nieuwe, total);
-      if (retPct > 40) {
-        insights.push({
-          text: `${retPct}% van je gesyncte orders komt van terugkerende klanten — sterke loyaliteit. ${newPct}% zijn nieuwe klanten.`,
-        });
-      } else if (newPct > 70) {
-        insights.push({
-          text: `${newPct}% van je orders zijn van nieuwe klanten — focus op retentie kan de lifetime value flink verhogen.`,
-        });
-      }
-    }
-
-    return Response.json({ insights });
-  } catch (err) {
-    console.error('[/api/insights] Error:', err);
-    return Response.json({ insights: [] });
+  } catch (err: any) {
+    console.error('Insights API error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
-
-function label(channel: string) {
-  return channel.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
