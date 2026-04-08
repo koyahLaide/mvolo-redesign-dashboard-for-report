@@ -16,6 +16,7 @@ const LINKS = [
   { href: '/prijzen',  label: 'Prijzen' },
   { href: '/cohort',    label: 'Cohort' },
   { href: '/strategie', label: 'Strategie' },
+  { href: '/finance',   label: 'Finance' },
 ];
 
 export default function Nav() {
