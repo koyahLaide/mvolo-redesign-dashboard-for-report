@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Nav from './components/Nav';
+import ActionBanner from './components/ActionBanner';
 import {
   PieChart, Pie, Cell, Tooltip, Legend,
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -501,6 +502,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      <ActionBanner />
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-8">
 
         {/* Filters row */}
