@@ -10,14 +10,11 @@ const LINKS = [
   { href: '/geo',       label: 'Geo' },
   { href: '/attributie', label: 'Attributie' },
   { href: '/inventory',  label: 'Voorraad' },
-  { href: '/klaviyo',    label: 'Klaviyo' },
-  { href: '/insights',        label: 'Insights' },
-  { href: '/email-intelligence', label: 'Email' },
-  { href: '/prijzen',  label: 'Prijzen' },
-  { href: '/cohort',    label: 'Cohort' },
-  { href: '/strategie', label: 'Strategie' },
-  { href: '/finance',       label: 'Finance' },
-  { href: '/klaviyo-flows', label: 'Flows' },
+  { href: '/email-hub',   label: 'Email' },
+  { href: '/prijzen',      label: 'Prijzen' },
+  { href: '/cohort',       label: 'Cohort' },
+  { href: '/strategie',    label: 'Strategie' },
+  { href: '/finance',      label: 'Finance' },
 ];
 
 export default function Nav() {
