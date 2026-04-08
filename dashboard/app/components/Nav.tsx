@@ -13,6 +13,7 @@ const LINKS = [
   { href: '/klaviyo',    label: 'Klaviyo' },
   { href: '/insights',        label: 'Insights' },
   { href: '/email-intelligence', label: 'Email' },
+  { href: '/prijzen',          label: 'Prijzen' },
 ];
 
 export default function Nav() {
