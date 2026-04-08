@@ -92,6 +92,14 @@ jobs:
         run: node src/scripts/sync-klaviyo-metrics.js
         continue-on-error: true
 
+      # ── 7b1. Sync Bol Advertising spend ─────────────────────────────────────
+      - name: Sync Bol Advertising
+        run: node src/scripts/sync-bol-advertising.js
+        continue-on-error: true
+        env:
+          BOL_ADVERTISING_CLIENT_ID: ${{ secrets.BOL_ADVERTISING_CLIENT_ID }}
+          BOL_ADVERTISING_CLIENT_SECRET: ${{ secrets.BOL_ADVERTISING_CLIENT_SECRET }}
+
       # ── 7b2. Sync Tier 1 (bundle pairs + seizoensgewichten) ─────────────────
       - name: Sync Tier 1 data
         run: node src/scripts/sync-tier1.js
