@@ -92,6 +92,11 @@ jobs:
         run: node src/scripts/sync-klaviyo-metrics.js
         continue-on-error: true
 
+      # ── 7b0. Sync COGS valuta (USD/EUR) ──────────────────────────────────────
+      - name: Sync COGS valuta
+        run: node src/scripts/sync-cogs-currency.js
+        continue-on-error: true
+
       # ── 7b1. Sync Bol Advertising spend ─────────────────────────────────────
       - name: Sync Bol Advertising
         run: node src/scripts/sync-bol-advertising.js
