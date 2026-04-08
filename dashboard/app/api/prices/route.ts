@@ -75,6 +75,19 @@ export async function GET() {
       return { ...ch, gross_profit, margin_pct };
     });
 
+    // ── Shopify inventory voor stock check ───────────────────────────────────
+    const shopifyRes = await fetch(
+      `https://${process.env.SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants`,
+      { headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_TOKEN! } }
+    );
+    const shopifyData = await shopifyRes.json();
+    const inventory: Record<string, { title: string; stock: number; price: number }> = {};
+    for (const p of shopifyData.products ?? []) {
+      for (const v of p.variants ?? []) {
+        if (v.sku) inventory[String(v.sku)] = { title: p.title, stock: v.inventory_quantity, price: parseFloat(v.price) };
+      }
+    }
+
     // ── 2. Prijs × volume per SKU ─────────────────────────────────────────────
     const priceResult = db.exec(`
       SELECT
