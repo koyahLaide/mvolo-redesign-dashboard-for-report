@@ -92,7 +92,12 @@ jobs:
         run: node src/scripts/sync-klaviyo-metrics.js
         continue-on-error: true
 
-      # ── 7c. Sync visitor sessions van Google Sheet ──────────────────────────
+      # ── 7c. Email timing analyse (wekelijks) ────────────────────────────────
+      - name: Email timing analyse
+        run: node src/scripts/analyze-email-timing.js
+        continue-on-error: true
+
+      # ── 7d. Sync visitor sessions van Google Sheet ──────────────────────────
       - name: Sync sessions
         run: node src/scripts/sync-sessions.js
         continue-on-error: true
