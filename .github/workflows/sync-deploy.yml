@@ -92,6 +92,11 @@ jobs:
         run: node src/scripts/sync-klaviyo-metrics.js
         continue-on-error: true
 
+      # ── 7b2. Sync Tier 1 (bundle pairs + seizoensgewichten) ─────────────────
+      - name: Sync Tier 1 data
+        run: node src/scripts/sync-tier1.js
+        continue-on-error: true
+
       # ── 7c. Email timing analyse (wekelijks) ────────────────────────────────
       - name: Email timing analyse
         run: node src/scripts/analyze-email-timing.js
