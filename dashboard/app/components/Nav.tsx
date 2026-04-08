@@ -11,7 +11,8 @@ const LINKS = [
   { href: '/attributie', label: 'Attributie' },
   { href: '/inventory',  label: 'Voorraad' },
   { href: '/klaviyo',    label: 'Klaviyo' },
-  { href: '/insights',   label: 'Insights' },
+  { href: '/insights',        label: 'Insights' },
+  { href: '/email-intelligence', label: 'Email' },
 ];
 
 export default function Nav() {
