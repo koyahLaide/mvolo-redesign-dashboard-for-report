@@ -36,8 +36,8 @@ export default function PrijzenPage() {
   useEffect(() => { load(); }, [load]);
 
   const maxRevenue = Math.max(...(data?.channels ?? []).map((c: any) => c.revenue), 1);
-  const alerts = (data?.priceAnalysis ?? []).filter((p: any) => p.alert);
-  const withTests = (data?.priceAnalysis ?? []).filter((p: any) => p.test_advice);
+  const alerts = (data?.priceAnalysis ?? []).filter((p: any) => p.alert && (p.stock === null || p.stock > 0));
+  const withTests = (data?.priceAnalysis ?? []).filter((p: any) => p.test_advice && (p.stock === null || p.stock > 5));
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -188,8 +188,13 @@ export default function PrijzenPage() {
                           >
                             <div className="flex items-center gap-3">
                               <span className="text-sm font-medium text-gray-200">{p.name}</span>
-                              {p.alert && (
+                              {p.alert && p.stock > 0 && (
                                 <span className="text-xs px-1.5 py-0.5 rounded bg-red-900/40 text-red-400">{p.alert}</span>
+                              )}
+                              {p.stock !== null && (
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${p.stock <= 0 ? 'bg-red-900/40 text-red-400' : p.stock <= 5 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-500'}`}>
+                                  {p.stock <= 0 ? 'Uitverkocht' : `${p.stock} op voorraad`}
+                                </span>
                               )}
                             </div>
                             <div className="flex items-center gap-6 text-xs text-right flex-shrink-0">

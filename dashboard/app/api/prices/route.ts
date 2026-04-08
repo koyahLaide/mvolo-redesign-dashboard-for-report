@@ -146,9 +146,12 @@ export async function GET() {
       const alert = bestVolMargin !== null && bestVolMargin < 30 ? 'LAGE MARGE' :
                     bestVolMargin !== null && bestVolMargin < 50 ? 'MARGE VERBETERING MOGELIJK' : null;
 
+      const stock = inventory[sku] ?? null;
+
       priceAnalysis.push({
         name: p.name,
         sku,
+        stock,
         cogs_sea: p.cogs_sea,
         cogs_air: p.cogs_air,
         total_qty: totalQty,
