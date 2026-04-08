@@ -16,7 +16,8 @@ const LINKS = [
   { href: '/prijzen',  label: 'Prijzen' },
   { href: '/cohort',    label: 'Cohort' },
   { href: '/strategie', label: 'Strategie' },
-  { href: '/finance',   label: 'Finance' },
+  { href: '/finance',       label: 'Finance' },
+  { href: '/klaviyo-flows', label: 'Flows' },
 ];
 
 export default function Nav() {
