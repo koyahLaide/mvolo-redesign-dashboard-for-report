@@ -272,6 +272,9 @@ function initDb() {
     'ALTER TABLE visitor_sessions ADD COLUMN had_dead_click INTEGER DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN scroll_depth REAL DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN clarity_session_id TEXT',
+    'ALTER TABLE competitor_prices ADD COLUMN prev_price REAL',
+    'ALTER TABLE competitor_prices ADD COLUMN price_change_pct REAL',
+    'ALTER TABLE competitor_prices ADD COLUMN price_changed INTEGER DEFAULT 0',
   ];
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_date ON klaviyo_metrics(date)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_name ON klaviyo_metrics(metric_name)`); } catch {}
