@@ -214,27 +214,27 @@ export async function GET() {
     });
 
 
-    // ── Marge per kanaal via order_items × COGS ───────────────────────────────
-    const channelMarginResult = db.exec(`
+    // ── Marge per kanaal via order_items × COGS (v2) ───────────────────────────
+    const cogChannelResult = db.exec(`
       SELECT o.channel, oi.sku, oi.quantity, oi.price
       FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
       WHERE o.created_at >= date('now', '-30 days')
     `);
-    const channelItems = channelMarginResult.length ? rowsToObjects(channelMarginResult[0]) : [];
+    const cogChannelItems = cogChannelResult.length ? rowsToObjects(cogChannelResult[0]) : [];
 
-    const channelMarginMap: Record<string, { revenue: number; cog: number; orders: Set<string>; }> = {};
-    channelItems.forEach((item: any) => {
+    const cogChannelMap: Record<string, { revenue: number; cog: number }> = {};
+    cogChannelItems.forEach((item: any) => {
       const ch = item.channel;
-      if (!channelMarginMap[ch]) channelMarginMap[ch] = { revenue: 0, cog: 0, orders: new Set() };
-      channelMarginMap[ch].revenue += (item.price ?? 0) * (item.quantity ?? 1);
+      if (!cogChannelMap[ch]) cogChannelMap[ch] = { revenue: 0, cog: 0 };
+      cogChannelMap[ch].revenue += (item.price ?? 0) * (item.quantity ?? 1);
       const cogProduct = cogsMap[item.sku];
       if (cogProduct?.cogs_sea) {
-        channelMarginMap[ch].cog += cogProduct.cogs_sea * (item.quantity ?? 1);
+        cogChannelMap[ch].cog += cogProduct.cogs_sea * (item.quantity ?? 1);
       }
     });
 
-    const channelMarginsByCog = Object.entries(channelMarginMap).map(([channel, d]: any) => ({
+    const channelMarginsByCog = Object.entries(cogChannelMap).map(([channel, d]: any) => ({
       channel,
       revenue: Math.round(d.revenue),
       cog: Math.round(d.cog),
