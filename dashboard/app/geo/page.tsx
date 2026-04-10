@@ -107,6 +107,7 @@ interface TooltipState {
 export default function GeoPage() {
   const [data, setData] = useState<GeoData | null>(null);
   const [period, setPeriod] = useState('all');
+  const [activeTab, setActiveTab] = useState<'kaart' | 'visitors'>('kaart');
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -361,6 +362,101 @@ export default function GeoPage() {
         </div>
       </div>
 
+    </div>}
+
+      {activeTab === 'visitors' && (
+        <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+          {/* Session stats */}
+          {data?.sessionStats && (
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+                <p className="text-xs text-gray-500">Getrackte sessies</p>
+                <p className="text-2xl font-bold text-white mt-1">{data.sessionStats.total_sessions}</p>
+                <p className="text-xs text-gray-600 mt-1">{data.sessionStats.unique_visitors} unieke bezoekers</p>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+                <p className="text-xs text-gray-500">Gem. sessies voor aankoop</p>
+                <p className="text-2xl font-bold text-indigo-400 mt-1">{data.sessionStats.avg_sessions_before_purchase}x</p>
+                <p className="text-xs text-gray-600 mt-1">max {data.sessionStats.max_sessions} sessies</p>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+                <p className="text-xs text-gray-500">Rage clicks</p>
+                <p className="text-2xl font-bold mt-1" style={{ color: (data.sessionStats.total_rage_clicks ?? 0) > 0 ? '#ef4444' : '#22c55e' }}>
+                  {data.sessionStats.total_rage_clicks ?? 0}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">frustratie signaal</p>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+                <p className="text-xs text-gray-500">Dead clicks</p>
+                <p className="text-2xl font-bold mt-1" style={{ color: (data.sessionStats.total_dead_clicks ?? 0) > 5 ? '#f59e0b' : '#22c55e' }}>
+                  {data.sessionStats.total_dead_clicks ?? 0}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">UX probleem signaal</p>
+              </div>
+            </div>
+          )}
+
+          {/* Visitors vs orders per land */}
+          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-800">
+              <h2 className="text-sm font-semibold text-gray-300">Visitors vs orders per land</h2>
+              <p className="text-xs text-gray-600 mt-0.5">Op basis van tracker.js sessies gekoppeld aan orders</p>
+            </div>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-800 text-gray-500 uppercase tracking-wider">
+                  <th className="px-5 py-2 text-left">Land</th>
+                  <th className="px-5 py-2 text-right">Visitors</th>
+                  <th className="px-5 py-2 text-right">Orders</th>
+                  <th className="px-5 py-2 text-right">Conv. rate</th>
+                  <th className="px-5 py-2 text-right">Gem. sessies</th>
+                  <th className="px-5 py-2 text-right">Rage clicks</th>
+                  <th className="px-5 py-2 text-right">Dead clicks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data?.visitorGeo ?? []).map((r: any) => (
+                  <tr key={r.country} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                    <td className="px-5 py-2.5 text-gray-300 font-medium">{r.country}</td>
+                    <td className="px-5 py-2.5 text-right text-gray-300 tabular-nums">{r.visitors}</td>
+                    <td className="px-5 py-2.5 text-right text-indigo-400 tabular-nums">{r.orders}</td>
+                    <td className="px-5 py-2.5 text-right tabular-nums">
+                      <span className="text-green-400">{r.visitors > 0 ? Math.round((r.orders / r.visitors) * 100) : 0}%</span>
+                    </td>
+                    <td className="px-5 py-2.5 text-right text-gray-400 tabular-nums">{r.avg_sessions_before_purchase}x</td>
+                    <td className="px-5 py-2.5 text-right tabular-nums" style={{ color: r.rage_clicks > 0 ? '#ef4444' : '#374151' }}>{r.rage_clicks || '—'}</td>
+                    <td className="px-5 py-2.5 text-right tabular-nums" style={{ color: r.dead_clicks > 0 ? '#f59e0b' : '#374151' }}>{r.dead_clicks || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Terugkeer verdeling */}
+          {(data?.returnVisits ?? []).length > 0 && (
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-800">
+                <h2 className="text-sm font-semibold text-gray-300">Sessies voor aankoop</h2>
+                <p className="text-xs text-gray-600 mt-0.5">Hoeveel sessies hebben bezoekers nodig voor ze kopen?</p>
+              </div>
+              <div className="p-6 space-y-3">
+                {(data?.returnVisits ?? []).map((r: any) => {
+                  const maxV = Math.max(...(data?.returnVisits ?? []).map((x: any) => x.visitors), 1);
+                  return (
+                    <div key={r.bucket} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400 w-24 flex-shrink-0">{r.bucket}</span>
+                      <div className="flex-1 h-5 bg-gray-800 rounded overflow-hidden relative">
+                        <div className="h-full bg-indigo-600/60 rounded" style={{ width: `${(r.visitors / maxV) * 100}%` }} />
+                        <span className="absolute inset-0 flex items-center px-2 text-xs text-white font-semibold">{r.visitors} bezoekers</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </main>
+      )}
     </div>
   );
 }
