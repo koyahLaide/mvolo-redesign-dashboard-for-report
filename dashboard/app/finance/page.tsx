@@ -345,7 +345,7 @@ export default function FinancePage() {
                       <h2 className="text-sm font-semibold text-gray-300">Alle kostenposten</h2>
                     </div>
                     <div className="overflow-y-auto max-h-96 divide-y divide-gray-800/30">
-                      {(data?.opexDetail ?? []).map((item: any, i: number) => (
+                      {(data?.opexDetail ?? []).filter((item: any) => item.category !== 'salary').map((item: any, i: number) => (
                         <div key={i} className="px-5 py-2 flex items-center justify-between">
                           <div>
                             <span className="text-xs text-gray-300">{item.name}</span>
