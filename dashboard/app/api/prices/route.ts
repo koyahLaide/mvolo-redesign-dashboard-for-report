@@ -58,18 +58,18 @@ export async function GET() {
     const skuCogs = skuCogsResult.length ? rowsToObjects(skuCogsResult[0]) : [];
 
     // Bereken gewogen gemiddelde marge per kanaal
-    const channelMargins: Record<string, { revenue: number; cogs: number; qty: number }> = {};
+    const channelMarginsByChannel: Record<string, { revenue: number; cogs: number; qty: number }> = {};
     skuCogs.forEach((r: any) => {
       const p = cogsMap[r.sku];
       if (!p || !p.cogs_sea) return;
-      if (!channelMargins[r.channel]) channelMargins[r.channel] = { revenue: 0, cogs: 0, qty: 0 };
-      channelMargins[r.channel].revenue += r.revenue;
-      channelMargins[r.channel].cogs += p.cogs_sea * r.qty;
-      channelMargins[r.channel].qty += r.qty;
+      if (!channelMarginsByChannel[r.channel]) channelMarginsByChannel[r.channel] = { revenue: 0, cogs: 0, qty: 0 };
+      channelMarginsByChannel[r.channel].revenue += r.revenue;
+      channelMarginsByChannel[r.channel].cogs += p.cogs_sea * r.qty;
+      channelMarginsByChannel[r.channel].qty += r.qty;
     });
 
     const channelWithMargin = channels.map((ch: any) => {
-      const m = channelMargins[ch.channel];
+      const m = channelMarginsByChannel[ch.channel];
       const gross_profit = m ? Math.round(m.revenue - m.cogs) : null;
       const margin_pct = m && m.revenue > 0 ? Math.round(((m.revenue - m.cogs) / m.revenue) * 100) : null;
       return { ...ch, gross_profit, margin_pct };
