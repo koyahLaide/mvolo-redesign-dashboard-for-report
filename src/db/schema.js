@@ -180,6 +180,64 @@ function initDb() {
       synced_at TEXT
     );
 
+
+    CREATE TABLE IF NOT EXISTS order_items (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id    TEXT NOT NULL,
+      sku         TEXT DEFAULT '',
+      title       TEXT,
+      quantity    INTEGER DEFAULT 1,
+      price       REAL DEFAULT 0,
+      order_date  TEXT,
+      UNIQUE(order_id, sku)
+    );
+    CREATE TABLE IF NOT EXISTS klaviyo_metrics (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      metric_name TEXT NOT NULL,
+      metric_id   TEXT NOT NULL,
+      date        TEXT NOT NULL,
+      count       INTEGER DEFAULT 0,
+      revenue     REAL DEFAULT 0,
+      synced_at   TEXT DEFAULT (datetime('now')),
+      UNIQUE(metric_id, date)
+    );
+    CREATE TABLE IF NOT EXISTS bundle_pairs (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      sku_a           TEXT NOT NULL,
+      sku_b           TEXT NOT NULL,
+      samen_gekocht   INTEGER DEFAULT 0,
+      cross_sell_freq INTEGER DEFAULT 0,
+      gem_dagen_cross INTEGER,
+      updated_at      TEXT DEFAULT (datetime('now')),
+      UNIQUE(sku_a, sku_b)
+    );
+    CREATE TABLE IF NOT EXISTS season_weights (
+      month       INTEGER NOT NULL,
+      avg_orders  REAL DEFAULT 0,
+      avg_revenue REAL DEFAULT 0,
+      weight      REAL DEFAULT 1.0,
+      updated_at  TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (month)
+    );
+    CREATE TABLE IF NOT EXISTS opex (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      category       TEXT NOT NULL,
+      name           TEXT NOT NULL,
+      amount         REAL NOT NULL,
+      frequency      TEXT NOT NULL DEFAULT 'monthly',
+      monthly_amount REAL NOT NULL,
+      btw            REAL DEFAULT 0,
+      updated_at     TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS exchange_rates (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      date      TEXT NOT NULL,
+      base      TEXT NOT NULL,
+      target    TEXT NOT NULL,
+      rate      REAL NOT NULL,
+      synced_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(date, base, target)
+    );
     CREATE TABLE IF NOT EXISTS klaviyo_flows (
       id           TEXT PRIMARY KEY,
       name         TEXT,
@@ -215,6 +273,11 @@ function initDb() {
     'ALTER TABLE visitor_sessions ADD COLUMN scroll_depth REAL DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN clarity_session_id TEXT',
   ];
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_date ON klaviyo_metrics(date)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_name ON klaviyo_metrics(metric_name)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_sku ON order_items(sku)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_date ON order_items(order_date)`); } catch {}
   for (const sql of migrationColumns) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
