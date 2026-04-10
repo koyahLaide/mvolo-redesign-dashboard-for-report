@@ -362,8 +362,6 @@ export default function GeoPage() {
         </div>
       </div>
 
-    </div>
-
       {activeTab === 'visitors' && (
         <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
           {/* Session stats */}
@@ -457,6 +455,8 @@ export default function GeoPage() {
           )}
         </main>
       )}
+    </div>
+
     </div>
   );
 }
