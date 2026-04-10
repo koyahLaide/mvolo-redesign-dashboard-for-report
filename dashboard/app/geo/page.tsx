@@ -456,7 +456,5 @@ export default function GeoPage() {
         </main>
       )}
     </div>
-
-    </div>
   );
 }
