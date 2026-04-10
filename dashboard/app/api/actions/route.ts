@@ -135,6 +135,81 @@ export async function GET() {
     `);
     const todaySkus = todaySkuResult.length ? rowsToObjects(todaySkuResult[0]) : [];
 
+
+    // ── Netto winst deze maand ────────────────────────────────────────────────
+    const revenueMonthResult = db.exec(`
+      SELECT
+        ROUND(SUM(total_price), 2) as revenue,
+        ROUND(SUM(total_price) / 1.21, 2) as revenue_excl
+      FROM orders
+      WHERE created_at >= date('now', 'start of month')
+        AND financial_status NOT IN ('refunded', 'voided')
+    `);
+    const revMonth = revenueMonthResult.length ? rowsToObjects(revenueMonthResult[0])[0] : null;
+
+    const cogMonthResult = db.exec(`
+      SELECT ROUND(SUM(oi.quantity * oi.price), 2) as total_items_revenue
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      WHERE o.created_at >= date('now', 'start of month')
+    `);
+    const cogMonth = cogMonthResult.length ? rowsToObjects(cogMonthResult[0])[0] : null;
+
+    const spendMonthResult = db.exec(`
+      SELECT ROUND(SUM(spend), 2) as total_spend
+      FROM ad_spend
+      WHERE date >= date('now', 'start of month')
+    `);
+    const spendMonth = spendMonthResult.length ? rowsToObjects(spendMonthResult[0])[0] : null;
+
+    const opexResult = db.exec(`SELECT ROUND(SUM(monthly_amount), 2) as total FROM opex`);
+    const opexTotal = opexResult.length ? rowsToObjects(opexResult[0])[0]?.total ?? 0 : 0;
+
+    // Schat COG als % van omzet als order_items leeg is
+    const revenueExcl = revMonth?.revenue_excl ?? 0;
+    const cogEstimate = cogMonth?.total_items_revenue > 0
+      ? Math.round(cogMonth.total_items_revenue * 0.28) // 28% COGS ratio
+      : Math.round(revenueExcl * 0.28);
+    const adSpend = spendMonth?.total_spend ?? 0;
+    const grossProfit = Math.round(revenueExcl - cogEstimate);
+    const netProfit = Math.round(grossProfit - opexTotal - adSpend);
+    const netMarginPct = revenueExcl > 0 ? Math.round((netProfit / revenueExcl) * 100) : 0;
+
+    // ── Return rate (30d) ─────────────────────────────────────────────────────
+    const returnResult = db.exec(`
+      SELECT
+        COUNT(*) as total_orders,
+        SUM(CASE WHEN financial_status IN ('refunded','partially_refunded') THEN 1 ELSE 0 END) as returns,
+        ROUND(100.0 * SUM(CASE WHEN financial_status IN ('refunded','partially_refunded') THEN 1 ELSE 0 END) / COUNT(*), 1) as return_rate
+      FROM orders
+      WHERE created_at >= date('now', '-30 days')
+    `);
+    const returnStats = returnResult.length ? rowsToObjects(returnResult[0])[0] : null;
+
+    // ── Competitor prijs alerts ───────────────────────────────────────────────
+    const compAlertResult = db.exec(`
+      SELECT competitor, product_name, price, category, url,
+        price_change_pct, price_changed
+      FROM competitor_prices
+      WHERE date = (SELECT MAX(date) FROM competitor_prices)
+        AND price_changed = 1
+      ORDER BY ABS(price_change_pct) DESC
+      LIMIT 3
+    `);
+    const competitorAlerts = compAlertResult.length ? rowsToObjects(compAlertResult[0]) : [];
+
+    // ── Competitor goedkoper dan Mvolo ────────────────────────────────────────
+    const cheaperCompResult = db.exec(`
+      SELECT cp.competitor, cp.category, MIN(cp.price) as min_price
+      FROM competitor_prices cp
+      WHERE cp.date = (SELECT MAX(date) FROM competitor_prices)
+        AND cp.category IN ('led_face_mask', 'rlt_panel', 'infrared_double_head')
+      GROUP BY cp.competitor, cp.category
+      ORDER BY min_price ASC
+      LIMIT 5
+    `);
+    const cheaperCompetitors = cheaperCompResult.length ? rowsToObjects(cheaperCompResult[0]) : [];
+
     db.close();
 
     return NextResponse.json({
@@ -156,6 +231,22 @@ export async function GET() {
       channel_wow:       channelWow,
       email_advice:      emailAdvice,
       today_skus:        todaySkus,
+      profit: {
+        revenue_excl:   revenueExcl,
+        cog:            cogEstimate,
+        gross_profit:   grossProfit,
+        opex:           opexTotal,
+        ad_spend:       adSpend,
+        net_profit:     netProfit,
+        net_margin_pct: netMarginPct,
+      },
+      return_rate: {
+        total_orders: returnStats?.total_orders ?? 0,
+        returns:      returnStats?.returns ?? 0,
+        rate:         returnStats?.return_rate ?? 0,
+      },
+      competitor_alerts:    competitorAlerts,
+      cheaper_competitors:  cheaperCompetitors,
     });
 
   } catch (err: any) {
