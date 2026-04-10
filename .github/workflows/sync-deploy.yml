@@ -92,6 +92,11 @@ jobs:
         run: node src/scripts/sync-klaviyo-metrics.js
         continue-on-error: true
 
+      # ── 7a8. Sync OPEX data ───────────────────────────────────────────────────
+      - name: Sync OPEX
+        run: node src/scripts/sync-opex.js
+        continue-on-error: true
+
       # ── 7b0. Sync COGS valuta (USD/EUR) ──────────────────────────────────────
       - name: Sync COGS valuta
         run: node src/scripts/sync-cogs-currency.js
