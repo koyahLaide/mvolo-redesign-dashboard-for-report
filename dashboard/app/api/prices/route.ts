@@ -234,7 +234,7 @@ export async function GET() {
       }
     });
 
-    const channelMargins = Object.entries(channelMarginMap).map(([channel, d]: any) => ({
+    const channelMarginsByCog = Object.entries(channelMarginMap).map(([channel, d]: any) => ({
       channel,
       revenue: Math.round(d.revenue),
       cog: Math.round(d.cog),
@@ -276,7 +276,7 @@ export async function GET() {
     db.close();
 
     return NextResponse.json({
-      channelMargins,
+      channelMargins: channelMarginsByCog,
       monthlyMargins,
       channels: channelWithMargin,
       priceAnalysis,
@@ -286,7 +286,7 @@ export async function GET() {
   } catch (err: any) {
     console.error('Prices API error:', err.message);
     return NextResponse.json({
-      channelMargins,
+      channelMargins: channelMarginsByCog,
       monthlyMargins, error: err.message }, { status: 500 });
   }
 }
