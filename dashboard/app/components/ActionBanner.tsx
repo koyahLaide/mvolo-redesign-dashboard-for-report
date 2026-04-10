@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 function formatEuro(v: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
@@ -31,20 +32,22 @@ export default function ActionBanner() {
 
   if (loading || !data) return null;
 
-  const { wow, today, critical_products, channel_wow, email_advice } = data;
-  const criticalCount = critical_products?.filter((p: any) => p.urgency === 'KRITIEK').length ?? 0;
-  const urgentCount   = critical_products?.filter((p: any) => p.urgency !== 'KRITIEK').length ?? 0;
-  const anomalies     = (channel_wow ?? []).filter((c: any) => c.change_pct !== null && Math.abs(c.change_pct) >= 30 && c.last_week >= 3);
+  const { wow, today, critical_products, channel_wow, email_advice, profit, return_rate, competitor_alerts } = data;
+  const criticalCount  = critical_products?.filter((p: any) => p.urgency === 'KRITIEK').length ?? 0;
+  const urgentCount    = critical_products?.filter((p: any) => p.urgency !== 'KRITIEK').length ?? 0;
+  const anomalies      = (channel_wow ?? []).filter((c: any) => c.change_pct !== null && Math.abs(c.change_pct) >= 30 && c.last_week >= 3);
+  const hasCompAlerts  = (competitor_alerts ?? []).length > 0;
+  const returnRate     = return_rate?.rate ?? 0;
 
   return (
     <div className="border border-gray-800 rounded-xl overflow-hidden bg-gray-900/50 mb-2">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800/60">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-white uppercase tracking-wider">Actie vereist</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-white uppercase tracking-wider">Dashboard</span>
           {criticalCount > 0 && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/50 text-red-400 font-semibold">
-              {criticalCount} kritiek
+              {criticalCount} voorraad kritiek
             </span>
           )}
           {urgentCount > 0 && (
@@ -57,6 +60,16 @@ export default function ActionBanner() {
               {anomalies.length} kanaal anomalie
             </span>
           )}
+          {hasCompAlerts && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/50 text-purple-400 font-semibold">
+              prijswijziging competitor
+            </span>
+          )}
+          {returnRate > 8 && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/50 text-red-400 font-semibold">
+              return rate {returnRate}%
+            </span>
+          )}
         </div>
         <button onClick={() => setCollapsed(c => !c)} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
           {collapsed ? 'Uitklappen ↓' : 'Inklappen ↑'}
@@ -64,7 +77,7 @@ export default function ActionBanner() {
       </div>
 
       {!collapsed && (
-        <div className="grid grid-cols-4 divide-x divide-gray-800/60">
+        <div className="grid grid-cols-5 divide-x divide-gray-800/60">
 
           {/* Vandaag + WoW */}
           <div className="px-5 py-4 space-y-3">
@@ -82,16 +95,45 @@ export default function ActionBanner() {
                 <span className="text-sm font-semibold text-white">{formatEuro(wow?.this_week_rev ?? 0)}</span>
                 <ChangeChip pct={wow?.rev_change_pct ?? null} />
               </div>
-              <p className="text-xs text-gray-600">{wow?.this_week_orders} orders · vorige week {formatEuro(wow?.last_week_rev ?? 0)}</p>
+              <p className="text-xs text-gray-600">{wow?.this_week_orders} orders</p>
             </div>
           </div>
 
-          {/* Kritieke voorraad */}
+          {/* Netto winst */}
+          <div className="px-5 py-4 space-y-3">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+              Winst deze maand
+              <Link href="/finance" className="ml-2 text-indigo-500 hover:text-indigo-400 normal-case">→</Link>
+            </p>
+            {profit ? (
+              <>
+                <div>
+                  <p className="text-xs text-gray-600">Omzet excl. BTW</p>
+                  <p className="text-sm font-semibold text-white">{formatEuro(profit.revenue_excl)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600">Brutomarge</p>
+                  <p className="text-sm font-semibold text-green-400">{formatEuro(profit.gross_profit)}</p>
+                </div>
+                <div className="border-t border-gray-800/60 pt-2">
+                  <p className="text-xs text-gray-600">Nettoresultaat</p>
+                  <p className="text-xl font-bold" style={{ color: profit.net_profit > 0 ? '#22c55e' : '#ef4444' }}>
+                    {formatEuro(profit.net_profit)}
+                  </p>
+                  <p className="text-xs text-gray-600">{profit.net_margin_pct}% marge · na OPEX + adspend</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-gray-600">Geen data</p>
+            )}
+          </div>
+
+          {/* Voorraad alerts */}
           <div className="px-5 py-4 space-y-2">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
-              Voorraad alerts
+              Voorraad
               {critical_products?.length > 0 && (
-                <a href="/inventory" className="ml-2 text-indigo-500 hover:text-indigo-400 normal-case">→ Bekijk alle</a>
+                <Link href="/inventory" className="ml-2 text-indigo-500 hover:text-indigo-400 normal-case">→ Bekijk alle</Link>
               )}
             </p>
             {critical_products?.length === 0 ? (
@@ -101,7 +143,7 @@ export default function ActionBanner() {
                 <div key={p.sku} className="flex items-center justify-between gap-2">
                   <span className="text-xs text-gray-300 truncate">{p.name}</span>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span className={`text-xs font-bold tabular-nums ${p.stock < 0 ? 'text-red-400' : p.stock === 0 ? 'text-orange-400' : 'text-yellow-400'}`}>
+                    <span className={`text-xs font-bold tabular-nums ${p.stock <= 0 ? 'text-red-400' : 'text-yellow-400'}`}>
                       {p.stock}
                     </span>
                     <span className={`text-xs px-1 py-0.5 rounded ${p.urgency === 'KRITIEK' ? 'bg-red-900/40 text-red-400' : 'bg-orange-900/40 text-orange-400'}`}>
@@ -111,6 +153,14 @@ export default function ActionBanner() {
                 </div>
               ))
             )}
+            {/* Return rate */}
+            <div className="border-t border-gray-800/60 pt-2 mt-2">
+              <p className="text-xs text-gray-500">Return rate (30d)</p>
+              <p className="text-sm font-semibold mt-0.5" style={{ color: returnRate > 8 ? '#ef4444' : returnRate > 5 ? '#f59e0b' : '#22c55e' }}>
+                {returnRate}%
+                <span className="text-xs text-gray-600 ml-1">({return_rate?.returns ?? 0} returns)</span>
+              </p>
+            </div>
           </div>
 
           {/* Kanaal WoW */}
@@ -120,35 +170,40 @@ export default function ActionBanner() {
               <div key={c.channel} className="flex items-center justify-between gap-2">
                 <span className="text-xs text-gray-300 truncate capitalize">{c.channel?.replace(/_/g, ' ')}</span>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs text-gray-500 tabular-nums">{c.this_week} orders</span>
+                  <span className="text-xs text-gray-500 tabular-nums">{c.this_week}</span>
                   <ChangeChip pct={c.change_pct} />
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Email advies */}
+          {/* Competitor alerts + Email */}
           <div className="px-5 py-4 space-y-2">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
-              Email advies
-              <a href="/email-intelligence" className="ml-2 text-indigo-500 hover:text-indigo-400 normal-case">→ Details</a>
+              Competitors
+              <Link href="/competitor-prices" className="ml-2 text-indigo-500 hover:text-indigo-400 normal-case">→</Link>
             </p>
-            {email_advice ? (
-              <div className="space-y-2">
-                <div className="bg-indigo-950/40 border border-indigo-800/30 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400">Beste moment</p>
-                  <p className="text-sm font-semibold text-indigo-300 mt-0.5">
-                    {email_advice.best_day} · {email_advice.best_times?.[1] ?? '16:00–18:00'}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-0.5">€{email_advice.rev_per_email} per email</p>
-                </div>
-                <p className="text-xs text-gray-500">{email_advice.best_campaign_type}</p>
-                <a href="/inventory" className="text-xs text-yellow-500 hover:text-yellow-400 block">
-                  ⚠ Check voorraad voor campagne planning
-                </a>
-              </div>
+            {(competitor_alerts ?? []).length === 0 ? (
+              <p className="text-xs text-green-400">✓ Geen prijswijzigingen</p>
             ) : (
-              <p className="text-xs text-gray-600">Nog geen timing rapport beschikbaar</p>
+              (competitor_alerts ?? []).slice(0, 3).map((a: any, i: number) => (
+                <div key={i} className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-gray-300 truncate">{a.competitor}</span>
+                  <span className={`text-xs font-semibold ${a.price_change_pct < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    {a.price_change_pct > 0 ? '+' : ''}{Math.round(a.price_change_pct)}%
+                  </span>
+                </div>
+              ))
+            )}
+            {/* Email advies */}
+            {email_advice && (
+              <div className="border-t border-gray-800/60 pt-2 mt-2">
+                <p className="text-xs text-gray-500">Beste email moment</p>
+                <p className="text-xs font-semibold text-indigo-300 mt-0.5">
+                  {email_advice.best_day} · {email_advice.best_times?.[1] ?? '16:00-18:00'}
+                </p>
+                <p className="text-xs text-gray-600">€{email_advice.rev_per_email}/mail</p>
+              </div>
             )}
           </div>
 
