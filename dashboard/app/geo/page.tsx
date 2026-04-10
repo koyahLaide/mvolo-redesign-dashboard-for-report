@@ -362,7 +362,7 @@ export default function GeoPage() {
         </div>
       </div>
 
-    </div>}
+    </div>
 
       {activeTab === 'visitors' && (
         <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
