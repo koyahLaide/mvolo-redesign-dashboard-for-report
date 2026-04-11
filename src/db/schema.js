@@ -314,38 +314,38 @@ function initDb() {
   }
 
 
+
+
   // ── Seed OPEX als tabel leeg is ─────────────────────────────────────────────
-  const opexCount = db.prepare('SELECT COUNT(*) as cnt FROM opex').get();
-  if (opexCount.cnt === 0) {
-    const opexData = [
-      { category: 'software',   name: 'Online kantoor',  amount: 48.39,  frequency: 'monthly', monthly_amount: 48.39,  btw: 10.16 },
-      { category: 'software',   name: 'Backlinks',        amount: 99.26,  frequency: 'monthly', monthly_amount: 99.26,  btw: 20.84 },
-      { category: 'software',   name: 'Marktmentor',      amount: 83.50,  frequency: 'monthly', monthly_amount: 83.50,  btw: 17.53 },
-      { category: 'software',   name: 'Awin',             amount: 75,     frequency: 'monthly', monthly_amount: 75,     btw: 10    },
-      { category: 'operations', name: 'Laptop',           amount: 89.84,  frequency: 'monthly', monthly_amount: 89.84,  btw: 14    },
-      { category: 'software',   name: 'Affiliate',        amount: 105,    frequency: 'monthly', monthly_amount: 105,    btw: 0     },
-      { category: 'operations', name: 'Giften',           amount: 90,     frequency: 'monthly', monthly_amount: 90,     btw: 0     },
-      { category: 'software',   name: 'Shopify',          amount: 150,    frequency: 'monthly', monthly_amount: 150,    btw: 31.5  },
-      { category: 'software',   name: 'Odido',            amount: 56.12,  frequency: 'monthly', monthly_amount: 56.12,  btw: 11.79 },
-      { category: 'finance',    name: 'ING Bank',         amount: 51,     frequency: 'monthly', monthly_amount: 51,     btw: 0     },
-      { category: 'software',   name: 'Slack',            amount: 57.75,  frequency: 'monthly', monthly_amount: 57.75,  btw: 12.13 },
-      { category: 'software',   name: 'Channeble',        amount: 82,     frequency: 'monthly', monthly_amount: 82,     btw: 17.22 },
-      { category: 'software',   name: 'Klaviyo',          amount: 17.79,  frequency: 'monthly', monthly_amount: 17.79,  btw: 3.74  },
-      { category: 'software',   name: 'Claude + ChatGPT', amount: 347.14, frequency: 'monthly', monthly_amount: 347.14, btw: 0     },
-      { category: 'operations', name: 'NH Fulfilment',    amount: 1000,   frequency: 'monthly', monthly_amount: 1000,   btw: 210   },
-      { category: 'software',   name: 'Trackbee',         amount: 48,     frequency: 'monthly', monthly_amount: 48,     btw: 10.08 },
-      { category: 'software',   name: 'Google Cloud',     amount: 8.17,   frequency: 'monthly', monthly_amount: 8.17,   btw: 1.71  },
-      { category: 'salary',     name: 'Team',             amount: 1467,   frequency: 'monthly', monthly_amount: 1467,   btw: 98.7  },
-      { category: 'software',   name: 'Webwinkelkeur',    amount: 180,    frequency: 'yearly',  monthly_amount: 15,     btw: 37.8  },
-      { category: 'software',   name: 'Mijndomein',       amount: 72,     frequency: 'yearly',  monthly_amount: 6,      btw: 15.12 },
-      { category: 'software',   name: 'Vimexx',           amount: 50,     frequency: 'yearly',  monthly_amount: 4.17,   btw: 10.5  },
-      { category: 'software',   name: 'GS1',              amount: 1413,   frequency: 'yearly',  monthly_amount: 117.75, btw: 29.61 },
-      { category: 'freelance',  name: 'Online jobs',      amount: 300,    frequency: 'yearly',  monthly_amount: 25,     btw: 0     },
-      { category: 'freelance',  name: 'Higgsfield',       amount: 873,    frequency: 'yearly',  monthly_amount: 72.75,  btw: 183.33},
-    ];
-    const insertOpex = db.prepare('INSERT OR IGNORE INTO opex (category, name, amount, frequency, monthly_amount, btw) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertAll = db.transaction(rows => rows.forEach(r => insertOpex.run(r.category, r.name, r.amount, r.frequency, r.monthly_amount, r.btw)));
-    insertAll(opexData);
+  if (db.prepare('SELECT COUNT(*) as cnt FROM opex').get().cnt === 0) {
+    const opexInsert = db.prepare('INSERT OR IGNORE INTO opex (category, name, amount, frequency, monthly_amount, btw) VALUES (?, ?, ?, ?, ?, ?)');
+    const opexSeed = db.transaction(rows => rows.forEach(r => opexInsert.run(r[0], r[1], r[2], r[3], r[4], r[5])));
+    opexSeed([
+      ['software','Online kantoor',48.39,'monthly',48.39,10.16],
+      ['software','Backlinks',99.26,'monthly',99.26,20.84],
+      ['software','Marktmentor',83.50,'monthly',83.50,17.53],
+      ['software','Awin',75,'monthly',75,10],
+      ['operations','Laptop',89.84,'monthly',89.84,14],
+      ['software','Affiliate',105,'monthly',105,0],
+      ['operations','Giften',90,'monthly',90,0],
+      ['software','Shopify',150,'monthly',150,31.5],
+      ['software','Odido',56.12,'monthly',56.12,11.79],
+      ['finance','ING Bank',51,'monthly',51,0],
+      ['software','Slack',57.75,'monthly',57.75,12.13],
+      ['software','Channeble',82,'monthly',82,17.22],
+      ['software','Klaviyo',17.79,'monthly',17.79,3.74],
+      ['software','Claude + ChatGPT',347.14,'monthly',347.14,0],
+      ['operations','NH Fulfilment',1000,'monthly',1000,210],
+      ['software','Trackbee',48,'monthly',48,10.08],
+      ['software','Google Cloud',8.17,'monthly',8.17,1.71],
+      ['salary','Team',1467,'monthly',1467,98.7],
+      ['software','Webwinkelkeur',180,'yearly',15,37.8],
+      ['software','Mijndomein',72,'yearly',6,15.12],
+      ['software','Vimexx',50,'yearly',4.17,10.5],
+      ['software','GS1',1413,'yearly',117.75,29.61],
+      ['freelance','Online jobs',300,'yearly',25,0],
+      ['freelance','Higgsfield',873,'yearly',72.75,183.33],
+    ]);
   }
 
   _db = db;
