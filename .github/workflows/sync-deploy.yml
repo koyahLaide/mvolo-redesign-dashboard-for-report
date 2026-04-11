@@ -36,10 +36,6 @@ jobs:
           fetch-depth: 0
           clean: true
 
-      # ── 1b. Fix schema duplicates na checkout ───────────────────────────────────
-      - name: Fix schema duplicates
-        run: |
-          sed -i 's/const opexCount/let opexCount/g' src/db/schema.js || true
 
       # ── 2. Cache database ───────────────────────────────────────────────────
       - name: Cache database
