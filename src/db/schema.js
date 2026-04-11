@@ -272,6 +272,8 @@ function initDb() {
     'ALTER TABLE visitor_sessions ADD COLUMN had_dead_click INTEGER DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN scroll_depth REAL DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN clarity_session_id TEXT',
+    'ALTER TABLE order_items ADD COLUMN marketplace TEXT DEFAULT \'shopify\'',
+    'ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT \'\'',
     'ALTER TABLE competitor_prices ADD COLUMN prev_price REAL',
     'ALTER TABLE competitor_prices ADD COLUMN price_change_pct REAL',
     'ALTER TABLE competitor_prices ADD COLUMN price_changed INTEGER DEFAULT 0',
