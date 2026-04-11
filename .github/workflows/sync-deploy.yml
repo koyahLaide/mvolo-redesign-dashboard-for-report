@@ -46,7 +46,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/mvolo.db
-          key: mvolo-db-v2-${{ github.run_number }} github.run_number }}-${{ hashFiles('src/db/schema.js') }}
+          key: mvolo-db-v3-${{ github.run_number }}
           restore-keys: |
             mvolo-db-v2- hashFiles('src/db/schema.js') }}-
             mvolo-db-
