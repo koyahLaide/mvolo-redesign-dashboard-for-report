@@ -316,37 +316,6 @@ function initDb() {
 
 
 
-  // ── Seed OPEX als tabel leeg is ─────────────────────────────────────────────
-  if (db.prepare('SELECT COUNT(*) as cnt FROM opex').get().cnt === 0) {
-    const opexInsert = db.prepare('INSERT OR IGNORE INTO opex (category, name, amount, frequency, monthly_amount, btw) VALUES (?, ?, ?, ?, ?, ?)');
-    const opexSeed = db.transaction(rows => rows.forEach(r => opexInsert.run(r[0], r[1], r[2], r[3], r[4], r[5])));
-    opexSeed([
-      ['software','Online kantoor',48.39,'monthly',48.39,10.16],
-      ['software','Backlinks',99.26,'monthly',99.26,20.84],
-      ['software','Marktmentor',83.50,'monthly',83.50,17.53],
-      ['software','Awin',75,'monthly',75,10],
-      ['operations','Laptop',89.84,'monthly',89.84,14],
-      ['software','Affiliate',105,'monthly',105,0],
-      ['operations','Giften',90,'monthly',90,0],
-      ['software','Shopify',150,'monthly',150,31.5],
-      ['software','Odido',56.12,'monthly',56.12,11.79],
-      ['finance','ING Bank',51,'monthly',51,0],
-      ['software','Slack',57.75,'monthly',57.75,12.13],
-      ['software','Channeble',82,'monthly',82,17.22],
-      ['software','Klaviyo',17.79,'monthly',17.79,3.74],
-      ['software','Claude + ChatGPT',347.14,'monthly',347.14,0],
-      ['operations','NH Fulfilment',1000,'monthly',1000,210],
-      ['software','Trackbee',48,'monthly',48,10.08],
-      ['software','Google Cloud',8.17,'monthly',8.17,1.71],
-      ['salary','Team',1467,'monthly',1467,98.7],
-      ['software','Webwinkelkeur',180,'yearly',15,37.8],
-      ['software','Mijndomein',72,'yearly',6,15.12],
-      ['software','Vimexx',50,'yearly',4.17,10.5],
-      ['software','GS1',1413,'yearly',117.75,29.61],
-      ['freelance','Online jobs',300,'yearly',25,0],
-      ['freelance','Higgsfield',873,'yearly',72.75,183.33],
-    ]);
-  }
 
   _db = db;
   return db;
