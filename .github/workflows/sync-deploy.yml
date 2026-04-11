@@ -88,6 +88,7 @@ jobs:
       - name: Sync order items
         run: node src/scripts/backfill-order-items.js
         continue-on-error: true
+        continue-on-error: true
 
       # ── 7b. Sync Klaviyo metrics ────────────────────────────────────────────
       - name: Sync Klaviyo metrics
