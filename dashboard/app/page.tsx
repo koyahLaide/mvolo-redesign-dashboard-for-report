@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Nav from './components/Nav';
@@ -667,9 +666,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-
-        {/* Maandelijkse omzet + brutomarge grafiek */}
-        <MaandMargeGrafiek />
 
         {/* Spend / Revenue / Profit line chart */}
         {stats.dailySpend.length > 0 && (
