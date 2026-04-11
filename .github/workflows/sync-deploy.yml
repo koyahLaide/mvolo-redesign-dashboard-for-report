@@ -84,7 +84,25 @@ jobs:
 
       # ── 6. Run ETL sync ─────────────────────────────────────────────────────
       - name: Fix schema duplicates
-        run: sed -i 's/const opexCount/let opexCount/g' src/db/schema.js || true
+        run: |
+          echo "=== VOOR FIX ==="
+          grep -n "opexCount" src/db/schema.js || echo "geen opexCount gevonden"
+          python3 -c "
+import re
+with open('src/db/schema.js') as f: c = f.read()
+# Verwijder het tweede seed blok compleet
+blocks = c.split('// ── Seed OPEX')
+if len(blocks) > 2:
+    c = blocks[0] + '// ── Seed OPEX' + blocks[1]
+    with open('src/db/schema.js', 'w') as f: f.write(c)
+    print('Dubbel blok verwijderd')
+else:
+    print('Geen dubbel blok gevonden, alleen renamen')
+    c = c.replace('const opexCount', 'let opexCount')
+    with open('src/db/schema.js', 'w') as f: f.write(c)
+"
+          echo "=== NA FIX ==="
+          grep -n "opexCount" src/db/schema.js || echo "geen opexCount gevonden" 
 
       - name: Run sync
         run: node src/index.js sync
