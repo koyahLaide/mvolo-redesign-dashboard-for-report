@@ -286,14 +286,7 @@ function initDb() {
   }
 
 
-  // ── Seed OPEX als tabel leeg is ─────────────────────────────────────────────
-  const opexCount = db.prepare('SELECT COUNT(*) as cnt FROM opex').get();
-  if (opexCount.cnt === 0) {
-    const opexData = [
-      { category: 'software',   name: 'Online kantoor',  amount: 48.39,  frequency: 'monthly', monthly_amount: 48.39,  btw: 10.16 },
-      { category: 'software',   name: 'Backlinks',        amount: 99.26,  frequency: 'monthly', monthly_amount: 99.26,  btw: 20.84 },
-      { category: 'software',   name: 'Marktmentor',      amount: 83.50,  frequency: 'monthly', monthly_amount: 83.50,  btw: 17.53 },
-      { category: 'software',   name: 'Awin',             amount: 75,     frequency: 'monthly', monthly_amount: 75,     btw: 10    },
+,
       { category: 'operations', name: 'Laptop',           amount: 89.84,  frequency: 'monthly', monthly_amount: 89.84,  btw: 14    },
       { category: 'software',   name: 'Affiliate',        amount: 105,    frequency: 'monthly', monthly_amount: 105,    btw: 0     },
       { category: 'operations', name: 'Giften',           amount: 90,     frequency: 'monthly', monthly_amount: 90,     btw: 0     },
