@@ -138,15 +138,14 @@ jobs:
         run: |
           mkdir -p dashboard/data
           cp data/mvolo.db dashboard/data/mvolo.db
+          sed -i 's|<MaandMargeGrafiek />||g' dashboard/app/page.tsx || true
+          sed -i '/Maandelijkse omzet.*brutomarge/d' dashboard/app/page.tsx || true
 
       # ── 9b. Force patch page.tsx op runner ─────────────────────────────────────
       # ── 10. Install dashboard deps ──────────────────────────────────────────
       - name: Install dashboard dependencies
         working-directory: dashboard
-        run: |
-          sed -i 's|<MaandMargeGrafiek />||g' app/page.tsx || true
-          sed -i '/Maandelijkse omzet.*brutomarge grafiek/d' app/page.tsx || true
-          npm ci
+        run: npm ci
 
       # ── 11. Deploy to Vercel ────────────────────────────────────────────────
       - name: Deploy to Vercel
