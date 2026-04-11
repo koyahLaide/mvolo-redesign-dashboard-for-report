@@ -155,5 +155,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: npx vercel --prod --yes --force --token ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          sed -i '/MaandMargeGrafiek/d' app/page.tsx
+          npx vercel --prod --yes --force --token ${{ secrets.VERCEL_TOKEN }}
 # Wed Apr  1 10:14:13 CEST 2026
