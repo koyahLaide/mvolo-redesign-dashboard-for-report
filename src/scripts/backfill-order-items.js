@@ -97,6 +97,8 @@ async function fetchBolItemsFromDb(db) {
 async function run() {
   console.log(chalk.cyan('\n  [order-items] Backfill starten...\n'));
   const db = initDb();
+try { db.prepare("ALTER TABLE order_items ADD COLUMN marketplace TEXT DEFAULT 'shopify'").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT ''").run(); } catch(e) {}
 
 // Zorg dat marketplace en channel kolommen bestaan
 try { db.exec("ALTER TABLE order_items ADD COLUMN marketplace TEXT DEFAULT 'shopify'"); } catch {}
