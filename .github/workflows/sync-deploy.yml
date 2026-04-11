@@ -28,6 +28,12 @@ jobs:
       KLAVIYO_API_KEY: ${{ secrets.KLAVIYO_API_KEY }}
 
     steps:
+      # ── 0. Verify schema.js heeft geen duplicaten ──────────────────────────────
+      - name: Fix schema duplicates
+        run: |
+          sed -i 's/const opexCount/let opexCount/g' src/db/schema.js
+          sed -i 's/const opexInsert/let opexInsert/g' src/db/schema.js
+
       # ── 1. Checkout root repo ───────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
