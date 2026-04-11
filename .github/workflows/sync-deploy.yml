@@ -138,6 +138,11 @@ jobs:
           mkdir -p dashboard/data
           cp data/mvolo.db dashboard/data/mvolo.db
 
+      # ── 9b. Force patch page.tsx op runner ─────────────────────────────────────
+      - name: Patch page.tsx
+        run: |
+          grep -n "MaandMargeGrafiek" dashboard/app/page.tsx && sed -i '/MaandMargeGrafiek/d' dashboard/app/page.tsx || echo "page.tsx is clean"
+
       # ── 10. Install dashboard deps ──────────────────────────────────────────
       - name: Install dashboard dependencies
         working-directory: dashboard
