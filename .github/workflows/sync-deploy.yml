@@ -43,9 +43,7 @@ jobs:
         with:
           path: data/mvolo.db
           key: mvolo-db-v3-${{ github.run_number }}
-          restore-keys: |
-            mvolo-db-v2- hashFiles('src/db/schema.js') }}-
-            mvolo-db-
+
 
       # ── 3. Create data directory ────────────────────────────────────────────
       - name: Create data directory
