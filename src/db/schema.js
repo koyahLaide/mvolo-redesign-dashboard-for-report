@@ -285,7 +285,6 @@ function initDb() {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
 
-
   _db = db;
   return db;
 }
