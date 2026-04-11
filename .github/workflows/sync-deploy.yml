@@ -41,8 +41,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/mvolo.db
-          key: mvolo-db-${{ github.run_number }}
+          key: mvolo-db-${{ github.run_number }}-${{ hashFiles('src/db/schema.js') }}
           restore-keys: |
+            mvolo-db-${{ hashFiles('src/db/schema.js') }}-
             mvolo-db-
 
       # ── 3. Create data directory ────────────────────────────────────────────
