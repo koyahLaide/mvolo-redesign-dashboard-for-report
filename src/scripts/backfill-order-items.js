@@ -12,7 +12,13 @@
 require('dotenv').config();
 const axios     = require('axios');
 const chalk     = require('chalk');
+
 const { initDb } = require('../db/schema');
+
+// Migrations
+try { db.prepare("ALTER TABLE order_items ADD COLUMN marketplace TEXT DEFAULT 'shopify'").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT ''").run(); } catch(e) {}
+
 
 const STORE   = process.env.SHOPIFY_STORE;
 const TOKEN   = process.env.SHOPIFY_TOKEN;
