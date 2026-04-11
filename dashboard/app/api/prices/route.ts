@@ -214,79 +214,9 @@ export async function GET() {
     });
 
 
-    // ── Marge per kanaal via order_items × COGS (v2) ───────────────────────────
-    const cogChannelResult = db.exec(`
-      SELECT o.channel, oi.sku, oi.quantity, oi.price
-      FROM order_items oi
-      JOIN orders o ON o.id = oi.order_id
-      WHERE o.created_at >= date('now', '-30 days')
-    `);
-    const cogChannelItems = cogChannelResult.length ? rowsToObjects(cogChannelResult[0]) : [];
-
-    const cogChannelMap: Record<string, { revenue: number; cog: number }> = {};
-    cogChannelItems.forEach((item: any) => {
-      const ch = item.channel;
-      if (!cogChannelMap[ch]) cogChannelMap[ch] = { revenue: 0, cog: 0 };
-      cogChannelMap[ch].revenue += (item.price ?? 0) * (item.quantity ?? 1);
-      const cogProduct = cogsMap[item.sku];
-      if (cogProduct?.cogs_sea) {
-        cogChannelMap[ch].cog += cogProduct.cogs_sea * (item.quantity ?? 1);
-      }
-    });
-
-    const channelMarginsByCog = Object.entries(cogChannelMap).map(([channel, d]: any) => ({
-      channel,
-      revenue: Math.round(d.revenue),
-      cog: Math.round(d.cog),
-      gross_profit: Math.round(d.revenue - d.cog),
-      margin_pct: d.revenue > 0 ? Math.round((1 - d.cog / d.revenue) * 100) : 0,
-    })).sort((a: any, b: any) => b.revenue - a.revenue);
-
-    // ── Maandelijkse omzet + brutomarge voor grafiek ──────────────────────────
-    const monthlyMarginResult = db.exec(`
-      SELECT strftime('%Y-%m', o.created_at) as month,
-        oi.sku, oi.quantity, oi.price
-      FROM order_items oi
-      JOIN orders o ON o.id = oi.order_id
-      WHERE o.created_at >= date('now', '-7 months')
-    `);
-    const monthlyItems = monthlyMarginResult.length ? rowsToObjects(monthlyMarginResult[0]) : [];
-
-    const monthlyMap: Record<string, { revenue: number; cog: number }> = {};
-    monthlyItems.forEach((item: any) => {
-      const mo = item.month;
-      if (!monthlyMap[mo]) monthlyMap[mo] = { revenue: 0, cog: 0 };
-      monthlyMap[mo].revenue += (item.price ?? 0) * (item.quantity ?? 1);
-      const cogProduct = cogsMap[item.sku];
-      if (cogProduct?.cogs_sea) {
-        monthlyMap[mo].cog += cogProduct.cogs_sea * (item.quantity ?? 1);
-      }
-    });
-
-    const monthlyMargins = Object.entries(monthlyMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, d]: any) => ({
-        month,
-        revenue: Math.round(d.revenue),
-        cog: Math.round(d.cog),
-        gross_profit: Math.round(d.revenue - d.cog),
-        margin_pct: d.revenue > 0 ? Math.round((1 - d.cog / d.revenue) * 100) : 0,
-      }));
-
-    db.close();
-
-    return NextResponse.json({
-      channelMargins: channelMarginsByCog,
-      monthlyMargins,
-      channels: channelWithMargin,
-      priceAnalysis,
-      channelProducts,
-    });
 
   } catch (err: any) {
     console.error('Prices API error:', err.message);
-    return NextResponse.json({
-      channelMargins: channelMarginsByCog,
-      monthlyMargins, error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
