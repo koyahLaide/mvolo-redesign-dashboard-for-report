@@ -144,6 +144,9 @@ jobs:
           grep -n "MaandMargeGrafiek" dashboard/app/page.tsx && sed -i '/MaandMargeGrafiek/d' dashboard/app/page.tsx || echo "page.tsx is clean"
 
       # ── 10. Install dashboard deps ──────────────────────────────────────────
+      - name: Patch dashboard files
+        run: |
+          grep -rn 'MaandMargeGrafiek' dashboard/ && sed -i '/MaandMargeGrafiek/d' dashboard/app/page.tsx || true
       - name: Install dashboard dependencies
         working-directory: dashboard
         run: npm ci
@@ -155,7 +158,5 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          sed -i '/MaandMargeGrafiek/d' app/page.tsx
-          npx vercel --prod --yes --force --token ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel --prod --yes --force --token ${{ secrets.VERCEL_TOKEN }}
 # Wed Apr  1 10:14:13 CEST 2026
