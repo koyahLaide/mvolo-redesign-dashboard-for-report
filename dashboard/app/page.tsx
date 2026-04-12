@@ -340,6 +340,8 @@ const PERIOD_LABELS: { key: Period; label: string }[] = [
   { key: 'all',     label: 'Alles' },
 ];
 
+function MaandMargeGrafiek() { return null; }
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
