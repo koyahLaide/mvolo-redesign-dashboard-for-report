@@ -146,7 +146,7 @@ try { db.exec("ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT ''"); } c
   db.exec('DELETE FROM order_items');
 
   const insert = db.prepare(`
-    INSERT OR REPLACE INTO order_items (order_id, order_date, marketplace, sku, title, quantity, price)
+    INSERT OR IGNORE INTO order_items (order_id, order_date, marketplace, sku, title, quantity, price)
     VALUES (@order_id, @order_date, @marketplace, @sku, @title, @quantity, @price)
   `);
 
