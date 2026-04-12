@@ -132,7 +132,7 @@ try { db.exec("ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT ''"); } c
   const bolItems = await fetchBolItemsFromDb(db);
   console.log(chalk.gray(`  → ${bolItems.length} Bol line items`));
 
-  const allItems = [...shopifyItems, ...bolItems];
+  const allItems = [...shopifyItems, ...bolItems].filter(item => !item.order_id?.startsWith('bol_import_'));
 
   // Wis bestaande data en herlaad
   db.exec('DELETE FROM order_items');
