@@ -79,6 +79,10 @@ jobs:
         run: node src/index.js sync
 
       # ── 7. Sync order items (SKU velocity) ─────────────────────────────────
+      - name: Import historische Bol orders
+        run: node src/scripts/import-bol-orders.js
+        continue-on-error: true
+
       - name: Sync order items
         run: node src/scripts/backfill-order-items.js
         continue-on-error: true
