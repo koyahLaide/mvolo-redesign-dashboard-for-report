@@ -132,7 +132,15 @@ try { db.exec("ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT ''"); } c
   const bolItems = await fetchBolItemsFromDb(db);
   console.log(chalk.gray(`  → ${bolItems.length} Bol line items`));
 
-  const allItems = [...shopifyItems, ...bolItems].filter(item => !item.order_id?.startsWith('bol_import_'));
+  const rawItems = [...shopifyItems, ...bolItems].filter(item => item.order_id && !item.order_id.startsWith('bol_import_'));
+  // Dedupliceer op order_id + sku combinatie
+  const seen = new Set();
+  const allItems = rawItems.filter(item => {
+    const key = item.order_id + '|' + item.sku;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   // Wis bestaande data en herlaad
   db.exec('DELETE FROM order_items');
