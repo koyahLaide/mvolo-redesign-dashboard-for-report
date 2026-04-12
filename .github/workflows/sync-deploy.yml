@@ -137,7 +137,7 @@ jobs:
         run: |
           mkdir -p dashboard/data
           cp data/mvolo.db dashboard/data/mvolo.db
-          grep -q 'function MaandMargeGrafiek' dashboard/app/page.tsx || sed -i 's/export default function Home/function MaandMargeGrafiek(){return null;}\nexport default function Home/' dashboard/app/page.tsx
+          grep -q 'function MaandMargeGrafiek' dashboard/app/page.tsx || sed -i 's/export default function DashboardPage/function MaandMargeGrafiek(){return null;}\nexport default function DashboardPage/' dashboard/app/page.tsx
           sed -i 's|<MaandMargeGrafiek />||g' dashboard/app/page.tsx || true
           sed -i '/Maandelijkse omzet.*brutomarge/d' dashboard/app/page.tsx || true
 
