@@ -907,7 +907,7 @@ const importAll = db.transaction(() => {
 const result = importAll();
 
 // Update marketplace voor alle bol_import orders
-db.prepare("UPDATE orders SET marketplace = 'bol' WHERE id LIKE 'bol_import_%' AND (marketplace IS NULL OR marketplace = '')").run();
+db.prepare("UPDATE orders SET marketplace = 'bol' WHERE id LIKE 'bol_import_%'").run();
 console.log(`Geïmporteerd: ${result.imported} orders`);
 console.log(`Overgeslagen: ${result.skipped} orders`);
 
