@@ -3,3 +3,7 @@ node_modules/
 data/*.db
 .next/
 .DS_Store
+
+
+# history
+.history
