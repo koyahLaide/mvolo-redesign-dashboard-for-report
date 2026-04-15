@@ -1,7 +1,7 @@
 'use strict';
 require('dotenv').config();
-const axios  = require('axios');
-const chalk  = require('chalk');
+const axios = require('axios');
+const chalk = require('chalk');
 const { initDb } = require('../db/schema');
 
 const delay = ms => new Promise(r => setTimeout(r, ms));
@@ -9,77 +9,77 @@ const delay = ms => new Promise(r => setTimeout(r, ms));
 // Alle competitors met Shopify JSON endpoint
 const COMPETITORS = [
   // NL markt
-  { name: 'Liroma',       url: 'https://liroma.nl/products.json',                pages: 3 },
-  { name: 'Vitalwave',    url: 'https://www.vitalwave.nl/products.json',          pages: 3 },
-  { name: 'Nuvibody',     url: 'https://nuvibody.com/products.json',              pages: 3 },
-  { name: 'Loptimize',    url: 'https://www.loptimize.nl/products.json',          pages: 2 },
-  { name: 'Be-Lume',      url: 'https://be-lume.com/products.json',               pages: 2 },
+  { name: 'Liroma', url: 'https://liroma.nl/products.json', pages: 3 },
+  { name: 'Vitalwave', url: 'https://www.vitalwave.nl/products.json', pages: 3 },
+  { name: 'Nuvibody', url: 'https://nuvibody.com/products.json', pages: 3 },
+  { name: 'Loptimize', url: 'https://www.loptimize.nl/products.json', pages: 2 },
+  { name: 'Be-Lume', url: 'https://be-lume.com/products.json', pages: 2 },
   // EU/International
-  { name: 'Panacea',      url: 'https://panacearedlight.com/products.json',       pages: 3 },
-  { name: 'Platinum',     url: 'https://platinumtherapylights.eu/products.json',  pages: 3 },
-  { name: 'Rojo',         url: 'https://rojolighttherapy.eu/products.json',       pages: 2 },
-  { name: 'Hooga',        url: 'https://hoogahealth.com/products.json',           pages: 3 },
-  { name: 'MitoRed',      url: 'https://mitoredlight.com/products.json',          pages: 3 },
-  { name: 'Amarapure',    url: 'https://amarapure.com/products.json',             pages: 2 },
-  { name: 'Dayon',        url: 'https://www.dayon.com/products.json',             pages: 2 },
-  { name: 'Solawave',     url: 'https://www.solawave.co/products.json',           pages: 2 },
+  { name: 'Panacea', url: 'https://panacearedlight.com/products.json', pages: 3 },
+  { name: 'Platinum', url: 'https://platinumtherapylights.eu/products.json', pages: 3 },
+  { name: 'Rojo', url: 'https://rojolighttherapy.eu/products.json', pages: 2 },
+  { name: 'Hooga', url: 'https://hoogahealth.com/products.json', pages: 3 },
+  { name: 'MitoRed', url: 'https://mitoredlight.com/products.json', pages: 3 },
+  { name: 'Amarapure', url: 'https://amarapure.com/products.json', pages: 2 },
+  { name: 'Dayon', url: 'https://www.dayon.com/products.json', pages: 2 },
+  { name: 'Solawave', url: 'https://www.solawave.co/products.json', pages: 2 },
   { name: 'Blockbluelight', url: 'https://www.blockbluelight.com/products.json', pages: 2 },
 ];
 
 // Product matching op naam + min prijs
 const PRODUCT_MATCHING = [
   {
-    category:  'led_face_mask',
-    keywords:  ['led', 'face mask', 'facial mask', 'gezichtsmasker', 'glow', 'face shield', 'led masker', 'lichttherapie masker', 'light mask', 'face panel'],
-    exclude:   ['bril', 'losse lamp', 'standaard', 'accessoire', 'glasses', 'goggles'],
+    category: 'led_face_mask',
+    keywords: ['led', 'face mask', 'facial mask', 'gezichtsmasker', 'glow', 'face shield', 'led masker', 'lichttherapie masker', 'light mask', 'face panel'],
+    exclude: ['bril', 'losse lamp', 'standaard', 'accessoire', 'glasses', 'goggles'],
     min_price: 50,
   },
   {
-    category:  'infrared_double_head',
-    keywords:  ['dubbele kop', 'double head', 'twin head', '507', 'dual head', 'double lamp'],
-    exclude:   ['losse lamp', 'accessoire', 'rugband', 'bril', 'enkele', 'single'],
+    category: 'infrared_double_head',
+    keywords: ['dubbele kop', 'double head', 'twin head', '507', 'dual head', 'double lamp'],
+    exclude: ['losse lamp', 'accessoire', 'rugband', 'bril', 'enkele', 'single'],
     min_price: 80,
   },
   {
-    category:  'infrared_single_head',
-    keywords:  ['enkele kop', 'single head', '506', 'infraroodlamp', 'infrarood lamp', 'infrared lamp', 'il 50', 'il 60', 'heat lamp', 'warmtelamp'],
-    exclude:   ['losse lamp', 'accessoire', 'rugband', 'bril', 'dubbele', 'double', 'panel', 'paneel'],
+    category: 'infrared_single_head',
+    keywords: ['enkele kop', 'single head', '506', 'infraroodlamp', 'infrarood lamp', 'infrared lamp', 'il 50', 'il 60', 'heat lamp', 'warmtelamp'],
+    exclude: ['losse lamp', 'accessoire', 'rugband', 'bril', 'dubbele', 'double', 'panel', 'paneel'],
     min_price: 40,
   },
   {
-    category:  'rlt_panel',
-    keywords:  ['rood licht', 'red light', 'rl60', 'rl120', 'rl240', 'rl300', 'rl600', 'primeforce', 'panel', 'paneel', 'lite 300', 'core 300', 'vt200', 'vt300', 'vt600', 'vt1200', 'vt2000', 'biomax', 'pro300', 'pro600', 'therapy light panel', 'red panel', 'rlt panel', 'photobiomodulation panel'],
-    exclude:   ['rugband', 'masker', 'bril', 'losse', 'accessoire', 'face mask', 'sauna'],
+    category: 'rlt_panel',
+    keywords: ['rood licht', 'red light', 'rl60', 'rl120', 'rl240', 'rl300', 'rl600', 'primeforce', 'panel', 'paneel', 'lite 300', 'core 300', 'vt200', 'vt300', 'vt600', 'vt1200', 'vt2000', 'biomax', 'pro300', 'pro600', 'therapy light panel', 'red panel', 'rlt panel', 'photobiomodulation panel'],
+    exclude: ['rugband', 'masker', 'bril', 'losse', 'accessoire', 'face mask', 'sauna'],
     min_price: 100,
   },
   {
-    category:  'infrared_rugband',
-    keywords:  ['rugband', 'rug band', 'back band', 'back belt', 'shield', 'heatpulse', 'back wrap', 'lumbar'],
-    exclude:   ['losse', 'accessoire'],
+    category: 'infrared_rugband',
+    keywords: ['rugband', 'rug band', 'back band', 'back belt', 'shield', 'heatpulse', 'back wrap', 'lumbar'],
+    exclude: ['losse', 'accessoire'],
     min_price: 60,
   },
   {
-    category:  'sauna_blanket',
-    keywords:  ['sauna', 'deken', 'blanket', 'infrared blanket', 'sauna wrap', 'body wrap'],
-    exclude:   [],
+    category: 'sauna_blanket',
+    keywords: ['sauna', 'deken', 'blanket', 'infrared blanket', 'sauna wrap', 'body wrap'],
+    exclude: [],
     min_price: 80,
   },
   {
-    category:  'daylight_lamp',
-    keywords:  ['daglicht', 'daylight lamp', 'lichttherapie lamp', 'tl 30', 'tl 35', 'tl 45', 'tl 70', 'tl 90', 'tl 95', 'sad lamp', 'light therapy lamp', 'wake up light', 'lucent'],
-    exclude:   ['rood licht', 'red light', 'infrarood', 'led masker', 'bril', 'glasses', 'panel'],
+    category: 'daylight_lamp',
+    keywords: ['daglicht', 'daylight lamp', 'lichttherapie lamp', 'tl 30', 'tl 35', 'tl 45', 'tl 70', 'tl 90', 'tl 95', 'sad lamp', 'light therapy lamp', 'wake up light', 'lucent'],
+    exclude: ['rood licht', 'red light', 'infrarood', 'led masker', 'bril', 'glasses', 'panel'],
     min_price: 20,
   },
   {
-    category:  'daylight_glasses',
-    keywords:  ['daglichtbril', 'daylight glasses', 'lichttherapiebril', 'ayo', 'luminette', 'light glasses', 'therapy glasses', 'wearable light'],
-    exclude:   ['losse', 'standaard', 'safety', 'goggles', 'veiligheidsbril'],
+    category: 'daylight_glasses',
+    keywords: ['daglichtbril', 'daylight glasses', 'lichttherapiebril', 'ayo', 'luminette', 'light glasses', 'therapy glasses', 'wearable light'],
+    exclude: ['losse', 'standaard', 'safety', 'goggles', 'veiligheidsbril'],
     min_price: 50,
   },
   {
-    category:  'ems_device',
-    keywords:  ['ems', 'gua sha', 'massager', 'face sculptor', 'microcurrent', 'face lift', 'toning device', 'solawave'],
-    exclude:   ['panel', 'lamp'],
+    category: 'ems_device',
+    keywords: ['ems', 'gua sha', 'massager', 'face sculptor', 'microcurrent', 'face lift', 'toning device', 'solawave'],
+    exclude: ['panel', 'lamp'],
     min_price: 20,
   },
 ];
@@ -113,8 +113,8 @@ async function fetchProducts(competitor) {
         const category = matchProduct(p.title, price);
         if (price > 0 && category) {
           products.push({
-            competitor:    competitor.name,
-            product_name:  p.title.substring(0, 120),
+            competitor: competitor.name,
+            product_name: p.title.substring(0, 120),
             price,
             compare_price: parseFloat(variant.compare_at_price || '0') || null,
             category,
@@ -140,6 +140,7 @@ async function run() {
   console.log(chalk.cyan('\n  [competitor-prices] Syncing ' + COMPETITORS.length + ' competitors...\n'));
   const db = initDb();
 
+  /*
   db.exec(`CREATE TABLE IF NOT EXISTS competitor_prices (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     competitor    TEXT NOT NULL,
@@ -154,7 +155,7 @@ async function run() {
   )`);
   db.exec('CREATE INDEX IF NOT EXISTS idx_comp_date ON competitor_prices(date)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_comp_cat ON competitor_prices(category)');
-
+  */
   const today = new Date().toISOString().slice(0, 10);
   const upsert = db.prepare(`
     INSERT INTO competitor_prices (competitor, product_name, price, compare_price, category, url, date)
@@ -184,7 +185,7 @@ async function run() {
   const yesterdayPrices = db.prepare(`
     SELECT competitor, product_name, price FROM competitor_prices WHERE date = ?
   `).all(yesterday);
-  
+
   const yesterdayMap = {};
   yesterdayPrices.forEach(p => {
     yesterdayMap[p.competitor + '::' + p.product_name] = p.price;

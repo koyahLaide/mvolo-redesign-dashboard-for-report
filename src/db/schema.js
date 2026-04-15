@@ -246,6 +246,21 @@ function initDb() {
       trigger_type TEXT,
       synced_at    TEXT
     );
+    CREATE TABLE IF NOT EXISTS competitor_prices (
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      competitor       TEXT NOT NULL,
+      product_name     TEXT NOT NULL,
+      price            REAL NOT NULL,
+      compare_price    REAL,
+      category         TEXT,
+      url              TEXT,
+      date             TEXT NOT NULL,
+      prev_price       REAL,
+      price_change_pct REAL,
+      price_changed    INTEGER DEFAULT 0,
+      synced_at        TEXT DEFAULT (datetime('now')),
+      UNIQUE(competitor, product_name, date)
+    );
   `);
 
   // Migrate: add new columns if they don't exist yet (SQLite has no ADD COLUMN IF NOT EXISTS)
@@ -274,15 +289,19 @@ function initDb() {
     'ALTER TABLE visitor_sessions ADD COLUMN clarity_session_id TEXT',
     'ALTER TABLE order_items ADD COLUMN marketplace TEXT DEFAULT \'shopify\'',
     'ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT \'\'',
+    /*
     'ALTER TABLE competitor_prices ADD COLUMN prev_price REAL',
     'ALTER TABLE competitor_prices ADD COLUMN price_change_pct REAL',
     'ALTER TABLE competitor_prices ADD COLUMN price_changed INTEGER DEFAULT 0',
+    */
   ];
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_date ON klaviyo_metrics(date)`); } catch {}
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_name ON klaviyo_metrics(metric_name)`); } catch {}
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)`); } catch {}
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_sku ON order_items(sku)`); } catch {}
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_date ON order_items(order_date)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_date ON klaviyo_metrics(date)`); } catch { }
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_name ON klaviyo_metrics(metric_name)`); } catch { }
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)`); } catch { }
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_sku ON order_items(sku)`); } catch { }
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_date ON order_items(order_date)`); } catch { }
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_comp_date ON competitor_prices(date)`); } catch { }
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_comp_cat  ON competitor_prices(category)`); } catch { }
   for (const sql of migrationColumns) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
