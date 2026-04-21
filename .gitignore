@@ -7,3 +7,6 @@ data/*.db
 
 # history
 .history
+
+# Claude
+CLAUDE.md

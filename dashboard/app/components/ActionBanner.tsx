@@ -139,7 +139,7 @@ export default function ActionBanner() {
             {critical_products?.length === 0 ? (
               <p className="text-xs text-green-400">✓ Alle voorraden OK</p>
             ) : (
-              critical_products.slice(0, 4).map((p: any) => (
+              (critical_products ?? []).slice(0, 4).map((p: any) => (
                 <div key={p.sku} className="flex items-center justify-between gap-2">
                   <span className="text-xs text-gray-300 truncate">{p.name}</span>
                   <div className="flex items-center gap-1.5 flex-shrink-0">

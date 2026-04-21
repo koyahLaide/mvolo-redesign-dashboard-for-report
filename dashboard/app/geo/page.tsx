@@ -1,17 +1,12 @@
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import Nav from '../components/Nav';
 
-const MAP_W = 600;
-const MAP_H = 500;
-const LON_MIN = 2.3, LON_MAX = 7.6;
-const LAT_MIN = 50.3, LAT_MAX = 53.9;
-
-function project(lon: number, lat: number): [number, number] {
-  const x = ((lon - LON_MIN) / (LON_MAX - LON_MIN)) * MAP_W;
-  const y = ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * MAP_H;
-  return [x, y];
-}
+const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
+const CircleMarker = dynamic(() => import('react-leaflet').then(m => m.CircleMarker), { ssr: false });
+const LeafletTooltip = dynamic(() => import('react-leaflet').then(m => m.Tooltip), { ssr: false });
 
 const CITY_COORDS: Record<string, [number, number]> = {
   'Amsterdam': [4.9041, 52.3676], 'Rotterdam': [4.4777, 51.9244],
@@ -37,7 +32,6 @@ function formatEuro(v: number) {
 export default function GeoPage() {
   const [data, setData] = useState<any>(null);
   const [period, setPeriod] = useState('all');
-  const [tooltip, setTooltip] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'kaart' | 'visitors'>('kaart');
 
   const load = useCallback(async () => {
@@ -103,33 +97,31 @@ export default function GeoPage() {
                 <div className="px-5 py-3 border-b border-gray-800">
                   <h2 className="text-sm font-semibold text-gray-300">Orders per stad (NL + BE)</h2>
                 </div>
-                <div className="p-4 relative">
-                  <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} className="w-full h-auto" style={{ background: '#0f172a' }}>
-                    <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="#0f172a" />
+                <div className="p-4" style={{ height: 500 }}>
+                  <MapContainer center={[52.3, 5.3]} zoom={7} style={{ height: '100%', width: '100%', borderRadius: 8 }}>
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    />
                     {topCities.map((city: any) => {
-                      const coords = CITY_COORDS[city.shipping_city];
+                      const coords = CITY_COORDS[city.city];
                       if (!coords) return null;
-                      const [x, y] = project(coords[0], coords[1]);
-                      const r = Math.max(4, Math.min(20, 4 + (city.orders / maxOrders) * 16));
+                      const r = Math.max(5, Math.min(20, 5 + (city.orders / maxOrders) * 15));
                       return (
-                        <g key={city.shipping_city}
-                          onMouseEnter={() => setTooltip({ x, y, city: city.shipping_city, orders: city.orders, revenue: city.revenue })}
-                          onMouseLeave={() => setTooltip(null)}
-                          style={{ cursor: 'pointer' }}>
-                          <circle cx={x} cy={y} r={r + 4} fill="#6366f1" opacity={0.15} />
-                          <circle cx={x} cy={y} r={r} fill="#6366f1" opacity={0.8} />
-                          <text x={x} y={y + r + 10} textAnchor="middle" fontSize="9" fill="#94a3b8">{city.shipping_city}</text>
-                        </g>
+                        <CircleMarker
+                          key={city.city}
+                          center={[coords[1], coords[0]]}
+                          radius={r}
+                          pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.8, weight: 1 }}
+                        >
+                          <LeafletTooltip>
+                            <span className="font-bold">{city.city}</span><br />
+                            {city.orders} orders · {formatEuro(city.revenue)}
+                          </LeafletTooltip>
+                        </CircleMarker>
                       );
                     })}
-                    {tooltip && (
-                      <g>
-                        <rect x={tooltip.x + 8} y={tooltip.y - 30} width={120} height={42} rx={4} fill="#1e293b" stroke="#334155" strokeWidth={1} />
-                        <text x={tooltip.x + 68} y={tooltip.y - 13} textAnchor="middle" fontSize="10" fill="white" fontWeight="bold">{tooltip.city}</text>
-                        <text x={tooltip.x + 68} y={tooltip.y + 2} textAnchor="middle" fontSize="9" fill="#94a3b8">{tooltip.orders} orders · {formatEuro(tooltip.revenue)}</text>
-                      </g>
-                    )}
-                  </svg>
+                  </MapContainer>
                 </div>
               </div>
 
@@ -166,8 +158,8 @@ export default function GeoPage() {
                     {topCities.slice(0, 8).map((city: any) => {
                       const pct = Math.round((city.orders / maxOrders) * 100);
                       return (
-                        <div key={city.shipping_city} className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400 w-28 flex-shrink-0 truncate">{city.shipping_city}</span>
+                        <div key={city.city} className="flex items-center gap-3">
+                          <span className="text-xs text-gray-400 w-28 flex-shrink-0 truncate">{city.city}</span>
                           <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                             <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
                           </div>

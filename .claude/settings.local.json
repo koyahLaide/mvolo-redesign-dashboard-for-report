@@ -22,7 +22,9 @@
       "Bash(npm i:*)",
       "Bash(npm run:*)",
       "Bash(vercel --prod --yes)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(dir \"C:\\\\Users\\\\doryu\\\\Documents\\\\Project_Mvolo\\\\mvolo-dashboard\\\\dashboard\" /b)",
+      "Bash(git *)"
     ]
   }
 }
