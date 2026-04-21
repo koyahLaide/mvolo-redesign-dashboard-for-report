@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
     const countriesResult = db.exec(`
       SELECT
-        shipping_country AS country,
+        shipping_country,
         COUNT(*)         AS orders,
         SUM(total_price) AS revenue
       FROM orders

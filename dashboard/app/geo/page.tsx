@@ -140,8 +140,8 @@ export default function GeoPage() {
                     </thead>
                     <tbody>
                       {(data?.countries ?? []).slice(0, 8).map((c: any) => (
-                        <tr key={c.country} className="border-b border-gray-800/50 hover:bg-gray-800/20">
-                          <td className="px-4 py-2 text-gray-300">{c.country}</td>
+                        <tr key={c.shipping_country} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                          <td className="px-4 py-2 text-gray-300">{c.shipping_country}</td>
                           <td className="px-4 py-2 text-right text-indigo-400 tabular-nums">{c.orders}</td>
                           <td className="px-4 py-2 text-right text-green-400 tabular-nums">{formatEuro(c.revenue)}</td>
                         </tr>
