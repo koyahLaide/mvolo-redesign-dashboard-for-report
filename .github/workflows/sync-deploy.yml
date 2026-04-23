@@ -38,6 +38,12 @@ jobs:
 
 
       # ── 2. Cache database ───────────────────────────────────────────────────
+      - name: Restore database cache
+        uses: actions/cache@v4
+        with:
+          path: data/mvolo.db
+          key: mvolo-db-${{ github.run_id }}
+          restore-keys: mvolo-db-
 
       # ── 3. Create data directory ────────────────────────────────────────────
       - name: Create data directory
