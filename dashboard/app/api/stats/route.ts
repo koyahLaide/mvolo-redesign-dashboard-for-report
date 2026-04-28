@@ -546,6 +546,18 @@ export async function GET(request: Request) {
         ? (rowsToObjects(directSubResult[0]) as { subchannel: string; orders: number; revenue: number }[])
         : [];
 
+    // ── Recent Orders (last 15) ──────────────────────────────────────────────
+    const recentOrdersResult = db.exec(`
+      SELECT
+        id, order_number, created_at, total_price, channel, marketplace
+      FROM orders
+      ORDER BY created_at DESC
+      LIMIT 15
+    `);
+    const recentOrders = recentOrdersResult.length
+      ? rowsToObjects(recentOrdersResult[0]) as { id: string; order_number: string; created_at: string; total_price: number; channel: string; marketplace: string }[]
+      : [];
+
     db.close();
 
     // ── Customer Journey stats (from /tmp sessions DB) ───────────────────────
@@ -666,6 +678,7 @@ export async function GET(request: Request) {
       pmTouchRows,
       vsJourneyByChannel,
       directSubchannels,
+      recentOrders,
     });
   } catch (err) {
     console.error('[/api/stats] Error:', err);

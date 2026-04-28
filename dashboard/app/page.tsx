@@ -106,6 +106,7 @@ interface Stats {
   ga4Daily: { date: string; sessions: number; users: number }[];
   ga4DailyByChannel: { date: string; channel: string; sessions: number }[];
   ga4Journeys: { first_channel: string; session_channel: string; sessions: number; users: number }[];
+  recentOrders: { id: string; order_number: string; created_at: string; total_price: number; channel: string; marketplace: string }[];
 }
 
 interface OrderDetail {
@@ -118,6 +119,7 @@ interface OrderDetail {
   is_new_customer: number;
   utm_campaign: string | null;
   utm_content: string | null;
+  marketplace?: string;
 }
 
 interface Insight {
@@ -161,6 +163,59 @@ function formatEuro(value: number) {
 function formatLabel(s: string) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+function RecentActivity({ orders }: { orders: any[] }) {
+  if (!orders || orders.length === 0) return null;
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+      <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-gray-900/50">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Recente Order Activiteit</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Live feed van de laatste transacties op alle platforms</p>
+        </div>
+        <Link href="/orders" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+          Alle orders bekijken →
+        </Link>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm text-left">
+          <thead className="text-xs text-gray-500 uppercase tracking-wider bg-gray-950/50">
+            <tr>
+              <th className="px-6 py-3 font-medium">Order #</th>
+              <th className="px-6 py-3 font-medium">Platform</th>
+              <th className="px-6 py-3 font-medium">Bedrag</th>
+              <th className="px-6 py-3 font-medium">Kanaal</th>
+              <th className="px-6 py-3 font-medium">Tijd</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-800/50">
+            {orders.slice(0, 10).map((order) => (
+              <tr key={order.id} className="hover:bg-gray-800/30 transition-colors group">
+                <td className="px-6 py-4 font-mono text-gray-300">#{order.order_number}</td>
+                <td className="px-6 py-4">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                    order.marketplace === 'bol' ? 'bg-orange-900/30 text-orange-400' : 'bg-blue-900/30 text-blue-400'
+                  }`}>
+                    {order.marketplace || 'Shopify'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 font-semibold text-white">{formatEuro(order.total_price)}</td>
+                <td className="px-6 py-4">
+                   <span className="text-xs text-gray-400">{formatLabel(order.channel || 'direct')}</span>
+                </td>
+                <td className="px-6 py-4 text-xs text-gray-500">
+                  {new Date(order.created_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+import Link from 'next/link';
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -348,6 +403,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [period, setPeriod] = useState<Period>('all');
   const [platform, setPlatform] = useState<Platform>('all');
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
@@ -468,6 +524,25 @@ export default function DashboardPage() {
             <Nav />
           </div>
           <div className="flex items-center gap-3">
+            {/* Search Bar */}
+            <div className="relative group hidden md:block">
+              <input
+                type="text"
+                placeholder="Order zoeken..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    window.location.href = `/orders?search=${encodeURIComponent(searchQuery.trim())}`;
+                  }
+                }}
+                className="bg-gray-900 border border-gray-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all w-48 group-hover:w-64"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 group-hover:text-gray-400 transition-colors">
+                🔍
+              </span>
+            </div>
+
             {/* Live update indicator */}
             {lastUpdated && (() => {
               const minutesAgo = Math.round((Date.now() - lastUpdated.getTime()) / 60000);
@@ -611,6 +686,8 @@ export default function DashboardPage() {
             />
           </div>
         )}
+
+        <RecentActivity orders={stats.recentOrders} />
 
         {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
