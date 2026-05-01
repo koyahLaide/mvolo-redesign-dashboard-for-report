@@ -3,7 +3,7 @@
 require('dotenv').config();
 const cron  = require('node-cron');
 const chalk = require('chalk');
-const { initSupabase } = require('./db/supabase');
+const { initSupabase } = require('./db/init_schema');
 const { runSync }      = require('./etl/sync');
 const { runSpendSync } = require('./etl/spend-sync');
 
