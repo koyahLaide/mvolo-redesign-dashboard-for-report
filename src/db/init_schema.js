@@ -15,7 +15,6 @@ async function initSupabase() {
     // Execute the combined modular schema SQL
     await client.query(schema);
     process.stdout.write(chalk.green('Ready.\n'));
-    return pool;
   } catch (err) {
     console.error(chalk.red('\n Supabase initialization failed:'));
     console.error(err);
@@ -26,4 +25,3 @@ async function initSupabase() {
 }
 
 module.exports = { initSupabase };
-
