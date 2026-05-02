@@ -1,27 +1,49 @@
 @import "tailwindcss";
-@import 'leaflet/dist/leaflet.css';
+@import "leaflet/dist/leaflet.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-primary: #3B82F6;
+  --color-primary-dark: #2563EB;
+  --color-sidebar: #1F2937;
+  --color-sidebar-hover: #374151;
+  --color-sidebar-active: #3B82F6;
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #F9FAFB;
+  --color-border: #E5E7EB;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Light mode (default) */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text-primary);
+}
+
+/* Dark mode */
+.dark body,
+body.dark {
+  background-color: #111827;
+  color: #F3F4F6;
+}
+
+.dark .bg-surface {
+  background-color: #1F2937;
+}
+
+.dark .bg-surface-secondary {
+  background-color: #111827;
+}
+
+.dark .border-border {
+  border-color: #374151;
+}
+
+.dark .text-text-primary {
+  color: #F3F4F6;
+}
+
+.dark .text-text-secondary {
+  color: #9CA3AF;
 }
