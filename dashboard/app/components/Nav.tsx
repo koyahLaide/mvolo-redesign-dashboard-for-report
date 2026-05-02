@@ -16,6 +16,8 @@ const LINKS = [
   { href: '/strategie',    label: 'Strategie' },
   { href: '/finance',             label: 'Finance' },
   { href: '/competitor-prices', label: 'Competitors' },
+{ href: '/feed', label: 'Feed Suite' },
+
 ];
 
 export default function Nav() {
