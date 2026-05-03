@@ -1,9 +1,12 @@
+'use strict';
+
 const { fetchOrders }    = require('../../connectors/bol.js');
 const { insertOrder } = require('../../schema/queries.js')
 const chalk = require('chalk');
 
 
 async function syncBol(db) {
+    
     const orders = await fetchOrders();
     console.log(chalk.white(`  Orders fetched from Bol.com: ${chalk.bold(orders.length)}`));
     let ordersNew = 0
