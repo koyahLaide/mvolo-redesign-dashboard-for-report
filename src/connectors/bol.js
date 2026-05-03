@@ -137,7 +137,7 @@ function mapBolOrder(detail) {
  *
  * @returns {Promise<Array>}
  */
-async function fetchBolOrders() {
+async function fetchOrders() {
   if (!CLIENT_ID || !CLIENT_SECRET) {
     throw new Error('BOL_CLIENT_ID and BOL_CLIENT_SECRET must be set in .env');
   }
