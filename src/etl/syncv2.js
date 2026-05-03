@@ -38,14 +38,13 @@ async function runSync() {
     ordersNew += bolInfo.ordersNew;
     attributedOrders.push(...bolInfo.attributedOrders);
 
+    //Ga4 Sync
+    await syncGa4(db);
     //Clarity Sync
     await syncClarity(db);
 
     //Klaviyo Sync
     await syncKlaviyo(db, syncedAt);
-
-    //Ga4 Sync
-    await syncGa4(db);
 
     // Summarise by channel
     const summary = summarizeAttribution(attributedOrders);
