@@ -172,4 +172,6 @@ async function fetchOrders() {
   return allOrders;
 }
 
-module.exports = { fetchOrders };
+const fetchBolOrders = fetchOrders;
+
+module.exports = { fetchOrders, fetchBolOrders };

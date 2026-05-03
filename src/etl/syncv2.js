@@ -32,19 +32,35 @@ async function runSync() {
     ordersNew += shopifyInfo.ordersNew;
     attributedOrders.push(...shopifyInfo.attributedOrders);
 
-    // Bol Sync
-    const bolInfo = await syncBol(db);
-    ordersFetched += bolInfo.length;
-    ordersNew += bolInfo.ordersNew;
-    attributedOrders.push(...bolInfo.attributedOrders);
+    try {
+      // Bol Sync
+      const bolInfo = await syncBol(db);
+      ordersFetched += bolInfo.length;
+      ordersNew += bolInfo.ordersNew;
+      attributedOrders.push(...bolInfo.attributedOrders);
+    } catch (err) {
+      console.warn(chalk.yellow(`  Bol sync skipped: ${err.message}`));
+    }
 
     //Ga4 Sync
-    await syncGa4(db);
+    try {
+      await syncGa4(db);
+    } catch (err) {
+      console.warn(chalk.yellow(`  GA4 sync skipped: ${err.message}`));
+    }
     //Clarity Sync
-    await syncClarity(db);
+    try {
+      await syncClarity(db);
+    } catch (err) {
+      console.warn(chalk.yellow(`  Clarity sync skipped: ${err.message}`));
+    }
 
-    //Klaviyo Sync
-    await syncKlaviyo(db, syncedAt);
+    try {
+      //Klaviyo Sync
+      await syncKlaviyo(db, syncedAt);
+    } catch (err) {
+      console.warn(chalk.yellow(`  Klaviyo sync skipped: ${err.message}`));
+    }
 
     // Summarise by channel
     const summary = summarizeAttribution(attributedOrders);
