@@ -6,8 +6,8 @@ const chalk = require('chalk');
 async function syncBol(db) {
     const orders = await fetchOrders();
     console.log(chalk.white(`  Orders fetched from Bol.com: ${chalk.bold(orders.length)}`));
-    const ordersNew = 0
-    const attributedOrder = []
+    let ordersNew = 0
+    const attributedOrders = []
     const bolAttribution = {
     channel:      'bol_marketplace',
     medium:       'marketplace',
@@ -22,7 +22,7 @@ async function syncBol(db) {
 
     for (const order of orders) {
     const isNew = insertOrder(db, order, bolAttribution, 1);
-    if (isNew) { bolNew++; ordersNew++; }
+    if (isNew) ordersNew++
     attributedOrders.push({ ...order, ...bolAttribution });
     }
 
