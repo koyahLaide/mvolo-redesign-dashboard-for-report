@@ -1,8 +1,12 @@
 const { getLastSyncedAt, attributeOrder, checkIsNewCustomer, insertOrder } = require('../../schema/queries.js')
 const { fetchOrders }    = require('../../connectors/shopify.js');
-let attributedOrders = [] 
+const chalk = require('chalk');
 
-async function syncShopify() {
+
+
+async function syncShopify(db) {
+    const attributedOrders = [] 
+    let ordersNew = 0
     // Determine start date for incremental sync
     const lastSync = getLastSyncedAt(db);
     if (lastSync) {
@@ -23,6 +27,9 @@ async function syncShopify() {
         attributedOrders.push({ ...order, ...attribution });
     }
     return ({length: shopifyOrders.length,
-             attributedOrders: attributedOrders
+             attributedOrders: attributedOrders,
+             ordersNew: ordersNew
     })
 }
+
+module.exports = { syncShopify }
