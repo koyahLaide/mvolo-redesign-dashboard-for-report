@@ -1,12 +1,13 @@
 const { fetchOrders }    = require('../../connectors/bol.js');
 const { insertOrder } = require('../../schema/queries.js')
-const { initDb } = require('../db/schema');
-db = initDb()
+const chalk = require('chalk');
 
-async function syncBol() {
-    const bolOrders = await fetchBolOrders();
-    console.log(chalk.white(`  Orders fetched from Bol.com: ${chalk.bold(bolFetched)}`));
 
+async function syncBol(db) {
+    const orders = await fetchOrders();
+    console.log(chalk.white(`  Orders fetched from Bol.com: ${chalk.bold(orders.length)}`));
+    const ordersNew = 0
+    const attributedOrder = []
     const bolAttribution = {
     channel:      'bol_marketplace',
     medium:       'marketplace',
@@ -19,11 +20,16 @@ async function syncBol() {
     touch_path:   JSON.stringify(['bol_marketplace']),
     };
 
-    for (const order of bolOrders) {
+    for (const order of orders) {
     const isNew = insertOrder(db, order, bolAttribution, 1);
     if (isNew) { bolNew++; ordersNew++; }
     attributedOrders.push({ ...order, ...bolAttribution });
     }
 
-    return bolOrders.length
+    return ({length: orders.length,
+            attributedOrders: attributedOrders,
+            ordersNew: ordersNew
+    })
 } 
+
+module.exports = { syncBol }

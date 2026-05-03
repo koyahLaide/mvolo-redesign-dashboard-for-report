@@ -16,17 +16,17 @@ async function syncShopify(db) {
         console.log(chalk.yellow('  No previous sync found — fetching all orders.\n'));
     }
 
-    const shopifyOrders = await fetchOrders({ createdAtMin: lastSync || undefined });
-    console.log(chalk.white(`  Orders fetched from Shopify: ${chalk.bold(shopifyOrders.length)}`));
+    const orders = await fetchOrders({ createdAtMin: lastSync || undefined });
+    console.log(chalk.white(`  Orders fetched from Shopify: ${chalk.bold(orders.length)}`));
 
-    for (const order of shopifyOrders) {
+    for (const order of orders) {
         const attribution = attributeOrder(order);
         const isNewCustomer = checkIsNewCustomer(db, order.customer_email);
         const isNew = insertOrder(db, order, attribution, isNewCustomer);
         if (isNew) ordersNew++;
         attributedOrders.push({ ...order, ...attribution });
     }
-    return ({length: shopifyOrders.length,
+    return ({length: orders.length,
              attributedOrders: attributedOrders,
              ordersNew: ordersNew
     })
