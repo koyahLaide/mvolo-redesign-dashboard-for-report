@@ -1,7 +1,7 @@
 'use strict';
 
 const { fetchOrders } = require('../../connectors/bol.js');
-const { insertOrder } = require('../../schema/queries.js');
+const { insertOrder } = require('../../db/schema/queries.js');
 const chalk = require('chalk');
 
 async function syncBol(db) {

@@ -1,11 +1,8 @@
 'use strict';
 
-const {
-  getLastSyncedAt,
-  attributeOrder,
-  checkIsNewCustomer,
-  insertOrder,
-} = require('../../schema/queries.js');
+const { getLastSyncedAt, checkIsNewCustomer, insertOrder } = require('../../db/queries.js');
+const { attributeOrder } = require('../attribution');
+
 const { fetchOrders } = require('../../connectors/shopify.js');
 const chalk = require('chalk');
 
