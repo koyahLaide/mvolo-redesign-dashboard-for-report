@@ -4,6 +4,7 @@
   "description": "Order attribution dashboard — syncs Shopify orders and attributes them to marketing channels",
   "main": "src/index.js",
   "scripts": {
+    "lint": "eslint src/",
     "start": "node src/index.js",
     "sync": "node -e \"require('dotenv').config(); require('./src/etl/sync').runSync()\"",
     "spend-sync": "node -e \"require('dotenv').config(); const {initDb}=require('./src/db/schema'); const {runSpendSync}=require('./src/etl/spend-sync'); runSpendSync(initDb())\"",
@@ -21,5 +22,10 @@
     "node-cron": "^3.0.3",
     "open": "^8.4.2",
     "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.3.0",
+    "prettier": "^3.8.3"
   }
 }
