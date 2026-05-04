@@ -32,12 +32,12 @@ export default function Nav() {
             key={href}
             href={href}
             className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
-              active ? 'text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+              active ? 'text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800/50'
             }`}
           >
             {label}
             {active && (
-              <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-white rounded-full" />
+              <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-gray-900 dark:bg-white rounded-full" />
             )}
           </Link>
         );

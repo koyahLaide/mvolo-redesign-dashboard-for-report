@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Nav from '../components/Nav';
 
 const CHANNEL_COLORS: Record<string, string> = {
   direct:              '#6366f1',
@@ -101,16 +100,16 @@ function AttributieHeatmap({ heatmap }: { heatmap: HeatmapRow[] }) {
   const maxVal = Math.max(...heatmap.map(r => mode === 'orders' ? r.orders : r.revenue), 1);
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-gray-300">Kanaal heatmap</h2>
-          <p className="text-xs text-gray-600 mt-0.5">First touch (rijen) × Last touch (kolommen)</p>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kanaal heatmap</h2>
+          <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">First touch (rijen) × Last touch (kolommen)</p>
         </div>
         <div className="flex items-center gap-1">
           {(['orders', 'revenue'] as const).map(m => (
             <button key={m} onClick={() => setMode(m)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${mode === m ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${mode === m ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}`}>
               {m === 'orders' ? 'Orders' : 'Omzet'}
             </button>
           ))}
@@ -122,7 +121,7 @@ function AttributieHeatmap({ heatmap }: { heatmap: HeatmapRow[] }) {
           <thead>
             <tr>
               <th className="w-32 text-left px-2 py-1">
-                <span className="text-gray-600 text-[10px]">First ↓ / Last →</span>
+                <span className="text-gray-500 text-[10px]">First ↓ / Last →</span>
               </th>
               {allChannels.map(ch => (
                 <th key={ch} className="text-center pb-2 px-0.5">
@@ -153,11 +152,17 @@ function AttributieHeatmap({ heatmap }: { heatmap: HeatmapRow[] }) {
                   return (
                     <td key={lastTouch} className="text-center p-0">
                       <div
-                        className="w-14 h-8 rounded flex items-center justify-center cursor-default transition-all"
+                        className={`w-14 h-8 rounded flex items-center justify-center cursor-default transition-all ${
+                          val === 0
+                            ? isDiagonal
+                              ? 'bg-gray-200 dark:bg-gray-800'
+                              : 'bg-gray-50 dark:bg-[#0a0f1a]'
+                            : ''
+                        }`}
                         style={{
                           background: val > 0
                             ? `rgba(${hexToRgb(color)}, ${0.08 + intensity * 0.72})`
-                            : isDiagonal ? '#111827' : '#0a0f1a',
+                            : undefined,
                           border: isDiagonal && val === 0 ? `1px solid ${color}20` : '1px solid transparent',
                         }}
                         onMouseEnter={e => {
@@ -194,7 +199,7 @@ function AttributieHeatmap({ heatmap }: { heatmap: HeatmapRow[] }) {
           </div>
         )}
 
-        <div className="flex items-center gap-2 mt-3 text-[10px] text-gray-600">
+        <div className="flex items-center gap-2 mt-3 text-[10px] text-gray-500 dark:text-gray-600">
           <span>Licht</span>
           <div className="flex gap-0.5">
             {[0.1, 0.25, 0.4, 0.6, 0.8].map(o => (
@@ -212,13 +217,22 @@ export default function AttributiePage() {
   const [data, setData] = useState<AssistedData | null>(null);
   const [period, setPeriod] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/assisted?period=${period}`);
-    const json = await res.json();
-    setData(json);
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await fetch(`/api/assisted?period=${period}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      setData(json);
+    } catch (e: any) {
+      setError(e.message ?? 'Onbekende fout');
+    } finally {
+      setLoading(false);
+    }
   }, [period]);
 
   useEffect(() => { load(); }, [load]);
@@ -227,44 +241,48 @@ export default function AttributiePage() {
   const maxAssisted = data ? Math.max(...data.byChannel.map(c => c.total_assisted), 1) : 1;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-8 py-5">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+
+      {/* Top bar with period filter */}
+      <div className="border-b border-gray-200 dark:border-gray-800 px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Multi-touch attributie analyse</p>
-            </div>
-            <Nav />
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Attributie</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Multi-touch attributie analyse</p>
           </div>
           <div className="flex items-center gap-2">
             {['30', '90', 'all'].map(p => (
               <button key={p} onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${period === p ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${period === p ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}`}>
                 {p === 'all' ? 'Alles' : `${p}d`}
               </button>
             ))}
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-5 py-4 text-sm text-red-700 dark:text-red-400">
+            Fout bij laden: {error}
+          </div>
+        )}
         <div>
-          <h2 className="text-lg font-semibold text-white">Multi-touch attributie</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Multi-touch attributie</h2>
           <p className="text-sm text-gray-500 mt-0.5">Welke kanalen assisteren conversies via andere kanalen?</p>
         </div>
 
         {data?.touchSummary && (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Totaal orders', value: data.touchSummary.total, sub: 'in geselecteerde periode', color: '#6366f1' },
-              { label: 'Single-touch', value: data.touchSummary.single_touch, sub: `${Math.round((data.touchSummary.single_touch / data.touchSummary.total) * 100)}% — zelfde first & last touch`, color: '#22c55e' },
-              { label: 'Multi-touch', value: data.touchSummary.multi_touch, sub: `${Math.round((data.touchSummary.multi_touch / data.touchSummary.total) * 100)}% — meerdere kanalen betrokken`, color: '#ec4899' },
+              { label: 'Totaal orders', value: data.touchSummary.total, sub: 'in geselecteerde periode', color: '#4f46e5' },
+              { label: 'Single-touch', value: data.touchSummary.single_touch, sub: `${Math.round((data.touchSummary.single_touch / data.touchSummary.total) * 100)}% — zelfde first & last touch`, color: '#16a34a' },
+              { label: 'Multi-touch', value: data.touchSummary.multi_touch, sub: `${Math.round((data.touchSummary.multi_touch / data.touchSummary.total) * 100)}% — meerdere kanalen betrokken`, color: '#db2777' },
             ].map(kpi => (
-              <div key={kpi.label} className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+              <div key={kpi.label} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
                 <p className="text-xs text-gray-500">{kpi.label}</p>
                 <p className="text-3xl font-bold mt-1" style={{ color: kpi.color }}>{kpi.value}</p>
-                <p className="text-xs text-gray-600 mt-1">{kpi.sub}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">{kpi.sub}</p>
               </div>
             ))}
           </div>
@@ -274,13 +292,13 @@ export default function AttributiePage() {
           <AttributieHeatmap heatmap={data.heatmap} />
         )}
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-gray-300">Top touch-paden</h2>
-              <p className="text-xs text-gray-600 mt-0.5">First touch → Last touch</p>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Top touch-paden</h2>
+              <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">First touch → Last touch</p>
             </div>
-            <span className="text-xs text-gray-600">alleen multi-touch</span>
+            <span className="text-xs text-gray-400 dark:text-gray-600">alleen multi-touch</span>
           </div>
           {loading ? (
             <div className="px-6 py-12 text-center text-gray-600 text-sm animate-pulse">Laden…</div>
@@ -291,19 +309,19 @@ export default function AttributiePage() {
                 const fc = channelColor(path.first_touch);
                 const cc = channelColor(path.channel);
                 return (
-                  <div key={i} className="flex items-center gap-4 bg-gray-800/40 rounded-xl px-4 py-3 border border-gray-700/30">
-                    <span className="text-xs text-gray-600 w-4 flex-shrink-0">{i + 1}</span>
+                  <div key={i} className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700/30">
+                    <span className="text-xs text-gray-500 w-4 flex-shrink-0">{i + 1}</span>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <span className="text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0" style={{ background: `${fc}22`, color: fc }}>{formatLabel(path.first_touch)}</span>
-                      <span className="text-gray-600 text-xs flex-shrink-0">→</span>
+                      <span className="text-gray-400 text-xs flex-shrink-0">→</span>
                       <span className="text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0" style={{ background: `${cc}22`, color: cc }}>{formatLabel(path.channel)}</span>
                     </div>
-                    <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden max-w-32">
+                    <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden max-w-32">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: fc }} />
                     </div>
                     <div className="flex items-center gap-4 text-right flex-shrink-0">
-                      <div><p className="text-sm font-semibold text-white tabular-nums">{path.orders}</p><p className="text-xs text-gray-600">orders</p></div>
-                      <div><p className="text-sm font-semibold text-indigo-400 tabular-nums">{formatEuro(path.revenue)}</p><p className="text-xs text-gray-600">omzet</p></div>
+                      <div><p className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{path.orders}</p><p className="text-xs text-gray-400 dark:text-gray-600">orders</p></div>
+                      <div><p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums">{formatEuro(path.revenue)}</p><p className="text-xs text-gray-400 dark:text-gray-600">omzet</p></div>
                     </div>
                   </div>
                 );
@@ -312,10 +330,10 @@ export default function AttributiePage() {
           )}
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-800">
-            <h2 className="text-sm font-semibold text-gray-300">Assisterende kanalen</h2>
-            <p className="text-xs text-gray-600 mt-0.5">Kanalen die als first touch hebben bijgedragen aan conversies via andere kanalen</p>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Assisterende kanalen</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Kanalen die als first touch hebben bijgedragen aan conversies via andere kanalen</p>
           </div>
           <div className="p-6 space-y-3">
             {loading ? <div className="text-center py-8 text-gray-600 text-sm animate-pulse">Laden…</div> : data?.byChannel.map((ch, i) => {
@@ -325,15 +343,15 @@ export default function AttributiePage() {
                 <div key={i} className="flex items-center gap-4">
                   <div className="flex items-center gap-2 w-48 flex-shrink-0">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                    <span className="text-sm text-gray-200 truncate">{formatLabel(ch.assisting_channel)}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{formatLabel(ch.assisting_channel)}</span>
                   </div>
-                  <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                   </div>
                   <div className="flex items-center gap-6 text-right flex-shrink-0">
-                    <div><span className="text-sm font-semibold text-white tabular-nums">{ch.total_assisted}</span><span className="text-xs text-gray-600 ml-1">assists</span></div>
-                    <span className="text-sm text-indigo-400 tabular-nums">{formatEuro(ch.total_revenue)}</span>
-                    <span className="text-xs text-gray-600">{ch.converting_channels} kanalen geholpen</span>
+                    <div><span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{ch.total_assisted}</span><span className="text-xs text-gray-500 ml-1">assists</span></div>
+                    <span className="text-sm text-indigo-600 dark:text-indigo-400 tabular-nums">{formatEuro(ch.total_revenue)}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-600">{ch.converting_channels} kanalen geholpen</span>
                   </div>
                 </div>
               );
@@ -341,12 +359,12 @@ export default function AttributiePage() {
           </div>
         </div>
 
-        <div className="bg-gray-800/30 border border-gray-700/30 rounded-xl px-6 py-5">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2">Hoe lees je dit?</h3>
+        <div className="bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700/30 rounded-xl px-6 py-5">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Hoe lees je dit?</h3>
           <div className="space-y-2 text-xs text-gray-500">
-            <p>• <span className="text-gray-300">Diagonaal:</span> single-touch orders — zelfde kanaal voor first & last touch.</p>
-            <p>• <span className="text-gray-300">Google Ads → Organic Search:</span> klant klikte op ad, kocht later via organisch zoeken.</p>
-            <p>• <span className="text-gray-300">Meta Ads → Awin:</span> Meta creëerde awareness, affiliate sloot de sale.</p>
+            <p>• <span className="text-gray-700 dark:text-gray-300">Diagonaal:</span> single-touch orders — zelfde kanaal voor first & last touch.</p>
+            <p>• <span className="text-gray-700 dark:text-gray-300">Google Ads → Organic Search:</span> klant klikte op ad, kocht later via organisch zoeken.</p>
+            <p>• <span className="text-gray-700 dark:text-gray-300">Meta Ads → Awin:</span> Meta creëerde awareness, affiliate sloot de sale.</p>
             <p>• Donkere cellen = meer orders/omzet. Hover voor details.</p>
           </div>
         </div>

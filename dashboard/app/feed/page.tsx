@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Nav from '../components/Nav';
 
 function formatEuro(v: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v ?? 0);
@@ -54,7 +53,7 @@ function GMCFixPanel({ issues, onClose }: { issues: any[]; onClose: () => void }
       <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white">GMC problemen & oplossingen</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-lg leading-none">×</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 dark:text-gray-300 text-lg leading-none">×</button>
         </div>
         {issues.map((issue: any, i: number) => (
           <div key={i} className="bg-gray-800/60 rounded-xl p-4 space-y-2">
@@ -72,7 +71,7 @@ function GMCFixPanel({ issues, onClose }: { issues: any[]; onClose: () => void }
               </span>
             </div>
             <div className="border-l-2 border-indigo-500/40 pl-3">
-              <p className="text-xs text-gray-300 leading-relaxed">💡 {issue.fix}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">💡 {issue.fix}</p>
             </div>
           </div>
         ))}
@@ -114,12 +113,12 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
             <h3 className="text-sm font-semibold text-white">Titel bewerken</h3>
             <p className="text-xs text-gray-500 mt-0.5">#{product.id}</p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 dark:text-gray-300 text-xl leading-none">×</button>
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs text-gray-400 uppercase tracking-wider">Titel</label>
+            <label className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Titel</label>
             <TitleScoreBadge score={score} />
           </div>
           <textarea
@@ -129,7 +128,7 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
             className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white resize-none focus:outline-none focus:border-indigo-500 transition-colors"
           />
           <div className="flex items-center justify-between">
-            <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden mr-3">
+            <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden mr-3">
               <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, (title.length / 150) * 100)}%` }} />
             </div>
             <span className="text-xs text-gray-500 tabular-nums">{title.length} / 150</span>
@@ -138,7 +137,7 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs text-gray-400 uppercase tracking-wider">AI suggesties</label>
+            <label className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI suggesties</label>
             <button onClick={generateAI} disabled={aiLoading}
               className="text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50 transition-colors">
               {aiLoading ? 'Genereren…' : '✦ Genereer met Claude'}
@@ -148,7 +147,7 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
             <div className="space-y-2">
               {suggestions.map((s, i) => (
                 <button key={i} onClick={() => setTitle(s)}
-                  className="w-full text-left text-xs text-gray-300 bg-gray-800/60 border border-gray-700 hover:border-indigo-500/50 rounded-xl px-4 py-3 transition-colors">
+                  className="w-full text-left text-xs text-gray-600 dark:text-gray-300 bg-gray-800/60 border border-gray-700 hover:border-indigo-500/50 rounded-xl px-4 py-3 transition-colors">
                   {s}
                 </button>
               ))}
@@ -160,7 +159,7 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
         </div>
 
         <div className="flex items-center gap-3 pt-1">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-200 transition-colors">
             Annuleren
           </button>
           <button
@@ -211,7 +210,7 @@ export default function FeedPage() {
   const disapprovedProducts = products.filter((p: any) => p.gmcStatus === 'disapproved' || p.gmcStatus === 'limited');
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
       {gmcPanel && <GMCFixPanel issues={gmcPanel} onClose={() => setGmcPanel(null)} />}
       {titleEditor && (
         <TitleEditor
@@ -221,32 +220,7 @@ export default function FeedPage() {
         />
       )}
 
-      <header className="border-b border-gray-800 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Feed Suite — {stats.totalProducts ?? 0} producten ·{' '}
-                <span className={data?.gmcConnected ? 'text-green-400' : 'text-yellow-400'}>
-                  GMC {data?.gmcConnected ? 'verbonden' : 'demo modus'}
-                </span>
-                {' '}· sync {data?.lastSync ? new Date(data.lastSync).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : '—'}
-              </p>
-            </div>
-            <Nav />
-          </div>
-          <div className="flex items-center gap-2">
-            {['NL', 'DE', 'UK', 'BE'].map(m => (
-              <button key={m} onClick={() => setMarketFilter(m)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${marketFilter === m ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'}`}>
-                {m}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
+      
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
 
         {/* GMC alert banner */}
@@ -257,7 +231,7 @@ export default function FeedPage() {
             </p>
             {disapprovedProducts.slice(0, 3).map((p: any, i: number) => (
               <div key={i} className="flex items-center justify-between text-xs">
-                <span className="text-gray-300 truncate max-w-lg">{p.title?.substring(0, 60)}…</span>
+                <span className="text-gray-600 dark:text-gray-300 truncate max-w-lg">{p.title?.substring(0, 60)}…</span>
                 <button onClick={() => setGmcPanel(p.gmcIssues)}
                   className="shrink-0 ml-4 text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
                   Oplossen →
@@ -270,29 +244,29 @@ export default function FeedPage() {
         {/* KPI strip */}
         {!loading && (
           <div className="grid grid-cols-6 gap-3">
-            <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500">Feed coverage</p>
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Feed coverage</p>
               <p className="text-2xl font-bold text-white mt-1">{stats.feedCoverageScore}%</p>
             </div>
             <div className="bg-red-950/30 border border-red-900/30 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500">Afgekeurd GMC</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Afgekeurd GMC</p>
               <p className="text-2xl font-bold text-red-400 mt-1">{stats.disapproved}</p>
             </div>
             <div className="bg-yellow-950/20 border border-yellow-900/20 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500">Beperkt zichtbaar</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Beperkt zichtbaar</p>
               <p className="text-2xl font-bold text-yellow-400 mt-1">{stats.limited}</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500">Titel Poor</p>
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Titel Poor</p>
               <p className="text-2xl font-bold text-red-400 mt-1">{stats.titlePoor}</p>
               <p className="text-xs text-gray-600">van {stats.totalProducts}</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500">Ontbrekende GTIN</p>
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Ontbrekende GTIN</p>
               <p className="text-2xl font-bold text-orange-400 mt-1">{stats.missingGtin}</p>
             </div>
             <div className="bg-blue-950/20 border border-blue-900/20 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500">Heroes</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Heroes</p>
               <p className="text-2xl font-bold text-blue-400 mt-1">{stats.heroes}</p>
               <p className="text-xs text-gray-600">{stats.totalProducts > 0 ? Math.round((stats.heroes / stats.totalProducts) * 100) : 0}% van feed</p>
             </div>
@@ -310,14 +284,14 @@ export default function FeedPage() {
             ].map(({ label, color, count, convValue, desc }) => (
               <button key={label}
                 onClick={() => setLabelFilter(labelFilter === label ? 'all' : label)}
-                className={`text-left bg-gray-900 border rounded-xl px-4 py-4 transition-colors ${labelFilter === label ? 'border-indigo-500' : 'border-gray-800 hover:border-gray-700'}`}>
+                className={`text-left bg-white dark:bg-gray-900 border rounded-xl px-4 py-4 transition-colors ${labelFilter === label ? 'border-indigo-500' : 'border-gray-200 dark:border-gray-800 hover:border-gray-700'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <LabelBadge label={label} />
                   <span className={`text-2xl font-bold text-${color}-400`}>{count}</span>
                 </div>
-                <p className="text-xs text-gray-500">{desc}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{desc}</p>
                 {convValue !== null && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {label === 'Heroes' ? `Omzet: ${formatEuro(convValue)}` : `Spend: ${formatEuro(convValue)}`}
                   </p>
                 )}
@@ -327,7 +301,7 @@ export default function FeedPage() {
         )}
 
         {/* Tab nav */}
-        <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
           {([
             ['producten', '📦 Producten'],
             ['gmc', '🔴 GMC problemen'],
@@ -335,7 +309,7 @@ export default function FeedPage() {
             ['labels', '🏷 Label analyse'],
           ] as const).map(([key, lbl]) => (
             <button key={key} onClick={() => setTab(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === key ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-gray-200'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === key ? 'bg-white text-gray-900' : 'text-gray-500 dark:text-gray-400 hover:text-gray-200'}`}>
               {lbl}
               {key === 'gmc' && stats.disapproved > 0 && (
                 <span className="ml-1.5 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{stats.disapproved}</span>
@@ -350,14 +324,14 @@ export default function FeedPage() {
             <span className="text-xs text-gray-600">Label:</span>
             {['all', 'Heroes', 'Villains', 'Sidekicks', 'Zombies'].map(l => (
               <button key={l} onClick={() => setLabelFilter(l)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${labelFilter === l ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'}`}>
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${labelFilter === l ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-200'}`}>
                 {l === 'all' ? 'Alle labels' : l}
               </button>
             ))}
             <span className="text-xs text-gray-600 ml-3">GMC:</span>
             {['all', 'approved', 'limited', 'disapproved'].map(g => (
               <button key={g} onClick={() => setGmcFilter(g)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${gmcFilter === g ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'}`}>
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${gmcFilter === g ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-200'}`}>
                 {g === 'all' ? 'Alles' : g === 'approved' ? 'Goedgekeurd' : g === 'limited' ? 'Beperkt' : 'Afgekeurd'}
               </button>
             ))}
@@ -370,10 +344,10 @@ export default function FeedPage() {
           <>
             {/* PRODUCTEN TAB */}
             {tab === 'producten' && (
-              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-800 text-gray-500 uppercase tracking-wider">
+                    <tr className="border-b border-gray-200 dark:border-gray-200 dark:border-gray-800 text-gray-500 uppercase tracking-wider">
                       <th className="px-4 py-3 text-left">Product</th>
                       <th className="px-4 py-3 text-right">Clicks</th>
                       <th className="px-4 py-3 text-right">Kosten</th>
@@ -393,10 +367,10 @@ export default function FeedPage() {
                           <p className="text-gray-200 truncate font-medium" title={p.title}>{p.title?.substring(0, 45)}{p.title?.length > 45 ? '…' : ''}</p>
                           <p className="text-gray-600 mt-0.5">{p.sku}</p>
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-gray-300">{p.clicks ?? 0}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-gray-300">{formatEuro(p.cost ?? 0)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-gray-300">{p.conversions ?? 0}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-white font-semibold">{formatEuro(p.conv_value ?? 0)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">{p.clicks ?? 0}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">{formatEuro(p.cost ?? 0)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">{p.conversions ?? 0}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-gray-900 dark:text-white font-semibold">{formatEuro(p.conv_value ?? 0)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">
                           <span className={p.roas >= 400 ? 'text-green-400' : p.roas >= 100 ? 'text-yellow-400' : 'text-red-400'}>
                             {p.roas ?? 0}%
@@ -444,14 +418,14 @@ export default function FeedPage() {
             {tab === 'gmc' && (
               <div className="space-y-3">
                 {disapprovedProducts.length === 0 ? (
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-12 text-center">
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-5 py-12 text-center">
                     <p className="text-green-400 text-lg mb-2">✓ Geen GMC problemen gevonden</p>
                     <p className="text-xs text-gray-600">Alle producten zijn goedgekeurd in Google Merchant Center.</p>
                   </div>
                 ) : (
                   disapprovedProducts.map((p: any) => (
-                    <div key={p.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                      <div className="px-5 py-4 border-b border-gray-800 flex items-start justify-between gap-4">
+                    <div key={p.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                      <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-800 flex items-start justify-between gap-4">
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-gray-200 truncate">{p.title}</p>
                           <p className="text-xs text-gray-600 mt-0.5">SKU: {p.sku} · {p.id}</p>
@@ -468,7 +442,7 @@ export default function FeedPage() {
                               <p className="text-xs font-semibold text-red-400">{issue.description}</p>
                               <div className="flex items-start gap-2">
                                 <span className="text-indigo-400 text-xs shrink-0">💡 Oplossing:</span>
-                                <p className="text-xs text-gray-300 leading-relaxed">{issue.fix}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{issue.fix}</p>
                               </div>
                             </div>
                             <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium h-fit ${
@@ -495,22 +469,22 @@ export default function FeedPage() {
             {tab === 'health' && (
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
-                    <p className="text-xs text-gray-500">Gemiddelde feed score</p>
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Gemiddelde feed score</p>
                     <p className="text-2xl font-bold text-white mt-1">
                       {products.length > 0 ? Math.round(products.reduce((s: number, p: any) => s + p.feedScore, 0) / products.length) : 0}
-                      <span className="text-sm text-gray-500">/100</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">/100</span>
                     </p>
                   </div>
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
-                    <p className="text-xs text-gray-500">Producten zonder problemen</p>
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Producten zonder problemen</p>
                     <p className="text-2xl font-bold text-green-400 mt-1">
                       {products.filter((p: any) => p.feedIssues.length === 0).length}
-                      <span className="text-sm text-gray-500"> / {products.length}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400"> / {products.length}</span>
                     </p>
                   </div>
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
-                    <p className="text-xs text-gray-500">Totale feed issues</p>
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Totale feed issues</p>
                     <p className="text-2xl font-bold text-orange-400 mt-1">
                       {products.reduce((s: number, p: any) => s + p.feedIssues.length, 0)}
                     </p>
@@ -518,24 +492,24 @@ export default function FeedPage() {
                 </div>
 
                 {products.filter((p: any) => p.feedIssues.length > 0).map((p: any) => (
-                  <div key={p.id} className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+                  <div key={p.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-200 truncate">{p.title}</p>
                         <p className="text-xs text-gray-600 mt-0.5">{p.sku}</p>
                       </div>
                       <div className="shrink-0 flex items-center gap-2">
-                        <div className="h-1.5 w-16 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-16 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                           <div className="h-full bg-orange-500 rounded-full" style={{ width: `${p.feedScore}%` }} />
                         </div>
-                        <span className="text-xs text-gray-400 tabular-nums">{p.feedScore}/100</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{p.feedScore}/100</span>
                       </div>
                     </div>
                     <div className="space-y-1.5">
                       {p.feedIssues.map((issue: string, i: number) => (
                         <div key={i} className="flex items-center gap-2 text-xs">
                           <span className="text-orange-400">⚠</span>
-                          <span className="text-gray-400">{issue}</span>
+                          <span className="text-gray-500 dark:text-gray-400">{issue}</span>
                         </div>
                       ))}
                     </div>
@@ -563,7 +537,7 @@ export default function FeedPage() {
                       <div className="space-y-2">
                         {lp.slice(0, 4).map((p: any) => (
                           <div key={p.id} className="flex items-center justify-between text-xs">
-                            <span className="text-gray-400 truncate max-w-xs">{p.title?.substring(0, 35)}…</span>
+                            <span className="text-gray-500 dark:text-gray-400 truncate max-w-xs">{p.title?.substring(0, 35)}…</span>
                             <span className={`tabular-nums font-medium ${p.roas >= 400 ? 'text-green-400' : p.roas >= 100 ? 'text-yellow-400' : 'text-red-400'}`}>
                               {p.roas ?? 0}%
                             </span>
@@ -576,8 +550,8 @@ export default function FeedPage() {
                 </div>
 
                 {/* Title status overzicht */}
-                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                  <h3 className="text-sm font-semibold text-gray-300 mb-4">Titel status overzicht</h3>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-4">Titel status overzicht</h3>
                   <div className="grid grid-cols-4 gap-4">
                     {[
                       { score: 'Poor', color: 'red-400', count: products.filter((p: any) => p.titleScore === 'Poor').length },

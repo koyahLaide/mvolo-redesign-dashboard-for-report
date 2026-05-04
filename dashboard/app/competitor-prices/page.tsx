@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Nav from '../components/Nav';
 
 function formatEuro(v: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v ?? 0);
@@ -61,7 +60,6 @@ export default function CompetitorPrijzenPage() {
   const categories = [...new Set(products.map((p: any) => p.category))].filter(Boolean) as string[];
   const filteredProducts = selectedCategory === 'all' ? products : products.filter((p: any) => p.category === selectedCategory);
 
-  // Groepeer per categorie voor overzicht
   const byCategory: Record<string, any[]> = {};
   products.forEach((p: any) => {
     if (!p.category) return;
@@ -70,39 +68,26 @@ export default function CompetitorPrijzenPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Competitor Prijzen — {data?.totalCompetitors ?? 0} competitors · {data?.totalProducts ?? 0} producten · sync {data?.lastSync ?? '—'}
-              </p>
-            </div>
-            <Nav />
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
 
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
 
         {/* Alerts banner */}
         {!loading && alerts.length > 0 && (
-          <div className="bg-red-950/30 border border-red-900/40 rounded-xl px-5 py-4 space-y-2">
-            <p className="text-xs font-semibold text-red-400 uppercase tracking-wider">⚠ {alerts.length} competitors goedkoper dan Mvolo</p>
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl px-5 py-4 space-y-2">
+            <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">⚠ {alerts.length} competitors goedkoper dan Mvolo</p>
             {alerts.slice(0, 3).map((a: any, i: number) => (
               <div key={i} className="flex items-center justify-between text-xs">
-                <span className="text-gray-300">
+                <span className="text-gray-600 dark:text-gray-300">
                   <span className="font-semibold" style={{ color: compColor(a.competitor) }}>{a.competitor}</span>
                   {' '}verkoopt{' '}
-                  <span className="text-gray-400">{a.category?.replace(/_/g, ' ')}</span>
+                  <span className="text-gray-500 dark:text-gray-400">{a.category?.replace(/_/g, ' ')}</span>
                   {' '}voor{' '}
-                  <span className="text-red-400 font-semibold">{formatEuro(a.competitor_price)}</span>
+                  <span className="text-red-600 dark:text-red-400 font-semibold">{formatEuro(a.competitor_price)}</span>
                   {' '}vs Mvolo{' '}
-                  <span className="text-white">{formatEuro(a.mvolo_price)}</span>
+                  <span className="text-gray-900 dark:text-white font-semibold">{formatEuro(a.mvolo_price)}</span>
                 </span>
-                <span className="text-red-400 font-semibold">{a.diff_pct}%</span>
+                <span className="text-red-600 dark:text-red-400 font-semibold">{a.diff_pct}%</span>
               </div>
             ))}
           </div>
@@ -110,20 +95,20 @@ export default function CompetitorPrijzenPage() {
 
         {/* Prijswijzigingen banner */}
         {!loading && priceChanges.length > 0 && (
-          <div className="bg-yellow-950/20 border border-yellow-900/30 rounded-xl px-5 py-4 space-y-2">
-            <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wider">📊 {priceChanges.length} prijswijzigingen afgelopen 14 dagen</p>
+          <div className="bg-amber-50 dark:bg-yellow-950/20 border border-amber-200 dark:border-yellow-900/30 rounded-xl px-5 py-4 space-y-2">
+            <p className="text-xs font-semibold text-amber-600 dark:text-yellow-400 uppercase tracking-wider">📊 {priceChanges.length} prijswijzigingen afgelopen 14 dagen</p>
             {priceChanges.slice(0, 3).map((c: any, i: number) => (
               <div key={i} className="flex items-center justify-between text-xs">
-                <span className="text-gray-300">
+                <span className="text-gray-600 dark:text-gray-300">
                   <span className="font-semibold" style={{ color: compColor(c.competitor) }}>{c.competitor}</span>
                   {' — '}
-                  <span className="text-gray-400 truncate">{c.product_name?.substring(0, 40)}</span>
+                  <span className="text-gray-500 dark:text-gray-400 truncate">{c.product_name?.substring(0, 40)}</span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="text-gray-500">{formatEuro(c.prev_price)}</span>
-                  <span className="text-gray-600">→</span>
-                  <span className="font-semibold text-white">{formatEuro(c.price)}</span>
-                  <span className={c.price_change_pct < 0 ? 'text-green-400' : 'text-red-400'}>
+                  <span className="text-gray-400 dark:text-gray-500">{formatEuro(c.prev_price)}</span>
+                  <span className="text-gray-500 dark:text-gray-600">→</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatEuro(c.price)}</span>
+                  <span className={c.price_change_pct < 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                     {c.price_change_pct > 0 ? '+' : ''}{Math.round(c.price_change_pct)}%
                   </span>
                 </span>
@@ -134,36 +119,36 @@ export default function CompetitorPrijzenPage() {
 
         {/* KPI banner */}
         {!loading && (
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
               <p className="text-xs text-gray-500">Competitors gemonitord</p>
-              <p className="text-2xl font-bold text-white mt-1">{data?.totalCompetitors}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{data?.totalCompetitors}</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
               <p className="text-xs text-gray-500">Producten getrackt</p>
-              <p className="text-2xl font-bold text-indigo-400 mt-1">{data?.totalProducts}</p>
+              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{data?.totalProducts}</p>
             </div>
-            <div className="bg-red-950/30 border border-red-900/30 rounded-xl px-5 py-4">
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/30 rounded-xl px-5 py-4">
               <p className="text-xs text-gray-500">Goedkoper dan Mvolo</p>
-              <p className="text-2xl font-bold text-red-400 mt-1">{alerts.length}</p>
-              <p className="text-xs text-gray-600">categorieën</p>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{alerts.length}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-600">categorieën</p>
             </div>
-            <div className="bg-yellow-950/20 border border-yellow-900/20 rounded-xl px-5 py-4">
+            <div className="bg-amber-50 dark:bg-yellow-950/20 border border-amber-200 dark:border-yellow-900/20 rounded-xl px-5 py-4">
               <p className="text-xs text-gray-500">Prijswijzigingen (14d)</p>
-              <p className="text-2xl font-bold text-yellow-400 mt-1">{priceChanges.length}</p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-yellow-400 mt-1">{priceChanges.length}</p>
             </div>
           </div>
         )}
 
         {/* Tab nav */}
-        <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
           {([
             ['overzicht',    '📊 Per categorie'],
             ['wijzigingen',  '📈 Prijswijzigingen'],
             ['analyse',      '🎯 Analyse vs Mvolo'],
           ] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === key ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-gray-200'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === key ? 'bg-gray-100 dark:bg-white text-gray-900 dark:text-gray-900' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
               {label}
             </button>
           ))}
@@ -179,12 +164,12 @@ export default function CompetitorPrijzenPage() {
                 {/* Categorie filter */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <button onClick={() => setSelectedCategory('all')}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium ${selectedCategory === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400'}`}>
+                    className={`px-3 py-1 rounded-lg text-xs font-medium ${selectedCategory === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                     Alle categorieën
                   </button>
                   {categories.map(cat => (
                     <button key={cat} onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium ${selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400'}`}>
+                      className={`px-3 py-1 rounded-lg text-xs font-medium ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                       {CATEGORY_LABELS[cat] ?? cat}
                     </button>
                   ))}
@@ -204,20 +189,20 @@ export default function CompetitorPrijzenPage() {
                       return false;
                     });
                     const mvoloPrice = mvolo?.avg_price ?? null;
-                    const cheapest = catProducts.sort((a, b) => a.price - b.price)[0];
+                    const cheapest = catProducts.sort((a: any, b: any) => a.price - b.price)[0];
 
                     return (
-                      <div key={category} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                        <div className="px-5 py-3 border-b border-gray-800 flex items-center justify-between">
+                      <div key={category} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                        <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <h2 className="text-sm font-semibold text-gray-300">{CATEGORY_LABELS[category] ?? category}</h2>
-                            <span className="text-xs text-gray-600">{catProducts.length} producten</span>
+                            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{CATEGORY_LABELS[category] ?? category}</h2>
+                            <span className="text-xs text-gray-400 dark:text-gray-600">{catProducts.length} producten</span>
                           </div>
                           {mvoloPrice && (
                             <span className="text-xs text-gray-500">
-                              Mvolo: <span className="text-white font-semibold">{formatEuro(mvoloPrice)}</span>
+                              Mvolo: <span className="text-gray-900 dark:text-white font-semibold">{formatEuro(mvoloPrice)}</span>
                               {cheapest.price < mvoloPrice * 0.85 && (
-                                <span className="ml-2 text-red-400">⚠ {cheapest.competitor} is goedkoper</span>
+                                <span className="ml-2 text-red-600 dark:text-red-400">⚠ {cheapest.competitor} is goedkoper</span>
                               )}
                             </span>
                           )}
@@ -225,7 +210,7 @@ export default function CompetitorPrijzenPage() {
                         <div className="overflow-x-auto">
                           <table className="w-full text-xs">
                             <thead>
-                              <tr className="border-b border-gray-800 text-gray-500 uppercase tracking-wider">
+                              <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 uppercase tracking-wider">
                                 <th className="px-4 py-2 text-left">Competitor</th>
                                 <th className="px-4 py-2 text-left">Product</th>
                                 <th className="px-4 py-2 text-right">Prijs</th>
@@ -235,40 +220,40 @@ export default function CompetitorPrijzenPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {catProducts.sort((a, b) => a.price - b.price).map((p: any, i: number) => {
+                              {catProducts.sort((a: any, b: any) => a.price - b.price).map((p: any, i: number) => {
                                 const diff = mvoloPrice ? Math.round(((p.price - mvoloPrice) / mvoloPrice) * 100) : null;
                                 return (
-                                  <tr key={i} className={`border-b border-gray-800/50 hover:bg-gray-800/20 ${p.price_changed ? 'bg-yellow-950/10' : ''}`}>
+                                  <tr key={i} className={`border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/20 ${p.price_changed ? 'bg-amber-50 dark:bg-yellow-950/10' : ''}`}>
                                     <td className="px-4 py-2">
                                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs"
                                         style={{ background: `${compColor(p.competitor)}22`, color: compColor(p.competitor) }}>
                                         {p.competitor}
                                       </span>
                                     </td>
-                                    <td className="px-4 py-2 text-gray-400 max-w-xs truncate">{p.product_name}</td>
-                                    <td className="px-4 py-2 text-right font-semibold text-white tabular-nums">
+                                    <td className="px-4 py-2 text-gray-500 dark:text-gray-400 max-w-xs truncate">{p.product_name}</td>
+                                    <td className="px-4 py-2 text-right font-semibold text-gray-900 dark:text-white tabular-nums">
                                       {formatEuro(p.price)}
                                       {p.compare_price > p.price && (
-                                        <span className="text-gray-600 line-through ml-1 text-xs">{formatEuro(p.compare_price)}</span>
+                                        <span className="text-gray-400 line-through ml-1 text-xs">{formatEuro(p.compare_price)}</span>
                                       )}
                                     </td>
                                     {mvoloPrice && (
                                       <td className="px-4 py-2 text-right tabular-nums">
-                                        <span style={{ color: diff! < -15 ? '#ef4444' : diff! < 0 ? '#f59e0b' : '#22c55e' }}>
+                                        <span style={{ color: diff! < -15 ? '#dc2626' : diff! < 0 ? '#d97706' : '#16a34a' }}>
                                           {diff! > 0 ? '+' : ''}{diff}%
                                         </span>
                                       </td>
                                     )}
                                     <td className="px-4 py-2 text-right tabular-nums">
                                       {p.price_changed ? (
-                                        <span style={{ color: (p.price_change_pct ?? 0) < 0 ? '#22c55e' : '#ef4444' }}>
+                                        <span style={{ color: (p.price_change_pct ?? 0) < 0 ? '#16a34a' : '#dc2626' }}>
                                           {(p.price_change_pct ?? 0) > 0 ? '+' : ''}{Math.round(p.price_change_pct ?? 0)}%
                                         </span>
-                                      ) : <span className="text-gray-700">—</span>}
+                                      ) : <span className="text-gray-400 dark:text-gray-700">—</span>}
                                     </td>
                                     <td className="px-4 py-2">
                                       <a href={p.url} target="_blank" rel="noopener noreferrer"
-                                        className="text-indigo-400 hover:text-indigo-300 text-xs">↗</a>
+                                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-xs">↗</a>
                                     </td>
                                   </tr>
                                 );
@@ -286,18 +271,18 @@ export default function CompetitorPrijzenPage() {
             {tab === 'wijzigingen' && (
               <div className="space-y-4">
                 {priceChanges.length === 0 ? (
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-8 text-center text-gray-600">
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-8 text-center text-gray-500 dark:text-gray-600">
                     Nog geen prijswijzigingen gedetecteerd. Data wordt dagelijks bijgewerkt.
                   </div>
                 ) : (
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-800">
-                      <h2 className="text-sm font-semibold text-gray-300">Prijswijzigingen afgelopen 14 dagen</h2>
-                      <p className="text-xs text-gray-600 mt-0.5">Groen = daling (concurrent goedkoper geworden) · Rood = stijging</p>
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+                      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Prijswijzigingen afgelopen 14 dagen</h2>
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Groen = daling (concurrent goedkoper geworden) · Rood = stijging</p>
                     </div>
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="border-b border-gray-800 text-gray-500 uppercase tracking-wider">
+                        <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 uppercase tracking-wider">
                           <th className="px-4 py-2 text-left">Datum</th>
                           <th className="px-4 py-2 text-left">Competitor</th>
                           <th className="px-4 py-2 text-left">Product</th>
@@ -308,7 +293,7 @@ export default function CompetitorPrijzenPage() {
                       </thead>
                       <tbody>
                         {priceChanges.map((c: any, i: number) => (
-                          <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                          <tr key={i} className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/20">
                             <td className="px-4 py-2 text-gray-500">{c.date}</td>
                             <td className="px-4 py-2">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
@@ -316,11 +301,11 @@ export default function CompetitorPrijzenPage() {
                                 {c.competitor}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-gray-400 max-w-xs truncate">{c.product_name}</td>
-                            <td className="px-4 py-2 text-right text-gray-500 tabular-nums line-through">{formatEuro(c.prev_price)}</td>
-                            <td className="px-4 py-2 text-right text-white font-semibold tabular-nums">{formatEuro(c.price)}</td>
+                            <td className="px-4 py-2 text-gray-500 dark:text-gray-400 max-w-xs truncate">{c.product_name}</td>
+                            <td className="px-4 py-2 text-right text-gray-400 dark:text-gray-500 tabular-nums line-through">{formatEuro(c.prev_price)}</td>
+                            <td className="px-4 py-2 text-right text-gray-900 dark:text-white font-semibold tabular-nums">{formatEuro(c.price)}</td>
                             <td className="px-4 py-2 text-right tabular-nums">
-                              <span style={{ color: c.price_change_pct < 0 ? '#22c55e' : '#ef4444' }}>
+                              <span style={{ color: c.price_change_pct < 0 ? '#16a34a' : '#dc2626' }}>
                                 {c.price_change_pct > 0 ? '+' : ''}{Math.round(c.price_change_pct)}%
                               </span>
                             </td>
@@ -349,34 +334,32 @@ export default function CompetitorPrijzenPage() {
                     : null;
 
                   return (
-                    <div key={cat.category} className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+                    <div key={cat.category} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-sm font-semibold text-gray-300">{CATEGORY_LABELS[cat.category] ?? cat.category}</h2>
-                        <span className="text-xs text-gray-600">{cat.competitor_count} competitors</span>
+                        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{CATEGORY_LABELS[cat.category] ?? cat.category}</h2>
+                        <span className="text-xs text-gray-400 dark:text-gray-600">{cat.competitor_count} competitors</span>
                       </div>
                       <div className="flex items-center gap-3 text-xs mb-3">
-                        <span className="text-gray-500">Min: <span className="text-green-400 font-semibold">{formatEuro(cat.min_price)}</span></span>
-                        <span className="text-gray-500">Gem: <span className="text-gray-300 font-semibold">{formatEuro(cat.avg_price)}</span></span>
-                        <span className="text-gray-500">Max: <span className="text-red-400 font-semibold">{formatEuro(cat.max_price)}</span></span>
-                        {mvoloPrice && <span className="text-gray-500">Mvolo: <span className="text-indigo-400 font-semibold">{formatEuro(mvoloPrice)}</span></span>}
+                        <span className="text-gray-500">Min: <span className="text-green-600 dark:text-green-400 font-semibold">{formatEuro(cat.min_price)}</span></span>
+                        <span className="text-gray-500">Gem: <span className="text-gray-700 dark:text-gray-300 font-semibold">{formatEuro(cat.avg_price)}</span></span>
+                        <span className="text-gray-500">Max: <span className="text-red-600 dark:text-red-400 font-semibold">{formatEuro(cat.max_price)}</span></span>
+                        {mvoloPrice && <span className="text-gray-500">Mvolo: <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{formatEuro(mvoloPrice)}</span></span>}
                       </div>
-                      {/* Prijs range bar */}
-                      <div className="relative h-3 bg-gray-800 rounded-full overflow-visible">
+                      <div className="relative h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-visible">
                         <div className="absolute inset-y-0 left-0 right-0 bg-gradient-to-r from-green-900/40 to-red-900/40 rounded-full" />
-                        {/* Mvolo positie */}
                         {positionPct !== null && positionPct >= 0 && positionPct <= 100 && (
-                          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white z-10"
+                          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white dark:border-gray-900 z-10"
                             style={{ left: `${positionPct}%` }}
                             title={`Mvolo: ${formatEuro(mvoloPrice!)}`} />
                         )}
                       </div>
-                      <div className="flex justify-between text-xs text-gray-700 mt-1">
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
                         <span>Goedkoopst</span>
                         <span>Duurste</span>
                       </div>
                       {positionPct !== null && (
                         <p className="text-xs text-gray-500 mt-2">
-                          Mvolo zit op <span className="text-indigo-400 font-semibold">{positionPct}%</span> van de prijsrange —
+                          Mvolo zit op <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{positionPct}%</span> van de prijsrange —
                           {positionPct < 30 ? ' 🟢 goed gepositioneerd' : positionPct < 60 ? ' 🟡 middensegment' : ' 🔴 premium segment'}
                         </p>
                       )}

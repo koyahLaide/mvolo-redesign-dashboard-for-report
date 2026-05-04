@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Nav from '../components/Nav';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, Cell,
@@ -69,8 +68,8 @@ function fmtDur(secs: number) {
 function SectionHead({ title, sub }: { title: string; sub?: string }) {
   return (
     <div className="flex items-center justify-between mb-4">
-      <h2 className="text-sm font-semibold text-gray-200">{title}</h2>
-      {sub && <span className="text-xs text-gray-600">{sub}</span>}
+      <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-800 dark:text-gray-200">{title}</h2>
+      {sub && <span className="text-xs text-gray-400 dark:text-gray-600">{sub}</span>}
     </div>
   );
 }
@@ -91,29 +90,15 @@ export default function JourneyPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
       {/* Header */}
-      <header className="border-b border-gray-800 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Customer Journey analyse</p>
-            </div>
-            <Nav />
-          </div>
-          <span className="text-xs text-gray-600">
-            {new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </span>
-        </div>
-      </header>
-
+      
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-8">
         {loading && (
           <div className="text-center py-24 text-gray-600 animate-pulse">Laden…</div>
         )}
         {error && (
-          <div className="bg-red-900/30 border border-red-800 rounded-lg px-4 py-3 text-red-400 text-sm">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-red-400 text-sm">
             Fout: {error}
           </div>
         )}
@@ -121,7 +106,7 @@ export default function JourneyPage() {
         {stats && (
           <>
             {/* ── SECTIE 1: Meta Attribution Windows ─────────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
               <SectionHead
                 title="Meta Attributievensters"
                 sub="1d / 7d / 28d klik — cumulatief"
@@ -138,12 +123,12 @@ export default function JourneyPage() {
                       const base = stats.metaWindows.total_28d || 1;
                       const pct  = Math.round((purchases / base) * 100);
                       return (
-                        <div key={label} className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4">
+                        <div key={label} className="bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="w-2 h-2 rounded-full" style={{ background: color }} />
                             <span className="text-xs font-medium text-gray-400">{label}</span>
                           </div>
-                          <p className="text-2xl font-bold text-white tabular-nums">{pct}%</p>
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{pct}%</p>
                           <p className="text-xs text-gray-500 mt-1">
                             <span className="text-gray-300">{purchases}</span> aankopen ·{' '}
                             <span className="text-gray-300">{fmtEuro(revenue)}</span>
@@ -155,20 +140,20 @@ export default function JourneyPage() {
                       );
                     })}
                   </div>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-400 dark:text-gray-600">
                     Cumulatief: 1d ≤ 7d ≤ 28d. Basis = 28d_click totaal ({stats.metaWindows.total_28d} aankopen).
                     {' '}Hoge 1d% = sterke koopintentie op de dag van klikken.
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400 dark:text-gray-600">
                   Nog geen Meta window data — voer <code className="text-indigo-400">node src/tools/journey-rebuild.js</code> uit.
                 </p>
               )}
             </section>
 
             {/* ── SECTIE 2: GA4 Verkeer & Journey ───────────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
+            <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-6">
               <SectionHead title="GA4 Verkeer & Journey" sub="afgelopen 30 dagen" />
 
               {/* Sessies per dag */}
@@ -197,7 +182,7 @@ export default function JourneyPage() {
                   <p className="text-xs text-gray-500 mb-3">Sessies per kanaal</p>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                      <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
                         <th className="py-2 text-left font-medium">Kanaal</th>
                         <th className="py-2 text-right font-medium">Sessies</th>
                         <th className="py-2 text-right font-medium">Gebruikers</th>
@@ -211,8 +196,8 @@ export default function JourneyPage() {
                         const newPct = row.users > 0 ? Math.round((row.new_users / row.users) * 100) : 0;
                         const bounce = row.bounce_rate * 100;
                         return (
-                          <tr key={row.channel} className="border-b border-gray-800/40 hover:bg-gray-800/30">
-                            <td className="py-2.5 text-gray-200">{row.channel}</td>
+                          <tr key={row.channel} className="border-b border-gray-200/40 dark:border-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-50 dark:bg-gray-800/30">
+                            <td className="py-2.5 text-gray-800 dark:text-gray-200">{row.channel}</td>
                             <td className="py-2.5 text-right text-gray-300 tabular-nums">{row.sessions.toLocaleString('nl-NL')}</td>
                             <td className="py-2.5 text-right text-gray-400 tabular-nums">{row.users.toLocaleString('nl-NL')}</td>
                             <td className="py-2.5 text-right text-gray-400 tabular-nums">{newPct}%</td>
@@ -240,7 +225,7 @@ export default function JourneyPage() {
                       const pct  = Math.round((row.sessions / max) * 100);
                       const same = row.first_channel === row.session_channel;
                       return (
-                        <div key={i} className="flex items-center gap-3 bg-gray-800/40 rounded-lg px-3 py-2 text-xs">
+                        <div key={i} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/40 rounded-lg px-3 py-2 text-xs">
                           <span className="text-gray-300 w-36 truncate">{row.first_channel}</span>
                           <span className="text-gray-600">→</span>
                           <span className={`w-36 truncate ${same ? 'text-gray-500' : 'text-indigo-400'}`}>{row.session_channel}</span>
@@ -256,32 +241,32 @@ export default function JourneyPage() {
               )}
 
               {!stats.ga4ByChannel?.length && !stats.ga4Daily?.length && (
-                <p className="text-sm text-gray-600">Geen GA4 data — voer een sync uit.</p>
+                <p className="text-sm text-gray-400 dark:text-gray-600">Geen GA4 data — voer een sync uit.</p>
               )}
             </section>
 
             {/* ── SECTIE 3: Herhaalaankoop analyse ──────────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
+            <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-6">
               <SectionHead title="Herhaalaankoop analyse" sub="klantloyaliteit" />
 
               {/* Loyalty KPIs */}
               {(stats.loyalty?.single_order > 0 || stats.loyalty?.repeat_customer > 0) && (
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4">
+                  <div className="bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4">
                     <p className="text-xs text-gray-500 mb-1">Eenmalige klanten</p>
-                    <p className="text-2xl font-bold text-white tabular-nums">{stats.loyalty.single_order}</p>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{stats.loyalty.single_order}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
                       {Math.round((stats.loyalty.single_order / ((stats.loyalty.single_order + stats.loyalty.repeat_customer) || 1)) * 100)}% van totaal
                     </p>
                   </div>
-                  <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4">
+                  <div className="bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4">
                     <p className="text-xs text-gray-500 mb-1">Terugkerende klanten</p>
                     <p className="text-2xl font-bold text-indigo-400 tabular-nums">{stats.loyalty.repeat_customer}</p>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
                       {Math.round((stats.loyalty.repeat_customer / ((stats.loyalty.single_order + stats.loyalty.repeat_customer) || 1)) * 100)}% van totaal
                     </p>
                   </div>
-                  <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4">
+                  <div className="bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4">
                     <p className="text-xs text-gray-500 mb-1">Gem. dagen tussen aankopen</p>
                     <p className="text-2xl font-bold text-emerald-400 tabular-nums">
                       {stats.repeatPurchases?.length
@@ -289,7 +274,7 @@ export default function JourneyPage() {
                             Math.max(stats.repeatPurchases.reduce((s, r) => s + r.repeat_purchases, 0), 1))
                         : '—'}
                     </p>
-                    <p className="text-xs text-gray-600 mt-1">gewogen gemiddelde</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">gewogen gemiddelde</p>
                   </div>
                 </div>
               )}
@@ -343,14 +328,14 @@ export default function JourneyPage() {
               )}
 
               {!stats.repeatPurchases?.length && !stats.returnBuckets?.length && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400 dark:text-gray-600">
                   Nog geen herhaalaankoop data — klanten hebben nog geen tweede bestelling geplaatst, of customer_id ontbreekt.
                 </p>
               )}
             </section>
 
             {/* ── SECTIE 4: ProfitMetrics Touch Data ────────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
+            <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-5">
               <SectionHead
                 title="ProfitMetrics Touch Data"
                 sub={`${stats.pmTouchSummary?.total ?? 0} orders geanalyseerd`}
@@ -360,21 +345,21 @@ export default function JourneyPage() {
                 <>
                   {/* Single vs multi-touch */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4">
+                    <div className="bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4">
                       <p className="text-xs text-gray-500 mb-1">Single-touch orders</p>
-                      <p className="text-2xl font-bold text-white tabular-nums">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
                         {Math.round((stats.pmTouchSummary.single_touch / (stats.pmTouchSummary.total || 1)) * 100)}%
                       </p>
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
                         {stats.pmTouchSummary.single_touch} orders — first = last touch
                       </p>
                     </div>
-                    <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4">
+                    <div className="bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4">
                       <p className="text-xs text-gray-500 mb-1">Multi-touch orders</p>
                       <p className="text-2xl font-bold text-indigo-400 tabular-nums">
                         {Math.round((stats.pmTouchSummary.multi_touch / (stats.pmTouchSummary.total || 1)) * 100)}%
                       </p>
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
                         {stats.pmTouchSummary.multi_touch} orders — meerdere kanalen
                       </p>
                     </div>
@@ -407,7 +392,7 @@ export default function JourneyPage() {
                       <p className="text-xs text-gray-500 mb-2">Top touch-pad combinaties</p>
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="text-gray-500 border-b border-gray-800">
+                          <tr className="text-gray-500 border-b border-gray-200 dark:border-gray-800">
                             <th className="py-2 text-left font-medium">First touch</th>
                             <th className="py-2 text-center font-medium text-gray-700">→</th>
                             <th className="py-2 text-left font-medium">Last touch</th>
@@ -418,8 +403,8 @@ export default function JourneyPage() {
                           {stats.pmTouchRows.slice(0, 8).map((row, i) => {
                             const isMulti = row.first_touch !== row.last_touch && row.last_touch;
                             return (
-                              <tr key={i} className="border-b border-gray-800/40 hover:bg-gray-800/30">
-                                <td className="py-2 text-gray-300">{fmtLabel(row.first_touch)}</td>
+                              <tr key={i} className="border-b border-gray-200/40 dark:border-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-50 dark:bg-gray-800/30">
+                                <td className="py-2 text-gray-700 dark:text-gray-300">{fmtLabel(row.first_touch)}</td>
                                 <td className="py-2 text-center text-gray-700">→</td>
                                 <td className={`py-2 ${isMulti ? 'text-indigo-400' : 'text-gray-500'}`}>
                                   {fmtLabel(row.last_touch ?? row.first_touch)}
@@ -434,7 +419,7 @@ export default function JourneyPage() {
                   )}
                 </>
               ) : (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400 dark:text-gray-600">
                   Geen PM touch data — voer <code className="text-indigo-400">node src/tools/journey-rebuild.js</code> uit
                   om ProfitMetrics metafields te verwerken.
                 </p>
@@ -442,7 +427,7 @@ export default function JourneyPage() {
             </section>
 
             {/* ── SECTIE 5: Visitor Sessions (tracker) ──────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
+            <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-5">
               <SectionHead
                 title="Visitor Sessions — tracker.js"
                 sub={stats.totalTracked > 0 ? `${stats.totalTracked} getrackte aankopen` : 'Data wordt verzameld'}
@@ -456,17 +441,17 @@ export default function JourneyPage() {
                       {stats.journeyByChannel.map((j) => (
                         <div
                           key={j.channel}
-                          className="flex items-center justify-between bg-gray-800/60 rounded-lg px-4 py-3 border border-gray-700/40"
+                          className="flex items-center justify-between bg-gray-100 dark:bg-gray-800/60 rounded-lg px-4 py-3 border border-gray-700/40"
                         >
                           <div className="flex items-center gap-2.5">
                             <span className="w-2 h-2 rounded-full" style={{ background: CHANNEL_COLORS[j.channel] ?? '#6b7280' }} />
-                            <span className="text-sm text-gray-200">{fmtLabel(j.channel)}</span>
-                            <span className="text-xs text-gray-600">({j.total}×)</span>
+                            <span className="text-sm text-gray-800 dark:text-gray-200">{fmtLabel(j.channel)}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-600">({j.total}×)</span>
                           </div>
                           <div className="flex gap-8 text-right">
                             <div>
                               <p className="text-xs text-gray-500">gem. sessies</p>
-                              <p className="text-sm font-semibold text-white tabular-nums">{j.avg_sessions}</p>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{j.avg_sessions}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">dagen tot aankoop</p>
@@ -491,10 +476,10 @@ export default function JourneyPage() {
                             const count = map[bucket] ?? 0;
                             const pct   = Math.round((count / total) * 100);
                             return (
-                              <div key={bucket} className="bg-gray-800/60 rounded-lg p-3 border border-gray-700/40 flex flex-col items-center gap-1">
-                                <span className="text-lg font-bold text-white tabular-nums">{pct}%</span>
+                              <div key={bucket} className="bg-gray-100 dark:bg-gray-800/60 rounded-lg p-3 border border-gray-700/40 flex flex-col items-center gap-1">
+                                <span className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{pct}%</span>
                                 <span className="text-xs text-gray-400 text-center">{bucket}</span>
-                                <span className="text-xs text-gray-600">{count} aankopen</span>
+                                <span className="text-xs text-gray-400 dark:text-gray-600">{count} aankopen</span>
                               </div>
                             );
                           });
@@ -506,7 +491,7 @@ export default function JourneyPage() {
               ) : (
                 <div className="bg-gray-800/40 border border-gray-700/30 rounded-xl p-6 text-center space-y-3">
                   <div className="text-3xl">📡</div>
-                  <p className="text-sm font-medium text-gray-300">Data wordt verzameld</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Data wordt verzameld</p>
                   <p className="text-xs text-gray-500 max-w-md mx-auto">
                     De tracker.js verzamelt sessiedata zodra bezoekers op mvolo.nl een aankoop doen.
                     Installeer de tracker op de bedankpagina van Shopify om sessies te registreren.
@@ -521,7 +506,7 @@ export default function JourneyPage() {
                       <p className="text-xs text-gray-500 mb-2">ProfitMetrics journey (fallback — {stats.vsJourneyByChannel.reduce((s, r) => s + r.total, 0)} orders)</p>
                       <div className="space-y-1.5">
                         {stats.vsJourneyByChannel.map((j) => (
-                          <div key={j.channel} className="flex items-center justify-between bg-gray-800/60 rounded-lg px-3 py-2 text-xs">
+                          <div key={j.channel} className="flex items-center justify-between bg-gray-100 dark:bg-gray-800/60 rounded-lg px-3 py-2 text-xs">
                             <span className="text-gray-300">{fmtLabel(j.channel)}</span>
                             <span className="text-gray-500">{j.avg_sessions} touches · {j.avg_days}d</span>
                           </div>

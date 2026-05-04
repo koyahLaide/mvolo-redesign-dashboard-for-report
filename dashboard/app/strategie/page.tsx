@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Nav from '../components/Nav';
 
 const CHANNEL_COLORS: Record<string, string> = {
   direct: '#6366f1', organic_search: '#22c55e', meta_ads: '#ec4899',
@@ -35,30 +34,11 @@ export default function StrategiePage() {
   const maxContrib = Math.max(...(data?.contributionMargin ?? []).map((c: any) => Math.abs(c.contribution ?? 0)), 1);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Strategie — predictive reorder · bundles · contribution margin</p>
-            </div>
-            <Nav />
-          </div>
-          {data && (
-            <div className="text-right text-xs text-gray-500">
-              Volgende maand: <span className="text-white font-semibold">{MONTHS[data.nextMonth]}</span>
-              <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${data.nextMonthWeight > 1.3 ? 'bg-orange-900/40 text-orange-400' : data.nextMonthWeight < 0.7 ? 'bg-blue-900/40 text-blue-400' : 'bg-gray-800 text-gray-400'}`}>
-                {data.nextMonthWeight}x seizoensfactor
-              </span>
-            </div>
-          )}
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
 
-        <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
           {([
             ['reorder', '📦 Predictive Reorder'],
             ['bundles', '🔗 Bundle Intelligence'],
@@ -79,7 +59,7 @@ export default function StrategiePage() {
             {/* PREDICTIVE REORDER */}
             {tab === 'reorder' && (
               <div className="space-y-6">
-                <div className="bg-indigo-950/30 border border-indigo-800/30 rounded-xl px-5 py-4">
+                <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/30 rounded-xl px-5 py-4">
                   <p className="text-xs text-gray-400">
                     De reorder calculator is gecorrigeerd voor het seizoen van volgende maand
                     (<span className="text-white font-semibold">{MONTHS[data.nextMonth]}: {data.nextMonthWeight}x</span>).
@@ -87,14 +67,14 @@ export default function StrategiePage() {
                   </p>
                 </div>
 
-                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-800">
-                    <h2 className="text-sm font-semibold text-gray-300">Predictive reorder advies</h2>
-                    <p className="text-xs text-gray-600 mt-0.5">Velocity × seizoensfactor {MONTHS[data.nextMonth]} ({data.nextMonthWeight}x)</p>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Predictive reorder advies</h2>
+                    <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Velocity × seizoensfactor {MONTHS[data.nextMonth]} ({data.nextMonthWeight}x)</p>
                   </div>
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-gray-800 text-gray-500 uppercase tracking-wider">
+                      <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 uppercase tracking-wider">
                         <th className="px-5 py-2 text-left">Product</th>
                         <th className="px-5 py-2 text-right">Voorraad</th>
                         <th className="px-5 py-2 text-right">Vel. huidig</th>
@@ -110,13 +90,13 @@ export default function StrategiePage() {
                       {(data?.predictiveReorder ?? []).map((p: any) => {
                         const urgencyColor = p.urgency === 'KRITIEK' ? '#ef4444' : p.urgency === 'SEIZOEN URGENT' ? '#f97316' : '#6366f1';
                         return (
-                          <tr key={p.sku} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                          <tr key={p.sku} className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/20">
                             <td className="px-5 py-2.5 text-gray-300 max-w-[180px] truncate">{p.name}</td>
                             <td className="px-5 py-2.5 text-right tabular-nums" style={{ color: p.stock <= 0 ? '#ef4444' : p.stock <= 5 ? '#f59e0b' : '#fff' }}>{p.stock}</td>
                             <td className="px-5 py-2.5 text-right text-gray-400 tabular-nums">{p.velocity_30d}/d</td>
                             <td className="px-5 py-2.5 text-right text-orange-400 tabular-nums font-semibold">{p.adjusted_velocity}/d</td>
                             <td className="px-5 py-2.5 text-right text-gray-400 tabular-nums">{p.reorder_qty_normal}</td>
-                            <td className="px-5 py-2.5 text-right text-white font-semibold tabular-nums">{p.reorder_qty_seasonal}</td>
+                            <td className="px-5 py-2.5 text-right text-gray-900 dark:text-white font-semibold tabular-nums">{p.reorder_qty_seasonal}</td>
                             <td className="px-5 py-2.5 text-right tabular-nums">
                               {p.extra_for_season > 0 ? <span className="text-orange-400 font-semibold">+{p.extra_for_season}</span> : <span className="text-gray-700">—</span>}
                             </td>
@@ -143,17 +123,17 @@ export default function StrategiePage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   {/* Bundle pairs */}
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-800">
-                      <h2 className="text-sm font-semibold text-gray-300">Samen gekocht</h2>
-                      <p className="text-xs text-gray-600 mt-0.5">Producten die in dezelfde order zitten</p>
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+                      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Samen gekocht</h2>
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Producten die in dezelfde order zitten</p>
                     </div>
-                    <div className="divide-y divide-gray-800/50">
+                    <div className="divide-y divide-gray-200/50 dark:divide-gray-800/50">
                       {(data?.bundlePairs ?? []).filter((p: any) => p.samen_gekocht >= 2).slice(0, 8).map((p: any, i: number) => (
                         <div key={i} className="px-5 py-3">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-300 truncate">{p.naam_a}</p>
+                              <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{p.naam_a}</p>
                               <p className="text-xs text-gray-500 truncate">+ {p.naam_b}</p>
                             </div>
                             <div className="flex items-center gap-3 text-xs text-right flex-shrink-0 ml-3">
@@ -167,17 +147,17 @@ export default function StrategiePage() {
                   </div>
 
                   {/* Cross-sell aanbevelingen */}
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-800">
-                      <h2 className="text-sm font-semibold text-gray-300">Cross-sell triggers</h2>
-                      <p className="text-xs text-gray-600 mt-0.5">Klanten die product A kopen → kopen B na X dagen</p>
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+                      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Cross-sell triggers</h2>
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Klanten die product A kopen → kopen B na X dagen</p>
                     </div>
-                    <div className="divide-y divide-gray-800/50">
+                    <div className="divide-y divide-gray-200/50 dark:divide-gray-800/50">
                       {(data?.crossSellRecs ?? []).filter((p: any) => p.cross_sell_freq >= 1).slice(0, 8).map((p: any, i: number) => (
                         <div key={i} className="px-5 py-3">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-300 truncate">{p.naam_a}</p>
+                              <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{p.naam_a}</p>
                               <p className="text-xs text-indigo-400 truncate">→ {p.naam_b}</p>
                             </div>
                             <div className="text-xs text-right flex-shrink-0 ml-3 space-y-0.5">
@@ -195,7 +175,7 @@ export default function StrategiePage() {
                 </div>
 
                 {/* Klaviyo flow aanbevelingen */}
-                <div className="bg-indigo-950/30 border border-indigo-800/30 rounded-xl px-6 py-5">
+                <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/30 rounded-xl px-6 py-5">
                   <h2 className="text-sm font-semibold text-indigo-300 mb-3">💡 Klaviyo flow aanbevelingen op basis van bundle data</h2>
                   <div className="grid grid-cols-3 gap-4 text-xs">
                     {[
@@ -206,7 +186,7 @@ export default function StrategiePage() {
                       { product: 'Elite 306 koper', followup: 'Circadian Bulb', dagen: 7, freq: 3, reden: '3x samen — direct upsell' },
                       { product: 'Sauna Deken koper', followup: 'LED Face Mask', dagen: 14, freq: 2, reden: '2x samen — skincare bundel' },
                     ].map((r, i) => (
-                      <div key={i} className="bg-gray-900/60 rounded-lg px-4 py-3 border border-gray-800/40">
+                      <div key={i} className="bg-gray-50 dark:bg-gray-50 dark:bg-gray-900/60 rounded-lg px-4 py-3 border border-gray-200 dark:border-gray-800/40">
                         <p className="font-semibold text-white text-xs">{r.product}</p>
                         <p className="text-indigo-400 mt-1">→ Stuur {r.followup}</p>
                         <p className="text-gray-500 mt-0.5">{r.dagen === 0 ? 'Direct in bundel' : `Na ${r.dagen} dagen`}</p>
@@ -225,14 +205,14 @@ export default function StrategiePage() {
                   ⚠ CAC schattingen zijn approximaties. Koppel Meta spend API voor exacte cijfers. Awin commissie zit al in orderwaarde verwerkt.
                 </div>
 
-                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-800">
-                    <h2 className="text-sm font-semibold text-gray-300">Contribution margin per kanaal (30d)</h2>
-                    <p className="text-xs text-gray-600 mt-0.5">Brutomarge minus geschatte acquisitiekosten</p>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Contribution margin per kanaal (30d)</h2>
+                    <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Brutomarge minus geschatte acquisitiekosten</p>
                   </div>
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-gray-800 text-gray-500 uppercase tracking-wider">
+                      <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 uppercase tracking-wider">
                         <th className="px-5 py-2 text-left">Kanaal</th>
                         <th className="px-5 py-2 text-right">Orders</th>
                         <th className="px-5 py-2 text-right">Omzet</th>
@@ -249,7 +229,7 @@ export default function StrategiePage() {
                         const contribColor = ch.contribution_pct === null ? '#6b7280' :
                           ch.contribution_pct > 50 ? '#22c55e' : ch.contribution_pct > 30 ? '#f59e0b' : '#ef4444';
                         return (
-                          <tr key={ch.channel} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                          <tr key={ch.channel} className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/20">
                             <td className="px-5 py-2.5">
                               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs"
                                 style={{ background: `${color}22`, color }}>
@@ -257,7 +237,7 @@ export default function StrategiePage() {
                               </span>
                             </td>
                             <td className="px-5 py-2.5 text-right text-gray-400 tabular-nums">{ch.orders}</td>
-                            <td className="px-5 py-2.5 text-right text-white font-semibold tabular-nums">{formatEuro(ch.revenue)}</td>
+                            <td className="px-5 py-2.5 text-right text-gray-900 dark:text-white font-semibold tabular-nums">{formatEuro(ch.revenue)}</td>
                             <td className="px-5 py-2.5 text-right text-green-400 tabular-nums">
                               {ch.gross_profit !== null ? formatEuro(ch.gross_profit) : '—'}
                             </td>
@@ -278,7 +258,7 @@ export default function StrategiePage() {
                       })}
                     </tbody>
                   </table>
-                  <div className="px-5 py-3 border-t border-gray-800/50 text-xs text-gray-600">
+                  <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-800/50 text-xs text-gray-400 dark:text-gray-600">
                     → Koppel Meta Ads spend API voor exacte CAC per campagne · Organic Search heeft 0 CAC = hoogste contribution
                   </div>
                 </div>
@@ -288,10 +268,10 @@ export default function StrategiePage() {
             {/* SEIZOENSPATROON */}
             {tab === 'seizoen' && (
               <div className="space-y-6">
-                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-800">
-                    <h2 className="text-sm font-semibold text-gray-300">Seizoensgewichten per maand</h2>
-                    <p className="text-xs text-gray-600 mt-0.5">1.0 = gemiddeld · &gt;1.0 = boven gemiddeld · &lt;1.0 = onder gemiddeld</p>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Seizoensgewichten per maand</h2>
+                    <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">1.0 = gemiddeld · &gt;1.0 = boven gemiddeld · &lt;1.0 = onder gemiddeld</p>
                   </div>
                   <div className="p-6 space-y-3">
                     {(data?.seasonWeights ?? []).map((s: any) => {
@@ -301,16 +281,16 @@ export default function StrategiePage() {
                       const color = isPiek ? '#f59e0b' : isDal ? '#6b7280' : '#6366f1';
                       const pct = Math.round((s.weight / maxWeight) * 100);
                       return (
-                        <div key={s.month} className={`flex items-center gap-4 ${isNext ? 'bg-indigo-950/30 rounded-lg px-3 -mx-3' : ''}`}>
+                        <div key={s.month} className={`flex items-center gap-4 ${isNext ? 'bg-indigo-50 dark:bg-indigo-950/30 rounded-lg px-3 -mx-3' : ''}`}>
                           <div className="flex items-center gap-2 w-20 flex-shrink-0">
                             {isNext && <span className="text-indigo-400 text-xs">→</span>}
                             <span className="text-sm text-gray-300 font-medium">{MONTHS[s.month]}</span>
                             {isPiek && <span className="text-xs">🔥</span>}
                             {isDal && <span className="text-xs">❄</span>}
                           </div>
-                          <div className="flex-1 h-6 bg-gray-800 rounded-lg overflow-hidden relative">
+                          <div className="flex-1 h-6 bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden relative">
                             <div className="h-full rounded-lg transition-all" style={{ width: `${pct}%`, background: color, opacity: 0.7 }} />
-                            <span className="absolute inset-0 flex items-center px-3 text-xs font-semibold text-white">
+                            <span className="absolute inset-0 flex items-center px-3 text-xs font-semibold text-gray-900 dark:text-white">
                               {s.weight.toFixed(2)}x · gem. €{Math.round(s.avg_revenue).toLocaleString('nl-NL')}
                             </span>
                           </div>
@@ -321,7 +301,7 @@ export default function StrategiePage() {
                       );
                     })}
                   </div>
-                  <div className="px-6 py-4 bg-gray-800/30 border-t border-gray-800/50 space-y-1 text-xs text-gray-500">
+                  <div className="px-6 py-4 bg-gray-800/30 border-t border-gray-200 dark:border-gray-800/50 space-y-1 text-xs text-gray-500">
                     <p>→ <span className="text-orange-400">November (2.59x)</span>: bestel in augustus/september voor BFCM — 2.6x meer dan gemiddeld</p>
                     <p>→ <span className="text-yellow-400">Januari (1.73x)</span>: bestel in oktober/november — sterk begin van het jaar</p>
                     <p>→ <span className="text-blue-400">Juni (0.26x)</span>: minimale inkoop — zomersal is bijna 4x minder dan november</p>

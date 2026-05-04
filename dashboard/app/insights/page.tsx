@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Nav from '../components/Nav';
 
 function formatEuro(v: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
@@ -43,27 +42,8 @@ export default function InsightsPage() {
   const maxChannel = Math.max(...(data?.channelBreakdown ?? []).map((r: any) => r.revenue), 1);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Gecombineerde inzichten — email impact & voorraad alerts</p>
-            </div>
-            <Nav />
-          </div>
-          <div className="flex items-center gap-2">
-            {['7', '30', '90'].map(p => (
-              <button key={p} onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${period === p ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-                {p}d
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-8">
 
         {loading ? (
@@ -82,27 +62,27 @@ export default function InsightsPage() {
 
               {/* KPI vergelijking */}
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
-                  <p className="text-xs text-gray-500">Klaviyo registered</p>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Klaviyo registered</p>
                   <p className="text-2xl font-bold text-indigo-400 mt-1">{formatEuro(ei.klaviyo_revenue ?? 0)}</p>
                   <p className="text-xs text-gray-600 mt-1">{ei.klaviyo_orders} orders via email</p>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
-                  <p className="text-xs text-gray-500">UTM geattribueerd</p>
-                  <p className="text-2xl font-bold text-gray-400 mt-1">{formatEuro(ei.utm_revenue ?? 0)}</p>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">UTM geattribueerd</p>
+                  <p className="text-2xl font-bold text-gray-500 dark:text-gray-400 mt-1">{formatEuro(ei.utm_revenue ?? 0)}</p>
                   <p className="text-xs text-gray-600 mt-1">{ei.utm_orders} orders met email UTM</p>
                 </div>
                 <div className="bg-red-950/30 border border-red-900/40 rounded-xl px-5 py-4">
-                  <p className="text-xs text-gray-500">Dark email (niet geattribueerd)</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Dark email (niet geattribueerd)</p>
                   <p className="text-2xl font-bold text-red-400 mt-1">{formatEuro(ei.hidden_revenue ?? 0)}</p>
                   <p className="text-xs text-gray-600 mt-1">{ei.hidden_orders} orders als direct/organic geteld · {ei.attribution_gap}% gap</p>
                 </div>
               </div>
 
               {/* Visuele vergelijking bar */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl px-6 py-5">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-6 py-5">
                 <p className="text-xs text-gray-500 mb-3">Verdeling email omzet</p>
-                <div className="h-8 bg-gray-800 rounded-full overflow-hidden flex">
+                <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden flex">
                   {ei.utm_revenue > 0 && (
                     <div className="h-full bg-indigo-500 flex items-center justify-center text-xs font-medium text-white"
                       style={{ width: `${(ei.utm_revenue / ei.klaviyo_revenue) * 100}%` }}>
@@ -113,7 +93,7 @@ export default function InsightsPage() {
                     {ei.attribution_gap}% niet geattribueerd (dark)
                   </div>
                 </div>
-                <div className="flex items-center gap-6 mt-3 text-xs text-gray-500">
+                <div className="flex items-center gap-6 mt-3 text-xs text-gray-500 dark:text-gray-400">
                   <span><span className="text-indigo-400">■</span> UTM-tracked: {formatEuro(ei.utm_revenue ?? 0)}</span>
                   <span><span className="text-red-400">■</span> Dark email: {formatEuro(ei.hidden_revenue ?? 0)}</span>
                   <span className="ml-auto text-gray-600">Bron: Klaviyo Placed Order metric</span>
@@ -122,30 +102,30 @@ export default function InsightsPage() {
 
               {/* Email trend tabel */}
               {data?.emailTrend?.length > 0 && (
-                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-800">
-                    <h3 className="text-sm font-semibold text-gray-300">Dagelijkse email activiteit</h3>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-800">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Dagelijkse email activiteit</h3>
                     <p className="text-xs text-gray-600 mt-0.5">Klaviyo metric vs UTM-geattribueerde orders</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="border-b border-gray-800 text-gray-500">
+                        <tr className="border-b border-gray-200 dark:border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
                           <th className="px-4 py-2 text-left">Datum</th>
                           <th className="px-4 py-2 text-right">Verzonden</th>
                           <th className="px-4 py-2 text-right">Geopend</th>
                           <th className="px-4 py-2 text-right">Geklikt</th>
                           <th className="px-4 py-2 text-right text-indigo-400">Klaviyo orders</th>
                           <th className="px-4 py-2 text-right text-indigo-400">Klaviyo omzet</th>
-                          <th className="px-4 py-2 text-right text-gray-500">UTM orders</th>
-                          <th className="px-4 py-2 text-right text-gray-500">UTM omzet</th>
+                          <th className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">UTM orders</th>
+                          <th className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">UTM omzet</th>
                         </tr>
                       </thead>
                       <tbody>
                         {data.emailTrend.filter((r: any) => r.kl_orders > 0 || r.sent > 0).slice(-14).reverse().map((row: any) => (
                           <tr key={row.date} className="border-b border-gray-800/50 hover:bg-gray-800/20">
-                            <td className="px-4 py-2 text-gray-400">{new Date(row.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}</td>
-                            <td className="px-4 py-2 text-right text-gray-400 tabular-nums">{row.sent || '—'}</td>
+                            <td className="px-4 py-2 text-gray-500 dark:text-gray-400">{new Date(row.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}</td>
+                            <td className="px-4 py-2 text-right text-gray-500 dark:text-gray-400 tabular-nums">{row.sent || '—'}</td>
                             <td className="px-4 py-2 text-right text-green-400 tabular-nums">{row.opened || '—'}</td>
                             <td className="px-4 py-2 text-right text-blue-400 tabular-nums">{row.clicked || '—'}</td>
                             <td className="px-4 py-2 text-right text-indigo-400 font-semibold tabular-nums">{row.kl_orders || '—'}</td>
@@ -162,16 +142,16 @@ export default function InsightsPage() {
 
               {/* Top campaigns */}
               {data?.topCampaigns?.length > 0 && (
-                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-800">
-                    <h3 className="text-sm font-semibold text-gray-300">Top campaigns met directe UTM attributie</h3>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-800">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Top campaigns met directe UTM attributie</h3>
                   </div>
                   <div className="divide-y divide-gray-800/50">
                     {data.topCampaigns.map((c: any, i: number) => (
                       <div key={i} className="px-6 py-3 flex items-center justify-between">
-                        <span className="text-sm text-gray-300 truncate max-w-md">{c.utm_campaign}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-md">{c.utm_campaign}</span>
                         <div className="flex items-center gap-6 text-xs text-right flex-shrink-0">
-                          <span className="text-gray-500">{c.orders} orders</span>
+                          <span className="text-gray-500 dark:text-gray-400">{c.orders} orders</span>
                           <span className="text-indigo-400 font-semibold">{formatEuro(c.revenue)}</span>
                         </div>
                       </div>
@@ -202,7 +182,7 @@ export default function InsightsPage() {
                     const urgencyColor = p.urgency === 'KRITIEK' ? '#ef4444' : p.urgency === 'URGENT' ? '#f97316' : '#eab308';
                     const urgencyBg   = p.urgency === 'KRITIEK' ? '#7f1d1d22' : p.urgency === 'URGENT' ? '#7c2d1222' : '#71350222';
                     return (
-                      <div key={p.sku} className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+                      <div key={p.sku} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-start gap-3">
                             <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 mt-0.5"
@@ -223,7 +203,7 @@ export default function InsightsPage() {
                               <p className="text-xs text-gray-600">{p.days_left !== null ? `${p.days_left}d over` : '∞'}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-300 tabular-nums">{p.velocity.toFixed(2)}/dag</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 tabular-nums">{p.velocity.toFixed(2)}/dag</p>
                               <p className="text-xs text-gray-600">velocity</p>
                             </div>
                             {p.margin !== null && (
@@ -264,10 +244,10 @@ export default function InsightsPage() {
             {/* ── SECTIE 3: KANAAL OMZET BREAKDOWN ─────────────────────── */}
             <section className="space-y-4">
               <h2 className="text-lg font-semibold text-white">📊 Kanaal omzet (last-touch vs Klaviyo-gecorrigeerd)</h2>
-              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-300">Last-touch attributie per kanaal</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Last-touch attributie per kanaal</h3>
                     <p className="text-xs text-gray-600 mt-0.5">
                       Directe omzet is waarschijnlijk {Math.round((ei.hidden_revenue / Math.max(ei.klaviyo_revenue, 1)) * 100)}% hoger dan getoond door dark email
                     </p>
@@ -282,7 +262,7 @@ export default function InsightsPage() {
                       <div key={ch.channel} className="flex items-center gap-3">
                         <div className="flex items-center gap-2 w-40 flex-shrink-0">
                           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                          <span className="text-xs text-gray-300 truncate">{formatLabel(ch.channel)}</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-300 truncate">{formatLabel(ch.channel)}</span>
                           {isDirect && <span className="text-xs text-yellow-500 flex-shrink-0">*</span>}
                         </div>
                         <div className="flex-1 h-5 bg-gray-800 rounded overflow-hidden relative">

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Nav from '../components/Nav';
 
 const CHANNEL_COLORS: Record<string, string> = {
   direct: '#6366f1', organic_search: '#22c55e', meta_ads: '#ec4899',
@@ -40,23 +39,12 @@ export default function PrijzenPage() {
   const withTests = (data?.priceAnalysis ?? []).filter((p: any) => p.test_advice && (p.stock === null || p.stock > 5));
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Marge per kanaal · prijsanalyse · prijstests</p>
-            </div>
-            <Nav />
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
 
         {/* Tab nav */}
-        <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
           {([
             ['marge', '📊 Marge per kanaal'],
             ['prijzen', '💰 Prijsanalyse'],
@@ -92,14 +80,14 @@ export default function PrijzenPage() {
                 )}
 
                 {/* Kanaal marge tabel */}
-                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-800">
-                    <h2 className="text-sm font-semibold text-gray-300">Marge per kanaal</h2>
-                    <p className="text-xs text-gray-600 mt-0.5">Gewogen gemiddelde op basis van verkochte SKUs × COGS</p>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Marge per kanaal</h2>
+                    <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Gewogen gemiddelde op basis van verkochte SKUs × COGS</p>
                   </div>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-xs uppercase tracking-wider border-b border-gray-800 text-gray-500">
+                      <tr className="text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 text-gray-500">
                         <th className="px-5 py-3 text-left">Kanaal</th>
                         <th className="px-5 py-3 text-right">Orders</th>
                         <th className="px-5 py-3 text-right">Omzet</th>
@@ -114,7 +102,7 @@ export default function PrijzenPage() {
                         const color = channelColor(ch.channel);
                         const pct = Math.round((ch.revenue / maxRevenue) * 100);
                         return (
-                          <tr key={ch.channel} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                          <tr key={ch.channel} className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/20">
                             <td className="px-5 py-3">
                               <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full"
                                 style={{ background: `${color}22`, color }}>
@@ -131,7 +119,7 @@ export default function PrijzenPage() {
                             <td className="px-5 py-3 text-right"><MarginBadge pct={ch.margin_pct} /></td>
                             <td className="px-5 py-3">
                               <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden max-w-24">
+                                <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden max-w-24">
                                   <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                                 </div>
                               </div>
@@ -154,14 +142,14 @@ export default function PrijzenPage() {
                     <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-3">💡 Aanbevolen prijstests</p>
                     <div className="grid grid-cols-2 gap-3">
                       {withTests.slice(0, 6).map((p: any) => (
-                        <div key={p.sku} className="bg-gray-900/60 rounded-lg px-4 py-3 border border-gray-800/40">
-                          <p className="text-xs font-semibold text-white">{p.name}</p>
+                        <div key={p.sku} className="bg-gray-50 dark:bg-gray-50 dark:bg-gray-900/60 rounded-lg px-4 py-3 border border-gray-200 dark:border-gray-800/40">
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white">{p.name}</p>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-xs text-gray-500">Nu: <span className="text-white">€{p.test_advice.current_price}</span> ({p.test_advice.current_margin}%)</span>
                             <span className="text-gray-700">→</span>
                             <span className="text-xs text-indigo-400 font-semibold">Test: €{p.test_advice.test_price} ({p.test_advice.projected_margin}%)</span>
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">{p.test_advice.reason}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">{p.test_advice.reason}</p>
                         </div>
                       ))}
                     </div>
@@ -169,30 +157,30 @@ export default function PrijzenPage() {
                 )}
 
                 {/* Per product prijspunten */}
-                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                     <div>
-                      <h2 className="text-sm font-semibold text-gray-300">Prijs × volume per product</h2>
-                      <p className="text-xs text-gray-600 mt-0.5">Op welke prijs wordt elk product het meest verkocht?</p>
+                      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Prijs × volume per product</h2>
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Op welke prijs wordt elk product het meest verkocht?</p>
                     </div>
                   </div>
-                  <div className="divide-y divide-gray-800/50">
+                  <div className="divide-y divide-gray-200/50 dark:divide-gray-800/50">
                     {(data?.priceAnalysis ?? []).map((p: any) => {
                       const isSelected = selectedSku === p.sku;
                       const maxQty = Math.max(...p.price_points.map((r: any) => r.qty), 1);
                       return (
                         <div key={p.sku}>
                           <div
-                            className="px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-800/20 transition-colors"
+                            className="px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors"
                             onClick={() => setSelectedSku(isSelected ? null : p.sku)}
                           >
                             <div className="flex items-center gap-3">
-                              <span className="text-sm font-medium text-gray-200">{p.name}</span>
+                              <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{p.name}</span>
                               {p.alert && p.stock > 0 && (
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-red-900/40 text-red-400">{p.alert}</span>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">{p.alert}</span>
                               )}
                               {p.stock !== null && (
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${p.stock <= 0 ? 'bg-red-900/40 text-red-400' : p.stock <= 5 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-500'}`}>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${p.stock <= 0 ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : p.stock <= 5 ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
                                   {p.stock <= 0 ? 'Uitverkocht' : `${p.stock} op voorraad`}
                                 </span>
                               )}
@@ -206,7 +194,7 @@ export default function PrijzenPage() {
                           </div>
 
                           {isSelected && (
-                            <div className="px-5 pb-4 bg-gray-800/10">
+                            <div className="px-5 pb-4 bg-gray-50 dark:bg-gray-800/10">
                               <div className="space-y-2 pt-2">
                                 {p.price_points.map((r: any, i: number) => {
                                   const barPct = Math.round((r.qty / maxQty) * 100);
@@ -214,10 +202,10 @@ export default function PrijzenPage() {
                                   return (
                                     <div key={r.price} className="flex items-center gap-3">
                                       <span className="text-xs text-gray-400 w-16 text-right flex-shrink-0 tabular-nums">€{r.price.toFixed(2)}</span>
-                                      <div className="flex-1 h-5 bg-gray-800 rounded overflow-hidden relative max-w-xs">
+                                      <div className="flex-1 h-5 bg-gray-200 dark:bg-gray-800 rounded overflow-hidden relative max-w-xs">
                                         <div className="h-full rounded transition-all"
                                           style={{ width: `${barPct}%`, background: isBest ? '#6366f1' : '#374151' }} />
-                                        <span className="absolute inset-0 flex items-center px-2 text-xs text-white font-medium">
+                                        <span className="absolute inset-0 flex items-center px-2 text-xs text-gray-900 dark:text-white font-medium">
                                           {r.qty} stuks ({r.pct_of_volume}%)
                                         </span>
                                       </div>
@@ -249,17 +237,17 @@ export default function PrijzenPage() {
                 {Object.entries(data?.channelProducts ?? {}).map(([channel, products]: [string, any]) => {
                   const color = channelColor(channel);
                   return (
-                    <div key={channel} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                      <div className="px-5 py-3 border-b border-gray-800 flex items-center gap-2">
+                    <div key={channel} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                      <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                        <span className="text-sm font-semibold text-gray-300">{formatLabel(channel)}</span>
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{formatLabel(channel)}</span>
                       </div>
-                      <div className="divide-y divide-gray-800/40">
+                      <div className="divide-y divide-gray-200/40 dark:divide-gray-800/40">
                         {products.map((p: any, i: number) => (
                           <div key={p.sku} className="px-5 py-2.5 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-600">{i + 1}</span>
-                              <span className="text-xs text-gray-300 truncate max-w-[180px]">{p.title?.substring(0, 35)}</span>
+                              <span className="text-xs text-gray-400 dark:text-gray-600">{i + 1}</span>
+                              <span className="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[180px]">{p.title?.substring(0, 35)}</span>
                             </div>
                             <div className="flex items-center gap-3 text-xs text-right flex-shrink-0">
                               <span className="text-gray-500">{p.qty}x</span>

@@ -1,7 +1,7 @@
-'use client'; // build: 1775896413.6295092
+'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import Nav from './components/Nav';
+import Link from 'next/link';
 import ActionBanner from './components/ActionBanner';
 import {
   PieChart, Pie, Cell, Tooltip, Legend,
@@ -30,13 +30,13 @@ interface DayStat {
 }
 
 interface WeekdayStat {
-  weekday: string; // '0'=Sun … '6'=Sat
+  weekday: string;
   orders: number;
   revenue: number;
 }
 
 interface HourStat {
-  hour: string; // '00'–'23'
+  hour: string;
   orders: number;
 }
 
@@ -94,14 +94,12 @@ interface Stats {
   journeyByChannel: { channel: string; avg_sessions: number; avg_days: number; total: number }[];
   journeyHistogram: { bucket: string; count: number }[];
   totalTracked: number;
-  // journey reconstruction
   metaWindows: { total_1d: number; total_7d: number; total_28d: number; rev_1d: number; rev_7d: number; rev_28d: number };
   repeatPurchases: { first_channel: string; repeat_purchases: number; avg_days_between: number }[];
   pmTouchSummary: { total: number; single_touch: number; multi_touch: number };
   pmTouchRows: { total: number; first_touch: string; last_touch: string }[];
   vsJourneyByChannel: { channel: string; avg_sessions: number; avg_days: number; total: number }[];
   directSubchannels: { subchannel: string; orders: number; revenue: number }[];
-  // ga4
   ga4ByChannel: { channel: string; sessions: number; users: number; new_users: number; bounce_rate: number; avg_session_duration: number }[];
   ga4Daily: { date: string; sessions: number; users: number }[];
   ga4DailyByChannel: { date: string; channel: string; sessions: number }[];
@@ -143,13 +141,11 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 const FALLBACK_COLORS = ['#6366f1','#22c55e','#ec4899','#3b82f6','#06b6d4','#f59e0b','#a78bfa','#f97316','#6b7280'];
 
-// 0=Zo, 1=Ma … 6=Za — in display order Ma–Zo we remap
 const WEEKDAY_NAMES: Record<string, string> = {
   '0': 'Zo', '1': 'Ma', '2': 'Di', '3': 'Wo', '4': 'Do', '5': 'Vr', '6': 'Za',
 };
-const WEEKDAY_ORDER = ['1','2','3','4','5','6','0']; // Ma … Zo
+const WEEKDAY_ORDER = ['1','2','3','4','5','6','0'];
 
-// Dutch day abbreviation from Date weekday index (0=Sun)
 const DAY_NL = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
 
 function channelColor(channel: string, index: number) {
@@ -164,22 +160,48 @@ function formatLabel(s: string) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function KpiCard({ label, value, sub, loading }: { label: string; value: string; sub?: string; loading?: boolean }) {
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col gap-1 shadow-sm">
+      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+      {loading
+        ? <span className="text-2xl font-bold text-gray-300 dark:text-gray-600 animate-pulse">Laden…</span>
+        : <span className="text-2xl font-bold text-gray-900 dark:text-white">{value}</span>
+      }
+      {sub && <span className="text-xs text-gray-400 dark:text-gray-500">{sub}</span>}
+    </div>
+  );
+}
+
+function RevenueTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm shadow-lg">
+      <p className="text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+      <p className="text-gray-900 dark:text-white font-semibold">{formatEuro(payload[0].value)}</p>
+      {payload[1] && <p className="text-gray-500 dark:text-gray-400">{payload[1].value} orders</p>}
+    </div>
+  );
+}
+
 function RecentActivity({ orders }: { orders: any[] }) {
   if (!orders || orders.length === 0) return null;
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
-      <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-gray-900/50">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
         <div>
-          <h2 className="text-sm font-semibold text-white">Recente Order Activiteit</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Live feed van de laatste transacties op alle platforms</p>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Recente Order Activiteit</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Live feed van de laatste transacties op alle platforms</p>
         </div>
-        <Link href="/orders" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+        <Link href="/orders" className="text-xs text-blue-600 dark:text-indigo-400 hover:text-blue-500 dark:hover:text-indigo-300 font-medium transition-colors">
           Alle orders bekijken →
         </Link>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="text-xs text-gray-500 uppercase tracking-wider bg-gray-950/50">
+          <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-950/50">
             <tr>
               <th className="px-6 py-3 font-medium">Order #</th>
               <th className="px-6 py-3 font-medium">Platform</th>
@@ -188,22 +210,22 @@ function RecentActivity({ orders }: { orders: any[] }) {
               <th className="px-6 py-3 font-medium">Tijd</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800/50">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-800/50">
             {orders.slice(0, 10).map((order) => (
-              <tr key={order.id} className="hover:bg-gray-800/30 transition-colors group">
-                <td className="px-6 py-4 font-mono text-gray-300">#{order.order_number}</td>
+              <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group">
+                <td className="px-6 py-4 font-mono text-gray-700 dark:text-gray-300">#{order.order_number}</td>
                 <td className="px-6 py-4">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                    order.marketplace === 'bol' ? 'bg-orange-900/30 text-orange-400' : 'bg-blue-900/30 text-blue-400'
+                    order.marketplace === 'bol' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                   }`}>
                     {order.marketplace || 'Shopify'}
                   </span>
                 </td>
-                <td className="px-6 py-4 font-semibold text-white">{formatEuro(order.total_price)}</td>
+                <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{formatEuro(order.total_price)}</td>
                 <td className="px-6 py-4">
-                   <span className="text-xs text-gray-400">{formatLabel(order.channel || 'direct')}</span>
+                   <span className="text-xs text-gray-500 dark:text-gray-400">{formatLabel(order.channel || 'direct')}</span>
                 </td>
-                <td className="px-6 py-4 text-xs text-gray-500">
+                <td className="px-6 py-4 text-xs text-gray-400 dark:text-gray-500">
                   {new Date(order.created_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
                 </td>
               </tr>
@@ -211,34 +233,6 @@ function RecentActivity({ orders }: { orders: any[] }) {
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-
-import Link from 'next/link';
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function KpiCard({ label, value, sub, loading }: { label: string; value: string; sub?: string; loading?: boolean }) {
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col gap-1">
-      <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</span>
-      {loading
-        ? <span className="text-2xl font-bold text-gray-600 animate-pulse">Laden…</span>
-        : <span className="text-2xl font-bold text-white">{value}</span>
-      }
-      {sub && <span className="text-xs text-gray-500">{sub}</span>}
-    </div>
-  );
-}
-
-function RevenueTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm shadow-xl">
-      <p className="text-gray-400 mb-1">{label}</p>
-      <p className="text-white font-semibold">{formatEuro(payload[0].value)}</p>
-      {payload[1] && <p className="text-gray-400">{payload[1].value} orders</p>}
     </div>
   );
 }
@@ -266,7 +260,6 @@ function OrderModal({ channel, period, onClose }: { channel: string; period: Per
       .finally(() => setLoading(false));
   }, [channel, period]);
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
@@ -275,49 +268,47 @@ function OrderModal({ channel, period, onClose }: { channel: string; period: Per
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+      className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-5xl max-h-[85vh] flex flex-col"
+        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl w-full max-w-5xl max-h-[85vh] flex flex-col shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <div>
-            <h2 className="text-sm font-semibold text-white">{formatLabel(channel)}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Orders van dit kanaal — klik buiten of druk Esc om te sluiten</p>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{formatLabel(channel)}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Orders van dit kanaal — klik buiten of druk Esc om te sluiten</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label="Sluiten"
           >
             ✕
           </button>
         </div>
 
-        {/* Body */}
         <div className="overflow-auto flex-1 min-h-0">
           {loading && (
-            <div className="flex items-center justify-center h-48 text-gray-500 text-sm animate-pulse">
+            <div className="flex items-center justify-center h-48 text-gray-400 text-sm animate-pulse">
               Laden…
             </div>
           )}
           {!loading && fetchError && (
-            <div className="flex items-center justify-center h-48 text-red-400 text-sm">
+            <div className="flex items-center justify-center h-48 text-red-500 text-sm">
               Fout: {fetchError}
             </div>
           )}
           {!loading && !fetchError && orders.length === 0 && (
-            <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
+            <div className="flex items-center justify-center h-48 text-gray-400 dark:text-gray-500 text-sm">
               Geen orders gevonden voor dit kanaal.
             </div>
           )}
           {!loading && !fetchError && orders.length > 0 && (
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-gray-900 z-10">
-                <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+              <thead className="sticky top-0 bg-white dark:bg-gray-900 z-10">
+                <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
                   <th className="px-4 py-3 text-left font-medium">Datum</th>
                   <th className="px-4 py-3 text-left font-medium">Dag</th>
                   <th className="px-4 py-3 text-left font-medium">Order #</th>
@@ -334,36 +325,36 @@ function OrderModal({ channel, period, onClose }: { channel: string; period: Per
                   const d = new Date(o.created_at);
                   const dagNaam = DAY_NL[d.getDay()];
                   return (
-                    <tr key={o.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap tabular-nums">
+                    <tr key={o.id} className="border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap tabular-nums">
                         {d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs font-medium text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
                           {dagNaam}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-200 font-mono">#{o.order_number}</td>
-                      <td className="px-4 py-3 text-right text-white font-medium tabular-nums">
+                      <td className="px-4 py-3 text-gray-800 dark:text-gray-200 font-mono">#{o.order_number}</td>
+                      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium tabular-nums">
                         {formatEuro(o.total_price)}
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        {o.first_touch ? formatLabel(o.first_touch) : <span className="text-gray-600">—</span>}
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                        {o.first_touch ? formatLabel(o.first_touch) : <span className="text-gray-300 dark:text-gray-600">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        {o.last_touch ? formatLabel(o.last_touch) : <span className="text-gray-600">—</span>}
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                        {o.last_touch ? formatLabel(o.last_touch) : <span className="text-gray-300 dark:text-gray-600">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         {o.is_new_customer === 1
-                          ? <span className="text-xs bg-emerald-900/50 text-emerald-400 px-2 py-0.5 rounded-full">Nieuw</span>
-                          : <span className="text-xs bg-indigo-900/50 text-indigo-400 px-2 py-0.5 rounded-full">Terugkerend</span>
+                          ? <span className="text-xs bg-green-100 dark:bg-emerald-900/50 text-green-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">Nieuw</span>
+                          : <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full">Terugkerend</span>
                         }
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs max-w-[140px] truncate">
-                        {o.utm_campaign ?? <span className="text-gray-700">—</span>}
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-500 text-xs max-w-[140px] truncate">
+                        {o.utm_campaign ?? <span className="text-gray-300 dark:text-gray-700">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs max-w-[120px] truncate">
-                        {o.utm_content ?? <span className="text-gray-700">—</span>}
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-500 text-xs max-w-[120px] truncate">
+                        {o.utm_content ?? <span className="text-gray-300 dark:text-gray-700">—</span>}
                       </td>
                     </tr>
                   );
@@ -373,9 +364,8 @@ function OrderModal({ channel, period, onClose }: { channel: string; period: Per
           )}
         </div>
 
-        {/* Footer */}
         {!loading && orders.length > 0 && (
-          <div className="px-6 py-3 border-t border-gray-800 flex-shrink-0 text-xs text-gray-600">
+          <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 text-xs text-gray-400 dark:text-gray-600">
             {orders.length} orders getoond
           </div>
         )}
@@ -409,7 +399,6 @@ export default function DashboardPage() {
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
 
-  // Funnel state
   interface FunnelStep { step: string; sessions: number; orders?: number; dropoff_pct: number | null; cr_pct?: number | null; rage_clicks: number; dead_clicks: number; }
   interface FunnelData { funnel: FunnelStep[]; topRagePages: { page: string; rage_clicks: number; dead_clicks: number; channel: string | null }[]; frustrationByChannel: { channel: string; rage_clicks: number; dead_clicks: number }[]; clarityTotals: { rage_clicks: number; dead_clicks: number }; hasData: boolean; aiInsight: string | null; }
   const [funnelData, setFunnelData] = useState<FunnelData | null>(null);
@@ -439,7 +428,6 @@ export default function DashboardPage() {
 
   useEffect(() => { loadStats(period); }, [period, platform, loadStats]);
 
-  // Auto-refresh every 6 hours
   useEffect(() => {
     const SIX_HOURS = 6 * 60 * 60 * 1000;
     const timer = setInterval(() => loadStats(period, true), SIX_HOURS);
@@ -462,7 +450,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="flex items-center justify-center py-32">
         <div className="text-gray-400 text-sm animate-pulse">Loading dashboard…</div>
       </div>
     );
@@ -470,8 +458,8 @@ export default function DashboardPage() {
 
   if (error || !stats) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-red-400 text-sm">{error ?? 'No data'}</div>
+      <div className="flex items-center justify-center py-32">
+        <div className="text-red-500 text-sm">{error ?? 'No data'}</div>
       </div>
     );
   }
@@ -481,7 +469,6 @@ export default function DashboardPage() {
     ? ((stats.returningCustomers / totalOrders) * 100).toFixed(1)
     : '0.0';
 
-  // Customer segment data for stacked bar chart
   const customerSegmentData = stats.channels.map((ch) => {
     const total = (ch.new_customers + ch.returning_customers) || 1;
     return {
@@ -493,7 +480,6 @@ export default function DashboardPage() {
     };
   });
 
-  // Weekday chart data — sorted Ma…Zo
   const weekdayMap = Object.fromEntries(stats.byWeekday.map((r) => [r.weekday, r]));
   const weekdayData = WEEKDAY_ORDER.map((wd) => ({
     dag: WEEKDAY_NAMES[wd],
@@ -502,7 +488,6 @@ export default function DashboardPage() {
   }));
   const maxWdRevenue = Math.max(...weekdayData.map((d) => d.revenue), 0);
 
-  // Hour heatmap data — fill gaps
   const hourMap = Object.fromEntries(stats.byHour.map((r) => [r.hour, r.orders]));
   const maxHourOrders = Math.max(...Object.values(hourMap), 0) || 1;
   const hourData = Array.from({ length: 24 }, (_, i) => {
@@ -511,21 +496,22 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="text-gray-900 dark:text-gray-100">
 
-      {/* Header */}
-      <header className="border-b border-gray-800 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Shopify order attribution by marketing channel</p>
-            </div>
-            <Nav />
+      <ActionBanner />
+
+      <div className="space-y-8">
+
+        {/* Page Title + Filters */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Mvolo Attribution Dashboard</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Shopify order attribution by marketing channel</p>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Search Bar */}
-            <div className="relative group hidden md:block">
+
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Search */}
+            <div className="relative group">
               <input
                 type="text"
                 placeholder="Order zoeken..."
@@ -536,19 +522,17 @@ export default function DashboardPage() {
                     window.location.href = `/orders?search=${encodeURIComponent(searchQuery.trim())}`;
                   }
                 }}
-                className="bg-gray-900 border border-gray-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all w-48 group-hover:w-64"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all w-48 group-hover:w-64"
               />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 group-hover:text-gray-400 transition-colors">
-                🔍
-              </span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </div>
 
-            {/* Live update indicator */}
+            {/* Live indicator */}
             {lastUpdated && (() => {
               const minutesAgo = Math.round((Date.now() - lastUpdated.getTime()) / 60000);
               const isFresh = minutesAgo < 360;
               return (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isFresh ? 'bg-emerald-500 animate-pulse' : 'bg-orange-500'}`} />
                   <span>
                     Laatste update:{' '}
@@ -557,41 +541,40 @@ export default function DashboardPage() {
                 </div>
               );
             })()}
+
+            {/* Refresh */}
             <button
               onClick={() => loadStats(period, true)}
               disabled={refreshing}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-all disabled:opacity-50"
             >
               <span className={refreshing ? 'animate-spin inline-block' : ''}>↻</span>
               {refreshing ? 'Laden…' : 'Nu verversen'}
             </button>
+
+            {/* Share */}
             <button
               onClick={handleShare}
               className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all ${
                 copied
-                  ? 'border-emerald-700 text-emerald-400 bg-emerald-900/20'
-                  : 'border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                  ? 'border-green-300 dark:border-emerald-700 text-green-600 dark:text-emerald-400 bg-green-50 dark:bg-emerald-900/20'
+                  : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-500'
               }`}
             >
               {copied ? '✓ Gekopieerd!' : '⬡ Deel'}
             </button>
           </div>
         </div>
-      </header>
 
-      <ActionBanner />
-      <main className="max-w-7xl mx-auto px-8 py-8 space-y-8">
-
-        {/* Filters row */}
+        {/* Period & Platform Filters */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Period filter */}
-          <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1">
             {PERIOD_LABELS.map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setPeriod(key)}
                 className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  period === key ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-gray-200'
+                  period === key ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 {label}
@@ -599,14 +582,13 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Platform filter */}
-          <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1">
             {([['all', 'Alle platforms'], ['shopify', 'Shopify'], ['bol', 'Bol.com']] as [Platform, string][]).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setPlatform(key)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  platform === key ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-gray-200'
+                  platform === key ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 {key === 'bol' && <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />}
@@ -616,7 +598,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* KPI Cards — row 1: orders / revenue */}
+        {/* KPI Cards — Row 1 */}
         <div className="grid grid-cols-2 lg:grid-cols-7 gap-4">
           <KpiCard label="Totaal orders" value={totalOrders.toLocaleString('nl-NL')} loading={refreshing} />
           <KpiCard label="Totale omzet" value={formatEuro(stats.totalRevenue)} loading={refreshing} />
@@ -655,24 +637,12 @@ export default function DashboardPage() {
           })()}
         </div>
 
-        {/* KPI Cards — row 2: ad spend / ROAS / POAS / CAC */}
+        {/* KPI Cards — Row 2: Ad Spend */}
         {(stats.totalSpend > 0 || stats.overallRoas > 0) && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard
-              label="Totale advertentiekosten"
-              value={formatEuro(stats.totalSpend)}
-              sub="Meta + Google Ads"
-            />
-            <KpiCard
-              label="ROAS"
-              value={`${stats.overallRoas}×`}
-              sub="omzet / adspend"
-            />
-            <KpiCard
-              label="POAS"
-              value={`${stats.overallPoas}×`}
-              sub="winst / adspend"
-            />
+            <KpiCard label="Totale advertentiekosten" value={formatEuro(stats.totalSpend)} sub="Meta + Google Ads" />
+            <KpiCard label="ROAS" value={`${stats.overallRoas}×`} sub="omzet / adspend" />
+            <KpiCard label="POAS" value={`${stats.overallPoas}×`} sub="winst / adspend" />
             <KpiCard
               label="CAC (gem.)"
               value={stats.spendByChannel.length > 0
@@ -689,22 +659,14 @@ export default function DashboardPage() {
 
         <RecentActivity orders={stats.recentOrders} />
 
-        {/* Charts row */}
+        {/* Charts Row: Pie + Line */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* Pie */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-gray-300 mb-4">Orders per kanaal</h2>
+          {/* Pie Chart */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-4">Orders per kanaal</h2>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie
-                  data={stats.channels}
-                  dataKey="orders"
-                  nameKey="channel"
-                  cx="50%" cy="50%"
-                  outerRadius={100} innerRadius={55}
-                  paddingAngle={2}
-                >
+                <Pie data={stats.channels} dataKey="orders" nameKey="channel" cx="50%" cy="50%" outerRadius={100} innerRadius={55} paddingAngle={2}>
                   {stats.channels.map((entry, i) => (
                     <Cell key={entry.channel} fill={channelColor(entry.channel, i)} />
                   ))}
@@ -714,62 +676,53 @@ export default function DashboardPage() {
                     `${Number(value)} orders (${((Number(value) / totalOrders) * 100).toFixed(1)}%)`,
                     formatLabel(String(name ?? "")),
                   ]}
-                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }}
-                  labelStyle={{ color: '#9ca3af' }}
-                  itemStyle={{ color: '#f9fafb' }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                  labelStyle={{ color: '#6b7280' }}
+                  itemStyle={{ color: '#111827' }}
                 />
                 <Legend formatter={(value) => (
-                  <span style={{ color: '#9ca3af', fontSize: 12 }}>{formatLabel(value)}</span>
+                  <span className="text-gray-500 dark:text-gray-400 text-xs">{formatLabel(value)}</span>
                 )} />
               </PieChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Line */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-gray-300 mb-4">Omzet per dag — laatste 30 dagen</h2>
+          {/* Line Chart */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-4">Omzet per dag — laatste 30 dagen</h2>
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={stats.daily} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }}
-                  tickFormatter={(d: string) => d.slice(5)} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="rev" tick={{ fill: '#6b7280', fontSize: 11 }}
-                  tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={48} />
-                <YAxis yAxisId="ord" orientation="right" tick={{ fill: '#6b7280', fontSize: 11 }}
-                  tickLine={false} axisLine={false} width={32} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={(d: string) => d.slice(5)} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="rev" tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={48} />
+                <YAxis yAxisId="ord" orientation="right" tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} width={32} />
                 <Tooltip content={<RevenueTooltip />} />
                 <Line yAxisId="rev" type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                <Line yAxisId="ord" type="monotone" dataKey="orders" stroke="#374151" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+                <Line yAxisId="ord" type="monotone" dataKey="orders" stroke="#d1d5db" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-
-        {/* Spend / Revenue / Profit line chart */}
+        {/* Spend / Revenue / Profit */}
         {stats.dailySpend.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-gray-300 mb-4">Adspend vs Omzet vs Winst — laatste 30 dagen</h2>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-4">Adspend vs Omzet vs Winst — laatste 30 dagen</h2>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={stats.dailySpend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }}
-                  tickFormatter={(d: string) => d.slice(5)} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }}
-                  tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={48} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={(d: string) => d.slice(5)} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={48} />
                 <Tooltip
-                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }}
-                  formatter={(value, name) => [
-                    formatEuro(Number(value)),
-                    name === 'spend' ? 'Adspend' : name === 'revenue' ? 'Omzet' : 'Winst',
-                  ]}
-                  itemStyle={{ color: '#f9fafb' }} labelStyle={{ color: '#9ca3af' }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                  formatter={(value, name) => [formatEuro(Number(value)), name === 'spend' ? 'Adspend' : name === 'revenue' ? 'Omzet' : 'Winst']}
+                  itemStyle={{ color: '#111827' }} labelStyle={{ color: '#6b7280' }}
                 />
                 <Line type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="revenue" />
-                <Line type="monotone" dataKey="profit"  stroke="#22c55e" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="profit" />
-                <Line type="monotone" dataKey="spend"   stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray="4 2" name="spend" />
+                <Line type="monotone" dataKey="profit" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="profit" />
+                <Line type="monotone" dataKey="spend" stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray="4 2" name="spend" />
                 <Legend formatter={(value) => (
-                  <span style={{ color: '#9ca3af', fontSize: 12 }}>
+                  <span className="text-gray-500 dark:text-gray-400 text-xs">
                     {value === 'revenue' ? 'Omzet' : value === 'profit' ? 'Winst' : 'Adspend'}
                   </span>
                 )} />
@@ -778,226 +731,175 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Campaign breakdown table */}
+        {/* Campaign Breakdown Table */}
         {stats.campaigns.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-800">
-              <h2 className="text-sm font-semibold text-gray-300">Campagne breakdown — laatste 30 dagen</h2>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Campagne breakdown — laatste 30 dagen</h2>
             </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                  <th className="px-6 py-3 text-left font-medium">Campagne</th>
-                  <th className="px-6 py-3 text-left font-medium">Kanaal</th>
-                  <th className="px-6 py-3 text-right font-medium">Spend</th>
-                  <th className="px-6 py-3 text-right font-medium">Imp.</th>
-                  <th className="px-6 py-3 text-right font-medium">Clicks</th>
-                  <th className="px-6 py-3 text-right font-medium">CTR</th>
-                  <th className="px-6 py-3 text-right font-medium">Aank.</th>
-                  <th className="px-6 py-3 text-right font-medium">CPC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.campaigns.map((c, i) => {
-                  const ctr = c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(2) : '0.00';
-                  const cpc = c.clicks > 0 ? c.spend / c.clicks : 0;
-                  return (
-                    <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors">
-                      <td className="px-6 py-3 text-gray-200 max-w-[220px] truncate">
-                        {c.campaign_name ?? <span className="text-gray-600">—</span>}
-                      </td>
-                      <td className="px-6 py-3">
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full"
-                          style={{
-                            background: `${CHANNEL_COLORS[c.channel] ?? '#6b7280'}20`,
-                            color: CHANNEL_COLORS[c.channel] ?? '#9ca3af',
-                          }}
-                        >
-                          {formatLabel(c.channel)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-right text-gray-300 tabular-nums">{formatEuro(c.spend)}</td>
-                      <td className="px-6 py-3 text-right text-gray-500 tabular-nums">{c.impressions.toLocaleString('nl-NL')}</td>
-                      <td className="px-6 py-3 text-right text-gray-400 tabular-nums">{c.clicks.toLocaleString('nl-NL')}</td>
-                      <td className="px-6 py-3 text-right text-gray-500 tabular-nums">{ctr}%</td>
-                      <td className="px-6 py-3 text-right text-gray-300 tabular-nums">{c.purchases}</td>
-                      <td className="px-6 py-3 text-right text-gray-400 tabular-nums">{c.clicks > 0 ? formatEuro(cpc) : '—'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
+                    <th className="px-6 py-3 text-left font-medium">Campagne</th>
+                    <th className="px-6 py-3 text-left font-medium">Kanaal</th>
+                    <th className="px-6 py-3 text-right font-medium">Spend</th>
+                    <th className="px-6 py-3 text-right font-medium">Imp.</th>
+                    <th className="px-6 py-3 text-right font-medium">Clicks</th>
+                    <th className="px-6 py-3 text-right font-medium">CTR</th>
+                    <th className="px-6 py-3 text-right font-medium">Aank.</th>
+                    <th className="px-6 py-3 text-right font-medium">CPC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.campaigns.map((c, i) => {
+                    const ctr = c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(2) : '0.00';
+                    const cpc = c.clicks > 0 ? c.spend / c.clicks : 0;
+                    return (
+                      <tr key={i} className="border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <td className="px-6 py-3 text-gray-800 dark:text-gray-200 max-w-[220px] truncate">{c.campaign_name ?? <span className="text-gray-300 dark:text-gray-600">—</span>}</td>
+                        <td className="px-6 py-3">
+                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${CHANNEL_COLORS[c.channel] ?? '#6b7280'}20`, color: CHANNEL_COLORS[c.channel] ?? '#6b7280' }}>
+                            {formatLabel(c.channel)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums">{formatEuro(c.spend)}</td>
+                        <td className="px-6 py-3 text-right text-gray-500 dark:text-gray-500 tabular-nums">{c.impressions.toLocaleString('nl-NL')}</td>
+                        <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400 tabular-nums">{c.clicks.toLocaleString('nl-NL')}</td>
+                        <td className="px-6 py-3 text-right text-gray-500 dark:text-gray-500 tabular-nums">{ctr}%</td>
+                        <td className="px-6 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums">{c.purchases}</td>
+                        <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400 tabular-nums">{c.clicks > 0 ? formatEuro(cpc) : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
-        {/* Channel table */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-300">
-              Alle kanalen
-            </h2>
-            <span className="text-xs text-gray-600">klik een rij voor orderdetails →</span>
+        {/* Channel Table */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Alle kanalen</h2>
+            <span className="text-xs text-gray-400 dark:text-gray-600">klik een rij voor orderdetails →</span>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                <th className="px-6 py-3 text-left font-medium">Kanaal</th>
-                <th className="px-6 py-3 text-right font-medium">Orders</th>
-                <th className="px-6 py-3 text-right font-medium">Omzet</th>
-                <th className="px-6 py-3 text-right font-medium">% totaal</th>
-                <th className="px-6 py-3 text-right font-medium">Gem. waarde</th>
-                <th className="px-6 py-3 text-right font-medium">GA4 Sessies</th>
-                <th className="px-6 py-3 text-right font-medium">Conv.%</th>
-                <th className="px-6 py-3 text-right font-medium">Nieuw</th>
-                <th className="px-6 py-3 text-right font-medium">Terugkerend</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(() => {
-                // Map GA4 channel group names → our internal channel keys
-                const GA4_MAP: Record<string, string> = {
-                  'Direct':          'direct',
-                  'Organic Search':  'organic_search',
-                  'Paid Social':     'meta_ads',
-                  'Paid Search':     'google_search',
-                  'Email':           'email',
-                  'Organic Social':  'organic_social',
-                  'Affiliates':      'awin_affiliate',
-                  'Referral':        'other',
-                  'Unassigned':      'other',
-                  'Cross-network':   'other',
-                };
-                const ga4Map: Record<string, number> = {};
-                for (const row of (stats.ga4ByChannel ?? [])) {
-                  const key = GA4_MAP[row.channel] ?? row.channel.toLowerCase().replace(/\s+/g, '_');
-                  ga4Map[key] = (ga4Map[key] ?? 0) + row.sessions;
-                }
-                return stats.channels.map((ch, i) => {
-                  const pctVal = ((ch.orders / totalOrders) * 100).toFixed(1);
-                  const avg    = ch.orders > 0 ? ch.revenue / ch.orders : 0;
-                  const sess   = ga4Map[ch.channel] ?? 0;
-                  const conv   = sess > 0 ? ((ch.orders / sess) * 100).toFixed(1) : null;
-                  return (
-                    <tr
-                      key={ch.channel}
-                      className="border-b border-gray-800/50 hover:bg-gray-800/50 transition-colors cursor-pointer group"
-                      onClick={() => setSelectedChannel(ch.channel)}
-                    >
-                      <td className="px-6 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ background: channelColor(ch.channel, i) }} />
-                          <span className="text-gray-200 group-hover:text-white transition-colors">
-                            {formatLabel(ch.channel)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-3.5 text-right text-gray-300 tabular-nums">{ch.orders}</td>
-                      <td className="px-6 py-3.5 text-right text-gray-300 tabular-nums">{formatEuro(ch.revenue)}</td>
-                      <td className="px-6 py-3.5 text-right tabular-nums">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                            <div className="h-1.5 rounded-full"
-                              style={{ width: `${pctVal}%`, background: channelColor(ch.channel, i) }} />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
+                  <th className="px-6 py-3 text-left font-medium">Kanaal</th>
+                  <th className="px-6 py-3 text-right font-medium">Orders</th>
+                  <th className="px-6 py-3 text-right font-medium">Omzet</th>
+                  <th className="px-6 py-3 text-right font-medium">% totaal</th>
+                  <th className="px-6 py-3 text-right font-medium">Gem. waarde</th>
+                  <th className="px-6 py-3 text-right font-medium">GA4 Sessies</th>
+                  <th className="px-6 py-3 text-right font-medium">Conv.%</th>
+                  <th className="px-6 py-3 text-right font-medium">Nieuw</th>
+                  <th className="px-6 py-3 text-right font-medium">Terugkerend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const GA4_MAP: Record<string, string> = {
+                    'Direct': 'direct', 'Organic Search': 'organic_search', 'Paid Social': 'meta_ads',
+                    'Paid Search': 'google_search', 'Email': 'email', 'Organic Social': 'organic_social',
+                    'Affiliates': 'awin_affiliate', 'Referral': 'other', 'Unassigned': 'other', 'Cross-network': 'other',
+                  };
+                  const ga4Map: Record<string, number> = {};
+                  for (const row of (stats.ga4ByChannel ?? [])) {
+                    const key = GA4_MAP[row.channel] ?? row.channel.toLowerCase().replace(/\s+/g, '_');
+                    ga4Map[key] = (ga4Map[key] ?? 0) + row.sessions;
+                  }
+                  return stats.channels.map((ch, i) => {
+                    const pctVal = ((ch.orders / totalOrders) * 100).toFixed(1);
+                    const avg = ch.orders > 0 ? ch.revenue / ch.orders : 0;
+                    const sess = ga4Map[ch.channel] ?? 0;
+                    const conv = sess > 0 ? ((ch.orders / sess) * 100).toFixed(1) : null;
+                    return (
+                      <tr key={ch.channel} className="border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer group" onClick={() => setSelectedChannel(ch.channel)}>
+                        <td className="px-6 py-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: channelColor(ch.channel, i) }} />
+                            <span className="text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{formatLabel(ch.channel)}</span>
                           </div>
-                          <span className="text-gray-400 w-10 text-right">{pctVal}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-3.5 text-right text-gray-400 tabular-nums">{formatEuro(avg)}</td>
-                      <td className="px-6 py-3.5 text-right tabular-nums text-gray-400">
-                        {sess > 0 ? sess.toLocaleString('nl-NL') : <span className="text-gray-700">—</span>}
-                      </td>
-                      <td className="px-6 py-3.5 text-right tabular-nums">
-                        {conv !== null
-                          ? <span className={`text-xs font-medium ${parseFloat(conv) >= 2 ? 'text-emerald-400' : parseFloat(conv) >= 0.5 ? 'text-yellow-400' : 'text-gray-500'}`}>{conv}%</span>
-                          : <span className="text-gray-700 text-xs">—</span>
-                        }
-                      </td>
-                      <td className="px-6 py-3.5 text-right tabular-nums">
-                        <span className="text-xs text-emerald-400">{ch.new_customers}</span>
-                      </td>
-                      <td className="px-6 py-3.5 text-right tabular-nums">
-                        <span className="text-xs text-indigo-400">{ch.returning_customers}</span>
-                      </td>
-                    </tr>
-                  );
-                });
-              })()}
-            </tbody>
-          </table>
+                        </td>
+                        <td className="px-6 py-3.5 text-right text-gray-700 dark:text-gray-300 tabular-nums">{ch.orders}</td>
+                        <td className="px-6 py-3.5 text-right text-gray-700 dark:text-gray-300 tabular-nums">{formatEuro(ch.revenue)}</td>
+                        <td className="px-6 py-3.5 text-right tabular-nums">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                              <div className="h-1.5 rounded-full" style={{ width: `${pctVal}%`, background: channelColor(ch.channel, i) }} />
+                            </div>
+                            <span className="text-gray-500 dark:text-gray-400 w-10 text-right">{pctVal}%</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{formatEuro(avg)}</td>
+                        <td className="px-6 py-3.5 text-right tabular-nums text-gray-600 dark:text-gray-400">
+                          {sess > 0 ? sess.toLocaleString('nl-NL') : <span className="text-gray-300 dark:text-gray-700">—</span>}
+                        </td>
+                        <td className="px-6 py-3.5 text-right tabular-nums">
+                          {conv !== null
+                            ? <span className={`text-xs font-medium ${parseFloat(conv) >= 2 ? 'text-emerald-600 dark:text-emerald-400' : parseFloat(conv) >= 0.5 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-500'}`}>{conv}%</span>
+                            : <span className="text-gray-300 dark:text-gray-700 text-xs">—</span>
+                          }
+                        </td>
+                        <td className="px-6 py-3.5 text-right tabular-nums">
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400">{ch.new_customers}</span>
+                        </td>
+                        <td className="px-6 py-3.5 text-right tabular-nums">
+                          <span className="text-xs text-indigo-600 dark:text-indigo-400">{ch.returning_customers}</span>
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Direct breakdown */}
+        {/* Direct Breakdown */}
         {stats.directSubchannels?.length > 0 && (() => {
-          const DIRECT_COLORS: Record<string, string> = {
-            direct_typed:   '#6366f1',
-            dark_social:    '#ec4899',
-            email_no_utm:   '#a78bfa',
-            meta_no_utm:    '#f97316',
-            ios_private:    '#06b6d4',
-            direct_unknown: '#6b7280',
-          };
-          const DIRECT_LABELS: Record<string, string> = {
-            direct_typed:   'Direct getypt / bladwijzer',
-            dark_social:    'Dark social (DM/WhatsApp)',
-            email_no_utm:   'E-mail zonder UTM',
-            meta_no_utm:    'Meta Ads (geen UTM)',
-            ios_private:    'iOS privé',
-            direct_unknown: 'Onbekend direct',
-          };
+          const DIRECT_COLORS: Record<string, string> = { direct_typed: '#6366f1', dark_social: '#ec4899', email_no_utm: '#a78bfa', meta_no_utm: '#f97316', ios_private: '#06b6d4', direct_unknown: '#6b7280' };
+          const DIRECT_LABELS: Record<string, string> = { direct_typed: 'Direct getypt / bladwijzer', dark_social: 'Dark social (DM/WhatsApp)', email_no_utm: 'E-mail zonder UTM', meta_no_utm: 'Meta Ads (geen UTM)', ios_private: 'iOS privé', direct_unknown: 'Onbekend direct' };
           const totalDirect = stats.directSubchannels.reduce((s, r) => s + r.orders, 0) || 1;
           return (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-gray-300">Direct breakdown</h2>
-                <span className="text-xs text-gray-600">{totalDirect} directe orders</span>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Direct breakdown</h2>
+                <span className="text-xs text-gray-400 dark:text-gray-600">{totalDirect} directe orders</span>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-                {/* Pie chart */}
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
-                    <Pie
-                      data={stats.directSubchannels}
-                      dataKey="orders"
-                      nameKey="subchannel"
-                      cx="50%" cy="50%"
-                      outerRadius={85} innerRadius={45}
-                      paddingAngle={2}
-                    >
+                    <Pie data={stats.directSubchannels} dataKey="orders" nameKey="subchannel" cx="50%" cy="50%" outerRadius={85} innerRadius={45} paddingAngle={2}>
                       {stats.directSubchannels.map((entry, i) => (
-                        <Cell key={entry.subchannel} fill={DIRECT_COLORS[entry.subchannel] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
+                        <Cell key={`${entry.subchannel}-${i}`} fill={DIRECT_COLORS[entry.subchannel] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value, name) => [
-                        `${Number(value)} orders (${((Number(value) / totalDirect) * 100).toFixed(1)}%)`,
-                        DIRECT_LABELS[String(name)] ?? String(name),
-                      ]}
-                      contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }}
-                      labelStyle={{ color: '#9ca3af' }}
-                      itemStyle={{ color: '#f9fafb' }}
+                      formatter={(value, name) => [`${Number(value)} orders (${((Number(value) / totalDirect) * 100).toFixed(1)}%)`, DIRECT_LABELS[String(name)] ?? String(name)]}
+                      contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                      labelStyle={{ color: '#6b7280' }} itemStyle={{ color: '#111827' }}
                     />
-                    <Legend formatter={(value) => (
-                      <span style={{ color: '#9ca3af', fontSize: 12 }}>{DIRECT_LABELS[value] ?? value}</span>
-                    )} />
+                    <Legend formatter={(value) => <span className="text-gray-500 dark:text-gray-400 text-xs">{DIRECT_LABELS[value] ?? value}</span>} />
                   </PieChart>
                 </ResponsiveContainer>
-                {/* Table */}
                 <div className="space-y-2">
                   {stats.directSubchannels.map((row, i) => {
                     const pct = ((row.orders / totalDirect) * 100).toFixed(1);
                     const color = DIRECT_COLORS[row.subchannel] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length];
                     return (
-                      <div key={row.subchannel} className="flex items-center gap-3 text-sm">
+                      <div key={`${row.subchannel}-${i}`} className="flex items-center gap-3 text-sm">
                         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
-                        <span className="text-gray-300 flex-1">{DIRECT_LABELS[row.subchannel] ?? row.subchannel}</span>
-                        <span className="text-gray-400 tabular-nums">{row.orders}</span>
-                        <div className="w-16 bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                        <span className="text-gray-700 dark:text-gray-300 flex-1">{DIRECT_LABELS[row.subchannel] ?? row.subchannel}</span>
+                        <span className="text-gray-600 dark:text-gray-400 tabular-nums">{row.orders}</span>
+                        <div className="w-16 bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
                           <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: color }} />
                         </div>
-                        <span className="text-gray-500 text-xs w-10 text-right tabular-nums">{pct}%</span>
-                        <span className="text-gray-600 text-xs w-20 text-right tabular-nums">{formatEuro(row.revenue)}</span>
+                        <span className="text-gray-500 dark:text-gray-500 text-xs w-10 text-right tabular-nums">{pct}%</span>
+                        <span className="text-gray-400 dark:text-gray-600 text-xs w-20 text-right tabular-nums">{formatEuro(row.revenue)}</span>
                       </div>
                     );
                   })}
@@ -1007,212 +909,154 @@ export default function DashboardPage() {
           );
         })()}
 
-        {/* Campaign breakdown — orders grouped by utm_campaign */}
+        {/* Order Campaigns */}
         {stats.orderCampaigns?.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-300">Campaign breakdown</h2>
-              <span className="text-xs text-gray-600">op basis van ProfitMetrics campaign IDs</span>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Campaign breakdown</h2>
+              <span className="text-xs text-gray-400 dark:text-gray-600">op basis van ProfitMetrics campaign IDs</span>
             </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                  <th className="px-6 py-3 text-left font-medium">Campaign ID</th>
-                  <th className="px-6 py-3 text-left font-medium">Kanaal</th>
-                  <th className="px-6 py-3 text-right font-medium">Orders</th>
-                  <th className="px-6 py-3 text-right font-medium">Omzet</th>
-                  <th className="px-6 py-3 text-right font-medium">Gem. waarde</th>
-                  <th className="px-6 py-3 text-right font-medium">% omzet</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.orderCampaigns.map((c, i) => {
-                  const pct = stats.totalRevenue > 0
-                    ? ((c.revenue / stats.totalRevenue) * 100).toFixed(1)
-                    : '0.0';
-                  const color = CHANNEL_COLORS[c.channel] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length];
-                  return (
-                    <tr key={`${c.utm_campaign}-${c.channel}`} className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors">
-                      <td className="px-6 py-3 font-mono text-xs text-gray-300 max-w-[200px] truncate">
-                        {c.utm_campaign}
-                      </td>
-                      <td className="px-6 py-3">
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: `${color}20`, color }}
-                        >
-                          {formatLabel(c.channel)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-right text-gray-300 tabular-nums">{c.orders}</td>
-                      <td className="px-6 py-3 text-right text-gray-300 tabular-nums">{formatEuro(c.revenue)}</td>
-                      <td className="px-6 py-3 text-right text-gray-400 tabular-nums">{formatEuro(c.avg_order_value)}</td>
-                      <td className="px-6 py-3 text-right tabular-nums">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-14 bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                            <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: color }} />
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
+                    <th className="px-6 py-3 text-left font-medium">Campaign ID</th>
+                    <th className="px-6 py-3 text-left font-medium">Kanaal</th>
+                    <th className="px-6 py-3 text-right font-medium">Orders</th>
+                    <th className="px-6 py-3 text-right font-medium">Omzet</th>
+                    <th className="px-6 py-3 text-right font-medium">Gem. waarde</th>
+                    <th className="px-6 py-3 text-right font-medium">% omzet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.orderCampaigns.map((c, i) => {
+                    const pct = stats.totalRevenue > 0 ? ((c.revenue / stats.totalRevenue) * 100).toFixed(1) : '0.0';
+                    const color = CHANNEL_COLORS[c.channel] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length];
+                    return (
+                      <tr key={`${c.utm_campaign}-${c.channel}`} className="border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <td className="px-6 py-3 font-mono text-xs text-gray-700 dark:text-gray-300 max-w-[200px] truncate">{c.utm_campaign}</td>
+                        <td className="px-6 py-3">
+                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${color}20`, color }}>{formatLabel(c.channel)}</span>
+                        </td>
+                        <td className="px-6 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums">{c.orders}</td>
+                        <td className="px-6 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums">{formatEuro(c.revenue)}</td>
+                        <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400 tabular-nums">{formatEuro(c.avg_order_value)}</td>
+                        <td className="px-6 py-3 text-right tabular-nums">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-14 bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                              <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: color }} />
+                            </div>
+                            <span className="text-gray-500 dark:text-gray-500 w-10 text-right">{pct}%</span>
                           </div>
-                          <span className="text-gray-500 w-10 text-right">{pct}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {/* Nieuw vs Terugkerend */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
-          <h2 className="text-sm font-semibold text-gray-300">Nieuw vs Terugkerend per kanaal</h2>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Nieuw vs Terugkerend per kanaal</h2>
           <div>
-            <p className="text-xs text-gray-500 mb-3">% Nieuw vs % Terugkerend</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">% Nieuw vs % Terugkerend</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={customerSegmentData} margin={{ top: 0, right: 0, left: 0, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                <XAxis dataKey="channel" tick={{ fill: '#6b7280', fontSize: 11 }}
-                  tickLine={false} axisLine={false} angle={-25} textAnchor="end" interval={0} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false}
-                  tickFormatter={(v: number) => `${v}%`} domain={[0, 100]} width={36} />
-                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }}
-                  formatter={(value, name) => [`${value}%`, name === 'nieuw' ? 'Nieuw' : 'Terugkerend']}
-                  itemStyle={{ color: '#f9fafb' }} labelStyle={{ color: '#9ca3af' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis dataKey="channel" tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} angle={-25} textAnchor="end" interval={0} />
+                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} domain={[0, 100]} width={36} />
+                <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }} formatter={(value, name) => [`${value}%`, name === 'nieuw' ? 'Nieuw' : 'Terugkerend']} itemStyle={{ color: '#111827' }} labelStyle={{ color: '#6b7280' }} />
                 <Bar dataKey="nieuw" name="nieuw" stackId="a" fill="#10b981" />
                 <Bar dataKey="terugkerend" name="terugkerend" stackId="a" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Legend formatter={(value) => (
-                  <span style={{ color: '#9ca3af', fontSize: 12 }}>
-                    {value === 'nieuw' ? 'Nieuw' : 'Terugkerend'}
-                  </span>
-                )} wrapperStyle={{ paddingTop: 8 }} />
+                <Legend formatter={(value) => <span className="text-gray-500 dark:text-gray-400 text-xs">{value === 'nieuw' ? 'Nieuw' : 'Terugkerend'}</span>} wrapperStyle={{ paddingTop: 8 }} />
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-3">Gem. orderwaarde — nieuw vs terugkerend</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Gem. orderwaarde — nieuw vs terugkerend</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={customerSegmentData} margin={{ top: 0, right: 0, left: 0, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                <XAxis dataKey="channel" tick={{ fill: '#6b7280', fontSize: 11 }}
-                  tickLine={false} axisLine={false} angle={-25} textAnchor="end" interval={0} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false}
-                  tickFormatter={(v: number) => `€${Math.round(v)}`} width={48} />
-                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }}
-                  formatter={(value, name) => [
-                    formatEuro(Number(value)), name === 'avgNew' ? 'Gem. nieuw' : 'Gem. terugkerend',
-                  ]} itemStyle={{ color: '#f9fafb' }} labelStyle={{ color: '#9ca3af' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis dataKey="channel" tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} angle={-25} textAnchor="end" interval={0} />
+                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `€${Math.round(v)}`} width={48} />
+                <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }} formatter={(value, name) => [formatEuro(Number(value)), name === 'avgNew' ? 'Gem. nieuw' : 'Gem. terugkerend']} itemStyle={{ color: '#111827' }} labelStyle={{ color: '#6b7280' }} />
                 <Bar dataKey="avgNew" name="avgNew" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="avgReturning" name="avgReturning" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Legend formatter={(value) => (
-                  <span style={{ color: '#9ca3af', fontSize: 12 }}>
-                    {value === 'avgNew' ? 'Gem. nieuw' : 'Gem. terugkerend'}
-                  </span>
-                )} wrapperStyle={{ paddingTop: 8 }} />
+                <Legend formatter={(value) => <span className="text-gray-500 dark:text-gray-400 text-xs">{value === 'avgNew' ? 'Gem. nieuw' : 'Gem. terugkerend'}</span>} wrapperStyle={{ paddingTop: 8 }} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Beste Dagen Analyse */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
-          <h2 className="text-sm font-semibold text-gray-300">Beste dagen analyse</h2>
-
-          {/* Weekday bar chart */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Beste dagen analyse</h2>
           <div>
-            <p className="text-xs text-gray-500 mb-3">Omzet per dag van de week</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Omzet per dag van de week</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={weekdayData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                 <XAxis dataKey="dag" tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false}
-                  tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} width={44} />
-                <Tooltip
-                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }}
-                  formatter={(value, name) => [
-                    name === 'revenue' ? formatEuro(Number(value)) : `${Number(value)} orders`,
-                    name === 'revenue' ? 'Omzet' : 'Orders',
-                  ]}
-                  itemStyle={{ color: '#f9fafb' }} labelStyle={{ color: '#9ca3af' }}
-                />
-                <Bar dataKey="revenue" name="revenue" radius={[4, 4, 0, 0]}
-                  label={false}>
+                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} width={44} />
+                <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }} formatter={(value, name) => [name === 'revenue' ? formatEuro(Number(value)) : `${Number(value)} orders`, name === 'revenue' ? 'Omzet' : 'Orders']} itemStyle={{ color: '#111827' }} labelStyle={{ color: '#6b7280' }} />
+                <Bar dataKey="revenue" name="revenue" radius={[4, 4, 0, 0]}>
                   {weekdayData.map((entry) => (
-                    <Cell
-                      key={entry.dag}
-                      fill={entry.revenue === maxWdRevenue && maxWdRevenue > 0 ? '#f59e0b' : '#6366f1'}
-                    />
+                    <Cell key={entry.dag} fill={entry.revenue === maxWdRevenue && maxWdRevenue > 0 ? '#f59e0b' : '#6366f1'} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <p className="text-xs text-gray-600 mt-2">Goud = beste dag</p>
+            <p className="text-xs text-gray-400 dark:text-gray-600 mt-2">Goud = beste dag</p>
           </div>
-
-          {/* Orders per weekday */}
           <div>
-            <p className="text-xs text-gray-500 mb-3">Aantal orders per dag van de week</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Aantal orders per dag van de week</p>
             <div className="grid grid-cols-7 gap-2">
               {weekdayData.map((d) => {
                 const maxOrders = Math.max(...weekdayData.map((x) => x.orders), 1);
                 const isBest = d.orders === Math.max(...weekdayData.map((x) => x.orders));
                 return (
                   <div key={d.dag} className="flex flex-col items-center gap-1.5">
-                    <div className="w-full bg-gray-800 rounded-lg overflow-hidden h-20 flex items-end">
-                      <div
-                        className="w-full rounded-t-lg transition-all"
-                        style={{
-                          height: `${(d.orders / maxOrders) * 100}%`,
-                          background: isBest ? '#f59e0b' : '#4b5563',
-                        }}
-                      />
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden h-20 flex items-end">
+                      <div className="w-full rounded-t-lg transition-all" style={{ height: `${(d.orders / maxOrders) * 100}%`, background: isBest ? '#f59e0b' : '#9ca3af' }} />
                     </div>
-                    <span className="text-xs font-medium text-gray-400">{d.dag}</span>
-                    <span className="text-xs text-gray-600 tabular-nums">{d.orders}</span>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{d.dag}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-600 tabular-nums">{d.orders}</span>
                   </div>
                 );
               })}
             </div>
           </div>
-
-          {/* Hour heatmap */}
           <div>
-            <p className="text-xs text-gray-500 mb-3">Orders per uur van de dag (heatmap)</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Orders per uur van de dag (heatmap)</p>
             <div className="grid grid-cols-12 gap-1">
               {hourData.map((h) => {
                 const intensity = maxHourOrders > 0 ? h.orders / maxHourOrders : 0;
                 const opacity = 0.08 + intensity * 0.92;
                 return (
-                  <div
-                    key={h.hour}
-                    className="relative group flex flex-col items-center"
-                    title={`${h.hour}:00 — ${h.orders} orders`}
-                  >
-                    <div
-                      className="w-full h-10 rounded-md flex items-center justify-center text-xs font-medium cursor-default"
-                      style={{
-                        background: `rgba(99, 102, 241, ${opacity})`,
-                        color: intensity > 0.5 ? '#e0e7ff' : '#6b7280',
-                      }}
-                    >
+                  <div key={h.hour} className="relative group flex flex-col items-center" title={`${h.hour}:00 — ${h.orders} orders`}>
+                    <div className="w-full h-10 rounded-md flex items-center justify-center text-xs font-medium cursor-default" style={{ background: `rgba(99, 102, 241, ${opacity})`, color: intensity > 0.5 ? '#e0e7ff' : '#6b7280' }}>
                       {h.orders > 0 ? h.orders : ''}
                     </div>
-                    <span className="text-[10px] text-gray-600 mt-0.5">{h.hour}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-600 mt-0.5">{h.hour}</span>
                   </div>
                 );
               })}
             </div>
-            <p className="text-xs text-gray-600 mt-2">Donkerder = meer orders — hover voor details</p>
+            <p className="text-xs text-gray-400 dark:text-gray-600 mt-2">Donkerder = meer orders — hover voor details</p>
           </div>
         </div>
 
-        {/* Top 5 days */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-800">
-            <h2 className="text-sm font-semibold text-gray-300">Top 5 dagen op omzet</h2>
+        {/* Top 5 Days */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Top 5 dagen op omzet</h2>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+              <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
                 <th className="px-6 py-3 text-left font-medium">Datum</th>
                 <th className="px-6 py-3 text-right font-medium">Orders</th>
                 <th className="px-6 py-3 text-right font-medium">Omzet</th>
@@ -1220,21 +1064,15 @@ export default function DashboardPage() {
             </thead>
             <tbody>
               {stats.topDays.map((day, i) => (
-                <tr key={day.date} className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors">
+                <tr key={day.date} className="border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                   <td className="px-6 py-3.5">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-gray-600 w-4">{i + 1}</span>
-                      <span className="text-gray-200">
-                        {new Date(day.date).toLocaleDateString('nl-NL', {
-                          weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
-                        })}
-                      </span>
+                      <span className="text-xs font-bold text-gray-400 dark:text-gray-600 w-4">{i + 1}</span>
+                      <span className="text-gray-800 dark:text-gray-200">{new Date(day.date).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-3.5 text-right text-gray-300 tabular-nums">{day.orders}</td>
-                  <td className="px-6 py-3.5 text-right font-semibold text-indigo-400 tabular-nums">
-                    {formatEuro(day.revenue)}
-                  </td>
+                  <td className="px-6 py-3.5 text-right text-gray-700 dark:text-gray-300 tabular-nums">{day.orders}</td>
+                  <td className="px-6 py-3.5 text-right font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums">{formatEuro(day.revenue)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1243,45 +1081,35 @@ export default function DashboardPage() {
 
         {/* Customer Journey */}
         {stats.journeyByChannel?.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-6 shadow-sm">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-300">Customer Journey</h2>
-              <span className="text-xs text-gray-600">{stats.totalTracked} tracked aankopen</span>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Customer Journey</h2>
+              <span className="text-xs text-gray-400 dark:text-gray-600">{stats.totalTracked} tracked aankopen</span>
             </div>
-
-            {/* Insights per channel */}
             <div className="space-y-2">
               {stats.journeyByChannel.map((j) => (
-                <div
-                  key={j.channel}
-                  className="flex items-center justify-between bg-gray-800/60 rounded-lg px-4 py-3 border border-gray-700/40"
-                >
+                <div key={j.channel} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/60 rounded-lg px-4 py-3 border border-gray-200 dark:border-gray-700/40">
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: CHANNEL_COLORS[j.channel] ?? '#6b7280' }}
-                    />
-                    <span className="text-sm text-gray-200">{formatLabel(j.channel)}</span>
-                    <span className="text-xs text-gray-600">({j.total}×)</span>
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CHANNEL_COLORS[j.channel] ?? '#6b7280' }} />
+                    <span className="text-sm text-gray-800 dark:text-gray-200">{formatLabel(j.channel)}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-600">({j.total}×)</span>
                   </div>
                   <div className="flex items-center gap-6 text-right">
                     <div>
-                      <p className="text-xs text-gray-500">gem. sessies</p>
-                      <p className="text-sm font-semibold text-white tabular-nums">{j.avg_sessions}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">gem. sessies</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{j.avg_sessions}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">dagen tot aankoop</p>
-                      <p className="text-sm font-semibold text-indigo-400 tabular-nums">{j.avg_days}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">dagen tot aankoop</p>
+                      <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums">{j.avg_days}</p>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Session count histogram */}
             {stats.journeyHistogram?.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-3">Sessies voor aankoop — verdeling</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Sessies voor aankoop — verdeling</p>
                 <div className="grid grid-cols-4 gap-3">
                   {(() => {
                     const total = stats.journeyHistogram.reduce((s, b) => s + b.count, 0) || 1;
@@ -1289,12 +1117,12 @@ export default function DashboardPage() {
                     const map = Object.fromEntries(stats.journeyHistogram.map((b) => [b.bucket, b.count]));
                     return buckets.map((bucket) => {
                       const count = map[bucket] ?? 0;
-                      const pct   = Math.round((count / total) * 100);
+                      const pct = Math.round((count / total) * 100);
                       return (
-                        <div key={bucket} className="bg-gray-800/60 rounded-lg p-3 border border-gray-700/40 flex flex-col items-center gap-1">
-                          <span className="text-lg font-bold text-white tabular-nums">{pct}%</span>
-                          <span className="text-xs text-gray-400">{bucket}</span>
-                          <span className="text-xs text-gray-600">{count} aankopen</span>
+                        <div key={bucket} className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-3 border border-gray-200 dark:border-gray-700/40 flex flex-col items-center gap-1">
+                          <span className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{pct}%</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400">{bucket}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-600">{count} aankopen</span>
                         </div>
                       );
                     });
@@ -1305,42 +1133,34 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* GA4: Verkeer & Journey */}
+        {/* GA4 Verkeer & Journey */}
         {(stats.ga4ByChannel?.length > 0 || stats.ga4Daily?.length > 0) && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-6 shadow-sm">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-300">Verkeer & Journey — Google Analytics 4</h2>
-              <span className="text-xs text-gray-600">afgelopen 30 dagen</span>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Verkeer & Journey — Google Analytics 4</h2>
+              <span className="text-xs text-gray-400 dark:text-gray-600">afgelopen 30 dagen</span>
             </div>
-
-            {/* Sessies per dag lijndiagram */}
             {stats.ga4Daily?.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-3">Sessies per dag</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Sessies per dag</p>
                 <ResponsiveContainer width="100%" height={160}>
                   <LineChart data={stats.ga4Daily} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} tickFormatter={(v: string) => v.slice(5)} />
                     <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} width={36} />
-                    <Tooltip
-                      contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
-                      labelStyle={{ color: '#9ca3af' }}
-                      formatter={(v: unknown) => [(v as number).toLocaleString('nl-NL'), 'sessies']}
-                    />
+                    <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} labelStyle={{ color: '#6b7280' }} formatter={(v: unknown) => [(v as number).toLocaleString('nl-NL'), 'sessies']} />
                     <Line type="monotone" dataKey="sessions" stroke="#6366f1" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
-
-            {/* Kanaal breakdown tabel */}
             {stats.ga4ByChannel?.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-3">Sessies per kanaal</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Sessies per kanaal</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                      <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
                         <th className="py-2 text-left font-medium">Kanaal (GA4)</th>
                         <th className="py-2 text-right font-medium">Sessies</th>
                         <th className="py-2 text-right font-medium">Gebruikers</th>
@@ -1352,21 +1172,21 @@ export default function DashboardPage() {
                     <tbody>
                       {stats.ga4ByChannel.map((row) => {
                         const newPct = row.users > 0 ? Math.round((row.new_users / row.users) * 100) : 0;
-                        const mins   = Math.floor(row.avg_session_duration / 60);
-                        const secs   = Math.round(row.avg_session_duration % 60);
-                        const dur    = `${mins}:${String(secs).padStart(2, '0')}`;
+                        const mins = Math.floor(row.avg_session_duration / 60);
+                        const secs = Math.round(row.avg_session_duration % 60);
+                        const dur = `${mins}:${String(secs).padStart(2, '0')}`;
                         return (
-                          <tr key={row.channel} className="border-b border-gray-800/40 hover:bg-gray-800/30 transition-colors">
-                            <td className="py-2.5 text-gray-200">{row.channel}</td>
-                            <td className="py-2.5 text-right text-gray-300 tabular-nums">{row.sessions.toLocaleString('nl-NL')}</td>
-                            <td className="py-2.5 text-right text-gray-400 tabular-nums">{row.users.toLocaleString('nl-NL')}</td>
-                            <td className="py-2.5 text-right text-gray-400 tabular-nums">{newPct}%</td>
+                          <tr key={row.channel} className="border-b border-gray-200 dark:border-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                            <td className="py-2.5 text-gray-800 dark:text-gray-200">{row.channel}</td>
+                            <td className="py-2.5 text-right text-gray-700 dark:text-gray-300 tabular-nums">{row.sessions.toLocaleString('nl-NL')}</td>
+                            <td className="py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{row.users.toLocaleString('nl-NL')}</td>
+                            <td className="py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{newPct}%</td>
                             <td className="py-2.5 text-right tabular-nums">
-                              <span className={row.bounce_rate > 0.6 ? 'text-red-400' : row.bounce_rate > 0.4 ? 'text-yellow-400' : 'text-emerald-400'}>
+                              <span className={row.bounce_rate > 0.6 ? 'text-red-500' : row.bounce_rate > 0.4 ? 'text-yellow-600 dark:text-yellow-400' : 'text-emerald-600 dark:text-emerald-400'}>
                                 {(row.bounce_rate * 100).toFixed(0)}%
                               </span>
                             </td>
-                            <td className="py-2.5 text-right text-gray-400 tabular-nums">{dur}</td>
+                            <td className="py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{dur}</td>
                           </tr>
                         );
                       })}
@@ -1375,29 +1195,23 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-
-            {/* First-touch → session-channel journey matrix */}
             {stats.ga4Journeys?.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-3">Journey: eerste kanaal → sessiekanaal (top paden)</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Journey: eerste kanaal → sessiekanaal (top paden)</p>
                 <div className="space-y-1.5">
                   {stats.ga4Journeys.slice(0, 10).map((row, i) => {
                     const maxSess = stats.ga4Journeys[0]?.sessions || 1;
                     const pct = Math.round((row.sessions / maxSess) * 100);
                     const sameChannel = row.first_channel === row.session_channel;
                     return (
-                      <div key={i} className="flex items-center gap-3 bg-gray-800/40 rounded-lg px-3 py-2 text-xs">
-                        <span className="text-gray-300 w-32 truncate">{row.first_channel}</span>
-                        <span className="text-gray-600">→</span>
-                        <span className={`w-32 truncate ${sameChannel ? 'text-gray-500' : 'text-indigo-400'}`}>
-                          {row.session_channel}
-                        </span>
-                        <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div key={i} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/40 rounded-lg px-3 py-2 text-xs">
+                        <span className="text-gray-700 dark:text-gray-300 w-32 truncate">{row.first_channel}</span>
+                        <span className="text-gray-400 dark:text-gray-600">→</span>
+                        <span className={`w-32 truncate ${sameChannel ? 'text-gray-500 dark:text-gray-500' : 'text-indigo-600 dark:text-indigo-400'}`}>{row.session_channel}</span>
+                        <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                           <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="text-gray-400 tabular-nums w-16 text-right">
-                          {row.sessions.toLocaleString('nl-NL')} sess.
-                        </span>
+                        <span className="text-gray-600 dark:text-gray-400 tabular-nums w-16 text-right">{row.sessions.toLocaleString('nl-NL')} sess.</span>
                       </div>
                     );
                   })}
@@ -1407,12 +1221,12 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Card 1: Meta Attribution Windows */}
+        {/* Meta Attribution Windows */}
         {stats.metaWindows && (stats.metaWindows.total_1d > 0 || stats.metaWindows.total_7d > 0 || stats.metaWindows.total_28d > 0) && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-300">Meta Attributievensters (afgelopen 30d)</h2>
-              <span className="text-xs text-gray-600">1d / 7d / 28d klik</span>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Meta Attributievensters (afgelopen 30d)</h2>
+              <span className="text-xs text-gray-400 dark:text-gray-600">1d / 7d / 28d klik</span>
             </div>
             <div className="grid grid-cols-3 gap-4">
               {[
@@ -1423,35 +1237,33 @@ export default function DashboardPage() {
                 const totalPurchases = (stats.metaWindows.total_1d + stats.metaWindows.total_7d + stats.metaWindows.total_28d) || 1;
                 const pct = Math.round((purchases / totalPurchases) * 100);
                 return (
-                  <div key={label} className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4 flex flex-col gap-2">
+                  <div key={label} className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4 flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                      <span className="text-xs font-medium text-gray-400">{label}</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</span>
                     </div>
-                    <span className="text-2xl font-bold text-white tabular-nums">{pct}%</span>
-                    <div className="text-xs text-gray-500">
-                      <span className="text-gray-300">{purchases}</span> aankopen ·{' '}
-                      <span className="text-gray-300">{formatEuro(revenue)}</span>
+                    <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{pct}%</span>
+                    <div className="text-xs text-gray-500 dark:text-gray-500">
+                      <span className="text-gray-700 dark:text-gray-300">{purchases}</span> aankopen ·{' '}
+                      <span className="text-gray-700 dark:text-gray-300">{formatEuro(revenue)}</span>
                     </div>
-                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                     </div>
                   </div>
                 );
               })}
             </div>
-            <p className="text-xs text-gray-600 mt-3">
-              Toont hoeveel % van Meta aankopen werd geattribueerd op dezelfde dag (1d), binnen een week (7d) of binnen 28 dagen na klikken.
-            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-600 mt-3">Toont hoeveel % van Meta aankopen werd geattribueerd op dezelfde dag (1d), binnen een week (7d) of binnen 28 dagen na klikken.</p>
           </div>
         )}
 
-        {/* Card 2: Repeat Purchase Analysis */}
+        {/* Repeat Purchase Analysis */}
         {stats.repeatPurchases?.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-300">Herhaalaankopen per kanaal</h2>
-              <span className="text-xs text-gray-600">gem. dagen tussen aankopen</span>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Herhaalaankopen per kanaal</h2>
+              <span className="text-xs text-gray-400 dark:text-gray-600">gem. dagen tussen aankopen</span>
             </div>
             <div className="space-y-2">
               {stats.repeatPurchases.map((r) => {
@@ -1459,18 +1271,14 @@ export default function DashboardPage() {
                 const pct = Math.round((r.avg_days_between / maxDays) * 100);
                 const color = CHANNEL_COLORS[r.first_channel] ?? '#6b7280';
                 return (
-                  <div key={r.first_channel} className="flex items-center gap-4 bg-gray-800/40 rounded-lg px-4 py-2.5">
+                  <div key={r.first_channel} className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/40 rounded-lg px-4 py-2.5">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                    <span className="text-sm text-gray-300 w-36 truncate">{formatLabel(r.first_channel)}</span>
-                    <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <span className="text-sm text-gray-700 dark:text-gray-300 w-36 truncate">{formatLabel(r.first_channel)}</span>
+                    <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                     </div>
-                    <span className="text-sm font-semibold text-white tabular-nums w-20 text-right">
-                      {r.avg_days_between}d
-                    </span>
-                    <span className="text-xs text-gray-600 w-24 text-right">
-                      {r.repeat_purchases}× herhaald
-                    </span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums w-20 text-right">{r.avg_days_between}d</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-600 w-24 text-right">{r.repeat_purchases}× herhaald</span>
                   </div>
                 );
               })}
@@ -1478,39 +1286,35 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Card 3: PM First vs Last Touch */}
+        {/* PM First vs Last Touch */}
         {stats.pmTouchSummary?.total > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-300">ProfitMetrics: First vs Last Touch</h2>
-              <span className="text-xs text-gray-600">{stats.pmTouchSummary.total} orders geanalyseerd</span>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">ProfitMetrics: First vs Last Touch</h2>
+              <span className="text-xs text-gray-400 dark:text-gray-600">{stats.pmTouchSummary.total} orders geanalyseerd</span>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4">
-                <p className="text-xs text-gray-500 mb-1">Single-touch</p>
-                <p className="text-2xl font-bold text-white tabular-nums">
-                  {Math.round((stats.pmTouchSummary.single_touch / (stats.pmTouchSummary.total || 1)) * 100)}%
-                </p>
-                <p className="text-xs text-gray-600 mt-1">{stats.pmTouchSummary.single_touch} orders — zelfde first &amp; last touch</p>
+              <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4">
+                <p className="text-xs text-gray-500 dark:text-gray-500 mb-1">Single-touch</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{Math.round((stats.pmTouchSummary.single_touch / (stats.pmTouchSummary.total || 1)) * 100)}%</p>
+                <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">{stats.pmTouchSummary.single_touch} orders — zelfde first &amp; last touch</p>
               </div>
-              <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl p-4">
-                <p className="text-xs text-gray-500 mb-1">Multi-touch</p>
-                <p className="text-2xl font-bold text-indigo-400 tabular-nums">
-                  {Math.round((stats.pmTouchSummary.multi_touch / (stats.pmTouchSummary.total || 1)) * 100)}%
-                </p>
-                <p className="text-xs text-gray-600 mt-1">{stats.pmTouchSummary.multi_touch} orders — meerdere kanalen betrokken</p>
+              <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/40 rounded-xl p-4">
+                <p className="text-xs text-gray-500 dark:text-gray-500 mb-1">Multi-touch</p>
+                <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{Math.round((stats.pmTouchSummary.multi_touch / (stats.pmTouchSummary.total || 1)) * 100)}%</p>
+                <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">{stats.pmTouchSummary.multi_touch} orders — meerdere kanalen betrokken</p>
               </div>
             </div>
             {stats.pmTouchRows?.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-2">Top touch-paden</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Top touch-paden</p>
                 <div className="space-y-1.5">
                   {stats.pmTouchRows.slice(0, 6).map((row, i) => (
-                    <div key={i} className="flex items-center gap-3 text-xs px-3 py-2 bg-gray-800/40 rounded-lg">
-                      <span className="text-gray-400 w-28 truncate">{formatLabel(row.first_touch)}</span>
-                      <span className="text-gray-600">→</span>
-                      <span className="text-gray-400 w-28 truncate">{formatLabel(row.last_touch ?? row.first_touch)}</span>
-                      <span className="ml-auto text-gray-500 tabular-nums">{row.total}×</span>
+                    <div key={i} className="flex items-center gap-3 text-xs px-3 py-2 bg-gray-50 dark:bg-gray-800/40 rounded-lg">
+                      <span className="text-gray-600 dark:text-gray-400 w-28 truncate">{formatLabel(row.first_touch)}</span>
+                      <span className="text-gray-400 dark:text-gray-600">→</span>
+                      <span className="text-gray-600 dark:text-gray-400 w-28 truncate">{formatLabel(row.last_touch ?? row.first_touch)}</span>
+                      <span className="ml-auto text-gray-500 dark:text-gray-500 tabular-nums">{row.total}×</span>
                     </div>
                   ))}
                 </div>
@@ -1521,88 +1325,51 @@ export default function DashboardPage() {
 
         {/* Funnel & Gedrag */}
         {funnelData && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 space-y-6 shadow-sm">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-300">Funnel & Gedrag</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Funnel & Gedrag</h2>
               <div className="flex items-center gap-3">
                 {funnelData.clarityTotals.rage_clicks > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/40 text-red-400 border border-red-800/50">
-                    🔴 {funnelData.clarityTotals.rage_clicks} rage clicks
-                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50">🔴 {funnelData.clarityTotals.rage_clicks} rage clicks</span>
                 )}
                 {funnelData.clarityTotals.dead_clicks > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">
-                    ⚫ {funnelData.clarityTotals.dead_clicks} dead clicks
-                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">⚫ {funnelData.clarityTotals.dead_clicks} dead clicks</span>
                 )}
-                <span className="text-xs text-gray-600">GA4 + Clarity + orders · 30 dagen</span>
+                <span className="text-xs text-gray-400 dark:text-gray-600">GA4 + Clarity + orders · 30 dagen</span>
               </div>
             </div>
-
-            {/* Visual funnel */}
             {funnelData.funnel.length > 0 && (() => {
-              const STEP_LABELS: Record<string, string> = {
-                homepage: 'Homepage',
-                product:  'Productpagina',
-                cart:     'Winkelwagen',
-                checkout: 'Afrekenen',
-                besteld:  'Besteld',
-              };
+              const STEP_LABELS: Record<string, string> = { homepage: 'Homepage', product: 'Productpagina', cart: 'Winkelwagen', checkout: 'Afrekenen', besteld: 'Besteld' };
               const maxVal = Math.max(...funnelData.funnel.map((s) => s.sessions || s.orders || 0), 1);
-
               return (
                 <div className="space-y-2">
                   {funnelData.funnel.map((step, i) => {
-                    const val    = step.step === 'besteld' ? (step.orders ?? 0) : step.sessions;
-                    const width  = Math.round((val / maxVal) * 100);
+                    const val = step.step === 'besteld' ? (step.orders ?? 0) : step.sessions;
+                    const width = Math.round((val / maxVal) * 100);
                     const isLast = step.step === 'besteld';
-                    const gradients = [
-                      'from-indigo-600 to-indigo-500',
-                      'from-violet-600 to-violet-500',
-                      'from-purple-600 to-purple-500',
-                      'from-fuchsia-600 to-fuchsia-500',
-                      'from-emerald-600 to-emerald-500',
-                    ];
+                    const gradients = ['from-indigo-600 to-indigo-500', 'from-violet-600 to-violet-500', 'from-purple-600 to-purple-500', 'from-fuchsia-600 to-fuchsia-500', 'from-emerald-600 to-emerald-500'];
                     return (
                       <div key={step.step} className="flex items-center gap-3">
-                        {/* Bar */}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-gray-400 w-28 flex-shrink-0">
-                              {STEP_LABELS[step.step] ?? step.step}
-                            </span>
-                            <div className="flex-1 h-8 bg-gray-800 rounded-lg overflow-hidden">
-                              <div
-                                className={`h-full bg-gradient-to-r ${gradients[i % gradients.length]} flex items-center px-3 transition-all`}
-                                style={{ width: `${width}%` }}
-                              >
+                            <span className="text-xs text-gray-600 dark:text-gray-400 w-28 flex-shrink-0">{STEP_LABELS[step.step] ?? step.step}</span>
+                            <div className="flex-1 h-8 bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden">
+                              <div className={`h-full bg-gradient-to-r ${gradients[i % gradients.length]} flex items-center px-3 transition-all`} style={{ width: `${width}%` }}>
                                 <span className="text-xs font-semibold text-white whitespace-nowrap">
-                                  {isLast
-                                    ? `${val.toLocaleString('nl-NL')} orders${step.cr_pct != null ? ` · CR: ${step.cr_pct}%` : ''}`
-                                    : val.toLocaleString('nl-NL')
-                                  }
+                                  {isLast ? `${val.toLocaleString('nl-NL')} orders${step.cr_pct != null ? ` · CR: ${step.cr_pct}%` : ''}` : val.toLocaleString('nl-NL')}
                                 </span>
                               </div>
                             </div>
                           </div>
                         </div>
-                        {/* Drop-off + Clarity badges */}
                         <div className="flex items-center gap-1.5 w-52 flex-shrink-0">
                           {step.dropoff_pct !== null && step.dropoff_pct > 0 && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${step.dropoff_pct >= 60 ? 'bg-red-900/50 text-red-400' : step.dropoff_pct >= 30 ? 'bg-orange-900/40 text-orange-400' : 'bg-gray-800 text-gray-500'}`}>
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${step.dropoff_pct >= 60 ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400' : step.dropoff_pct >= 30 ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
                               -{step.dropoff_pct}%
                             </span>
                           )}
-                          {step.rage_clicks > 0 && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-red-900/30 text-red-400 border border-red-800/40">
-                              🔴 {step.rage_clicks}
-                            </span>
-                          )}
-                          {step.dead_clicks > 0 && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800/80 text-gray-500 border border-gray-700/40">
-                              ⚫ {step.dead_clicks}
-                            </span>
-                          )}
+                          {step.rage_clicks > 0 && (<span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/40">🔴 {step.rage_clicks}</span>)}
+                          {step.dead_clicks > 0 && (<span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800/80 text-gray-500 dark:text-gray-500 border border-gray-200 dark:border-gray-700/40">⚫ {step.dead_clicks}</span>)}
                         </div>
                       </div>
                     );
@@ -1610,23 +1377,18 @@ export default function DashboardPage() {
                 </div>
               );
             })()}
-
-            {/* No GA4 funnel data yet */}
             {!funnelData.hasData && (
-              <div className="text-xs text-gray-600 bg-gray-800/40 rounded-lg px-4 py-3 border border-gray-700/40">
-                GA4 paginadata nog niet gesynchroniseerd. Voer <code className="text-gray-400">npm run sync</code> uit om funneldata op te halen.
-                Orders uit de database worden altijd als laatste stap getoond.
+              <div className="text-xs text-gray-500 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/40 rounded-lg px-4 py-3 border border-gray-200 dark:border-gray-700/40">
+                GA4 paginadata nog niet gesynchroniseerd. Voer <code className="text-gray-600 dark:text-gray-400">npm run sync</code> uit om funneldata op te halen. Orders uit de database worden altijd als laatste stap getoond.
               </div>
             )}
-
-            {/* Top frustration pages */}
             {funnelData.topRagePages.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-3">Top frustratiepagina&apos;s</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Top frustratiepagina&apos;s</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="text-gray-600 uppercase tracking-wider border-b border-gray-800">
+                      <tr className="text-gray-400 dark:text-gray-600 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
                         <th className="py-2 text-left font-medium">Pagina</th>
                         <th className="py-2 text-right font-medium">Rage clicks</th>
                         <th className="py-2 text-right font-medium">Dead clicks</th>
@@ -1635,21 +1397,11 @@ export default function DashboardPage() {
                     </thead>
                     <tbody>
                       {funnelData.topRagePages.map((r, i) => (
-                        <tr key={i} className="border-b border-gray-800/40 hover:bg-gray-800/20">
-                          <td className="py-2 text-gray-300 font-mono max-w-[200px] truncate">{r.page}</td>
-                          <td className="py-2 text-right">
-                            {r.rage_clicks > 0
-                              ? <span className="text-red-400 font-medium">{r.rage_clicks}</span>
-                              : <span className="text-gray-700">—</span>
-                            }
-                          </td>
-                          <td className="py-2 text-right">
-                            {r.dead_clicks > 0
-                              ? <span className="text-gray-400">{r.dead_clicks}</span>
-                              : <span className="text-gray-700">—</span>
-                            }
-                          </td>
-                          <td className="py-2 pl-4 text-gray-500">{r.channel ?? '—'}</td>
+                        <tr key={i} className="border-b border-gray-200 dark:border-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-800/20">
+                          <td className="py-2 text-gray-700 dark:text-gray-300 font-mono max-w-[200px] truncate">{r.page}</td>
+                          <td className="py-2 text-right">{r.rage_clicks > 0 ? <span className="text-red-500 font-medium">{r.rage_clicks}</span> : <span className="text-gray-300 dark:text-gray-700">—</span>}</td>
+                          <td className="py-2 text-right">{r.dead_clicks > 0 ? <span className="text-gray-500 dark:text-gray-400">{r.dead_clicks}</span> : <span className="text-gray-300 dark:text-gray-700">—</span>}</td>
+                          <td className="py-2 pl-4 text-gray-500 dark:text-gray-500">{r.channel ?? '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1657,11 +1409,9 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-
-            {/* Frustration by channel */}
             {funnelData.frustrationByChannel.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-3">Frustratie per kanaal</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Frustratie per kanaal</p>
                 <div className="space-y-2">
                   {funnelData.frustrationByChannel.map((r, i) => {
                     const total = (r.rage_clicks + r.dead_clicks) || 1;
@@ -1669,27 +1419,25 @@ export default function DashboardPage() {
                     return (
                       <div key={r.channel} className="flex items-center gap-3 text-xs">
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                        <span className="text-gray-300 w-32 truncate">{formatLabel(r.channel)}</span>
-                        <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                        <span className="text-gray-700 dark:text-gray-300 w-32 truncate">{formatLabel(r.channel)}</span>
+                        <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${Math.min(100, total)}%`, background: color }} />
                         </div>
-                        <span className="text-red-400 w-16 text-right tabular-nums">{r.rage_clicks > 0 ? `🔴 ${r.rage_clicks}` : ''}</span>
-                        <span className="text-gray-500 w-16 text-right tabular-nums">{r.dead_clicks > 0 ? `⚫ ${r.dead_clicks}` : ''}</span>
+                        <span className="text-red-500 w-16 text-right tabular-nums">{r.rage_clicks > 0 ? `🔴 ${r.rage_clicks}` : ''}</span>
+                        <span className="text-gray-500 dark:text-gray-500 w-16 text-right tabular-nums">{r.dead_clicks > 0 ? `⚫ ${r.dead_clicks}` : ''}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
             )}
-
-            {/* AI Conclusie */}
             {funnelData.aiInsight && (
-              <div className="bg-gray-800/50 border border-indigo-900/40 rounded-xl px-5 py-4">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-900/40 rounded-xl px-5 py-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Claude AI Analyse</span>
-                  <span className="text-xs text-gray-600">funnel · 30 dagen · claude-haiku</span>
+                  <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Claude AI Analyse</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-600">funnel · 30 dagen · claude-haiku</span>
                 </div>
-                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{funnelData.aiInsight}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{funnelData.aiInsight}</p>
               </div>
             )}
           </div>
@@ -1697,31 +1445,24 @@ export default function DashboardPage() {
 
         {/* AI Conclusies */}
         {insights.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-gray-300 mb-4">Automatische conclusies</h2>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-4">Automatische conclusies</h2>
             <div className="space-y-3">
               {insights.map((ins, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 bg-gray-800/60 rounded-lg px-4 py-3.5 border border-gray-700/50"
-                >
-                  <span className="text-indigo-400 mt-0.5 flex-shrink-0 text-sm">→</span>
-                  <p className="text-sm text-gray-300 leading-relaxed">{ins.text}</p>
+                <div key={i} className="flex items-start gap-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg px-4 py-3.5 border border-gray-200 dark:border-gray-700/50">
+                  <span className="text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0 text-sm">→</span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{ins.text}</p>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-      </main>
+      </div>
 
       {/* Order detail modal */}
       {selectedChannel && (
-        <OrderModal
-          channel={selectedChannel}
-          period={period}
-          onClose={() => setSelectedChannel(null)}
-        />
+        <OrderModal channel={selectedChannel} period={period} onClose={() => setSelectedChannel(null)} />
       )}
     </div>
   );

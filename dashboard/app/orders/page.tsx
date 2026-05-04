@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Nav from '../components/Nav';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,7 +89,7 @@ function ColHead({ col, label, sort, dir, onSort }: {
   const active = sort === col;
   return (
     <th className="px-4 py-3 text-left font-medium cursor-pointer select-none whitespace-nowrap group" onClick={() => onSort(col)}>
-      <span className={`flex items-center gap-1 ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'}`}>
+      <span className={`flex items-center gap-1 ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'}`}>
         {label}
         <span className="text-xs opacity-60">{active ? (dir === 'desc' ? '↓' : '↑') : '↕'}</span>
       </span>
@@ -125,16 +124,16 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
   return (
     <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
       <div
-        className="w-full max-w-lg h-full bg-gray-900 border-l border-gray-800 overflow-y-auto shadow-2xl"
+        className="w-full max-w-lg h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 overflow-y-auto shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between z-10">
           <div>
-            <h2 className="text-sm font-semibold text-white">Order #{order.order_number}</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Order #{order.order_number}</h2>
             <p className="text-xs text-gray-500 mt-0.5">Klik-journey & attributie</p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-lg transition-colors">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-white text-lg transition-colors">✕</button>
         </div>
 
         <div className="px-6 py-5 space-y-6">
@@ -150,9 +149,9 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
               { label: 'Device', value: order.device_type ? order.device_type.charAt(0).toUpperCase() + order.device_type.slice(1) : '—' },
               { label: 'Taal', value: order.browser_language ?? '—' },
             ].map(kpi => (
-              <div key={kpi.label} className="bg-gray-800/60 rounded-xl px-4 py-3 border border-gray-700/40">
+              <div key={kpi.label} className="bg-gray-50 dark:bg-gray-800/60 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700/40">
                 <p className="text-xs text-gray-500">{kpi.label}</p>
-                <p className="text-sm font-semibold text-white mt-0.5">{kpi.value}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">{kpi.value}</p>
               </div>
             ))}
           </div>
@@ -168,20 +167,20 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
                 { label: 'Adset', value: order.utm_term },
                 { label: 'Ad', value: order.utm_content },
               ].map(row => (
-                <div key={row.label} className="flex items-center justify-between py-1.5 border-b border-gray-800/60">
+                <div key={row.label} className="flex items-center justify-between py-1.5 border-b border-gray-200 dark:border-gray-800/60">
                   <span className="text-xs text-gray-500">{row.label}</span>
                   {row.value ? (
                     <span
                       className="text-xs font-medium px-2 py-0.5 rounded-full"
                       style={{
                         background: `${channelColor(row.value)}22`,
-                        color: CHANNEL_COLORS[row.value] ? channelColor(row.value) : '#d1d5db',
+                        color: CHANNEL_COLORS[row.value] ? channelColor(row.value) : '#6b7280',
                       }}
                     >
                       {formatLabel(row.value) ?? row.value}
                     </span>
                   ) : (
-                    <span className="text-xs text-gray-700">—</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-700">—</span>
                   )}
                 </div>
               ))}
@@ -201,7 +200,7 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
                     >
                       {formatLabel(touch) ?? touch}
                     </span>
-                    {i < touchPath.length - 1 && <span className="text-gray-700 text-xs">→</span>}
+                    {i < touchPath.length - 1 && <span className="text-gray-400 dark:text-gray-700 text-xs">→</span>}
                   </div>
                 ))}
               </div>
@@ -210,23 +209,23 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
 
           {/* Volledige klik-journey van tracker.js */}
           {loading && (
-            <div className="text-xs text-gray-600 animate-pulse">Journey laden...</div>
+            <div className="text-xs text-gray-500 dark:text-gray-600 animate-pulse">Journey laden...</div>
           )}
 
           {!loading && hasRealJourney && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Klik-journey</h3>
-                <span className="text-xs text-gray-600">
+                <span className="text-xs text-gray-500 dark:text-gray-600">
                   {session!.session_count} sessies · {session!.days_to_convert}d tot aankoop
                 </span>
               </div>
               <div className="space-y-2">
                 {sessionHistory.map((s, i) => (
-                  <div key={i} className="bg-gray-800/40 rounded-lg px-4 py-3 border border-gray-700/30 space-y-1">
+                  <div key={i} className="bg-gray-50 dark:bg-gray-800/40 rounded-lg px-4 py-3 border border-gray-200 dark:border-gray-700/30 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-300 font-medium truncate max-w-[240px]">{s.p}</span>
-                      <span className="text-xs text-gray-600 flex-shrink-0 ml-2">
+                      <span className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate max-w-[240px]">{s.p}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-600 flex-shrink-0 ml-2">
                         {new Date(s.ts).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -239,10 +238,10 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
                           {s.src}
                         </span>
                       )}
-                      {s.med && <span className="text-gray-600">{s.med}</span>}
-                      {s.cmp && <span className="text-gray-700 truncate max-w-[160px]">{s.cmp}</span>}
-                      {s.ref && !s.src && <span className="text-gray-600 truncate max-w-[200px]">via {s.ref}</span>}
-                      {!s.src && !s.ref && <span className="text-gray-700">direct</span>}
+                      {s.med && <span className="text-gray-500 dark:text-gray-600">{s.med}</span>}
+                      {s.cmp && <span className="text-gray-400 dark:text-gray-700 truncate max-w-[160px]">{s.cmp}</span>}
+                      {s.ref && !s.src && <span className="text-gray-500 dark:text-gray-600 truncate max-w-[200px]">via {s.ref}</span>}
+                      {!s.src && !s.ref && <span className="text-gray-400 dark:text-gray-700">direct</span>}
                     </div>
                   </div>
                 ))}
@@ -251,9 +250,9 @@ function JourneyDrawer({ order, onClose }: { order: Order; onClose: () => void }
           )}
 
           {!loading && !hasRealJourney && (
-            <div className="bg-gray-800/30 border border-gray-700/30 rounded-xl px-4 py-5 text-center space-y-2">
+            <div className="bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700/30 rounded-xl px-4 py-5 text-center space-y-2">
               <p className="text-sm text-gray-500">Geen klik-journey beschikbaar</p>
-              <p className="text-xs text-gray-700">
+              <p className="text-xs text-gray-400 dark:text-gray-700">
                 Journey data wordt verzameld via tracker.js voor nieuwe orders.
                 Bestaande orders hebben alleen UTM-gebaseerde attributie.
               </p>
@@ -313,7 +312,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
 
       {/* Journey drawer */}
       {selectedOrder && (
@@ -321,41 +320,15 @@ export default function OrdersPage() {
       )}
 
       {/* Header */}
-      <header className="border-b border-gray-800 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Mvolo Attribution Dashboard</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Shopify order attribution by marketing channel</p>
-            </div>
-            <Nav />
-          </div>
-          <div className="flex items-center gap-3">
-            {lastUpdated && (() => {
-              const minutesAgo = Math.round((Date.now() - lastUpdated.getTime()) / 60000);
-              const isFresh = minutesAgo < 360;
-              return (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isFresh ? 'bg-emerald-500 animate-pulse' : 'bg-orange-500'}`} />
-                  <span>Laatste update: {lastUpdated.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              );
-            })()}
-            <button onClick={fetchOrders} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-all">
-              ↻ Nu verversen
-            </button>
-          </div>
-        </div>
-      </header>
-
+      
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
 
         {/* Platform filter */}
-        <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
           {([['all', 'Alle platforms'], ['shopify', 'Shopify'], ['bol', 'Bol.com']] as [Platform, string][]).map(([key, label]) => (
             <button key={key} onClick={() => { setPlatform(key); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${platform === key ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-gray-200'}`}>
-              {key === 'bol' && <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${platform === key ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+              {key === 'bol' && <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />}
               {label}
             </button>
           ))}
@@ -364,32 +337,32 @@ export default function OrdersPage() {
         {/* Title + search */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">Alle orders</h2>
+            <h2 className="text-lg font-semibold">Alle orders</h2>
             <p className="text-xs text-gray-500 mt-0.5">
               {loading ? 'Laden…' : `${total.toLocaleString('nl-NL')} orders · klik op rij voor journey`}
             </p>
           </div>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">⌕</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none">⌕</span>
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Zoek op ordernummer, kanaal, campagne…"
-              className="bg-gray-900 border border-gray-700 rounded-lg pl-8 pr-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-80 transition-colors" />
+              className="bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg pl-8 pr-4 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-80 transition-colors" />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-xs">✕</button>
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-xs">✕</button>
             )}
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-800 rounded-lg px-4 py-3 text-red-400 text-sm">Fout: {error}</div>
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-lg px-4 py-3 text-red-600 dark:text-red-400 text-sm">Fout: {error}</div>
         )}
 
         {/* Table */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-wider border-b border-gray-800 bg-gray-900">
+                <tr className="text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Platform</th>
                   <ColHead col="order_number"    label="Order #"     sort={sort} dir={dir} onSort={handleSort} />
                   <ColHead col="created_at"      label="Datum"       sort={sort} dir={dir} onSort={handleSort} />
@@ -407,10 +380,10 @@ export default function OrdersPage() {
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={13} className="px-4 py-16 text-center text-gray-600 text-sm animate-pulse">Laden…</td></tr>
+                  <tr><td colSpan={13} className="px-4 py-16 text-center text-gray-400 dark:text-gray-600 text-sm animate-pulse">Laden…</td></tr>
                 )}
                 {!loading && orders.length === 0 && (
-                  <tr><td colSpan={13} className="px-4 py-16 text-center text-gray-600 text-sm">Geen orders gevonden{search ? ` voor "${search}"` : ''}.</td></tr>
+                  <tr><td colSpan={13} className="px-4 py-16 text-center text-gray-400 dark:text-gray-600 text-sm">Geen orders gevonden{search ? ` voor "${search}"` : ''}.</td></tr>
                 )}
                 {!loading && orders.map(o => {
                   const d = new Date(o.created_at);
@@ -419,39 +392,39 @@ export default function OrdersPage() {
                   return (
                     <tr
                       key={o.id}
-                      className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer"
+                      className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
                       onClick={() => setSelectedOrder(o)}
                     >
                       <td className="px-4 py-3">
                         {o.marketplace === 'bol'
-                          ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-900/40 text-orange-400">Bol</span>
-                          : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">Shopify</span>}
+                          ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400">Bol</span>
+                          : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">Shopify</span>}
                       </td>
-                      <td className="px-4 py-3 font-mono text-gray-300">#{o.order_number}</td>
-                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap tabular-nums">
+                      <td className="px-4 py-3 font-mono text-gray-700 dark:text-gray-300">#{o.order_number}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap tabular-nums">
                         {d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs font-medium text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">{dag}</span>
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{dag}</span>
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums font-medium text-white whitespace-nowrap">{formatEuro(o.total_price)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums font-medium text-gray-900 dark:text-white whitespace-nowrap">{formatEuro(o.total_price)}</td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full" style={{ background: `${color}22`, color }}>
-                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
                           {formatLabel(o.channel)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{formatLabel(o.first_touch) ?? <span className="text-gray-700">—</span>}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{formatLabel(o.last_touch) ?? <span className="text-gray-700">—</span>}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs font-mono max-w-[140px] truncate">{o.utm_campaign ?? <span className="text-gray-700">—</span>}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs font-mono max-w-[130px] truncate">{o.utm_term ?? <span className="text-gray-700">—</span>}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs font-mono max-w-[130px] truncate">{o.utm_content ?? <span className="text-gray-700">—</span>}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">{formatLabel(o.first_touch) ?? <span className="text-gray-400 dark:text-gray-700">—</span>}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">{formatLabel(o.last_touch) ?? <span className="text-gray-400 dark:text-gray-700">—</span>}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs font-mono max-w-[140px] truncate">{o.utm_campaign ?? <span className="text-gray-400 dark:text-gray-700">—</span>}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs font-mono max-w-[130px] truncate">{o.utm_term ?? <span className="text-gray-400 dark:text-gray-700">—</span>}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs font-mono max-w-[130px] truncate">{o.utm_content ?? <span className="text-gray-400 dark:text-gray-700">—</span>}</td>
                       <td className="px-4 py-3">
                         {o.is_new_customer === 1
-                          ? <span className="text-xs bg-emerald-900/50 text-emerald-400 px-2 py-0.5 rounded-full">Nieuw</span>
+                          ? <span className="text-xs bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">Nieuw</span>
                           : o.is_new_customer === 0
-                            ? <span className="text-xs bg-indigo-900/50 text-indigo-400 px-2 py-0.5 rounded-full">Terugkerend</span>
-                            : <span className="text-xs text-gray-700">—</span>}
+                            ? <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full">Terugkerend</span>
+                            : <span className="text-xs text-gray-400 dark:text-gray-700">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs text-indigo-500 hover:text-indigo-400">→</span>
@@ -465,11 +438,11 @@ export default function OrdersPage() {
 
           {/* Pagination */}
           {!loading && totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800">
-              <span className="text-xs text-gray-600">Pagina {page} van {totalPages} ({total.toLocaleString('nl-NL')} orders)</span>
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-800">
+              <span className="text-xs text-gray-500 dark:text-gray-600">Pagina {page} van {totalPages} ({total.toLocaleString('nl-NL')} orders)</span>
               <div className="flex items-center gap-2">
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                  className="px-3 py-1.5 text-xs rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                  className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-400 dark:hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                   ← Vorige
                 </button>
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -477,12 +450,12 @@ export default function OrdersPage() {
                   return p;
                 }).filter((v, i, arr) => arr.indexOf(v) === i).map(p => (
                   <button key={p} onClick={() => setPage(p)}
-                    className={`w-8 h-7 text-xs rounded-lg transition-colors ${p === page ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}>
+                    className={`w-8 h-7 text-xs rounded-lg transition-colors ${p === page ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
                     {p}
                   </button>
                 ))}
                 <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                  className="px-3 py-1.5 text-xs rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                  className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-400 dark:hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                   Volgende →
                 </button>
               </div>

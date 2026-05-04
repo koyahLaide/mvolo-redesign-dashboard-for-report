@@ -1,49 +1,38 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+/* CRITICAL: This tells Tailwind v4 how to handle dark: prefix */
+@custom-variant dark (&:is(.dark *));
+
 @theme {
-  --color-primary: #3B82F6;
-  --color-primary-dark: #2563EB;
-  --color-sidebar: #1F2937;
-  --color-sidebar-hover: #374151;
-  --color-sidebar-active: #3B82F6;
-  --color-surface: #FFFFFF;
-  --color-surface-secondary: #F9FAFB;
-  --color-border: #E5E7EB;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
-  --color-text-muted: #9CA3AF;
+  /* Brand */
+  --color-primary:        #3B82F6; /* blue-500  */
+  --color-primary-hover:  #2563EB; /* blue-600  */
+
+  /* Light mode surfaces */
+  --color-bg:             #F3F4F6; /* gray-100  — page canvas     */
+  --color-surface:        #FFFFFF; /* white     — cards / chrome  */
+  --color-border:         #E5E7EB; /* gray-200                    */
+
+  /* Light mode text */
+  --color-text-primary:   #111827; /* gray-900  */
+  --color-text-secondary: #6B7280; /* gray-500  */
+  --color-text-muted:     #9CA3AF; /* gray-400  */
+
+  /* Dark mode surfaces — depth: 950 → 900 (chrome) → 800 (cards) */
+  --color-bg-dark:        #030712; /* gray-950  — page canvas     */
+  --color-chrome-dark:    #111827; /* gray-900  — sidebar/header  */
+  --color-surface-dark:   #1F2937; /* gray-800  — cards           */
+  --color-border-dark:    #374151; /* gray-700                    */
 }
 
-/* Light mode (default) */
 body {
-  background-color: var(--color-surface-secondary);
+  background-color: var(--color-bg);
   color: var(--color-text-primary);
 }
 
-/* Dark mode */
-.dark body,
-body.dark {
-  background-color: #111827;
-  color: #F3F4F6;
+.dark body {
+  background-color: var(--color-bg-dark);
+  color: #F9FAFB;
 }
 
-.dark .bg-surface {
-  background-color: #1F2937;
-}
-
-.dark .bg-surface-secondary {
-  background-color: #111827;
-}
-
-.dark .border-border {
-  border-color: #374151;
-}
-
-.dark .text-text-primary {
-  color: #F3F4F6;
-}
-
-.dark .text-text-secondary {
-  color: #9CA3AF;
-}
