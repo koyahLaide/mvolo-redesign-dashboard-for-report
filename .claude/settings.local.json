@@ -24,7 +24,8 @@
       "Bash(vercel --prod --yes)",
       "Bash(git push:*)",
       "Bash(dir \"C:\\\\Users\\\\doryu\\\\Documents\\\\Project_Mvolo\\\\mvolo-dashboard\\\\dashboard\" /b)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(findstr /n \"async function fetch\\\\|module.exports\" c:\\\\Users\\\\Ralph\\\\Documents\\\\mvolo-dashboard\\\\src\\\\connectors\\\\bol.js)"
     ]
   }
 }
