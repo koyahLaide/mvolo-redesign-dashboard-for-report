@@ -8,20 +8,20 @@ function formatEuro(v: number) {
 
 function TitleScoreBadge({ score }: { score: string }) {
   const map: Record<string, string> = {
-    Great: 'text-green-400',
-    Average: 'text-yellow-400',
-    Poor: 'text-red-400',
-    'Too Long': 'text-gray-400',
+    Great: 'text-green-500 dark:text-green-400',
+    Average: 'text-yellow-500 dark:text-yellow-400',
+    Poor: 'text-red-500 dark:text-red-400',
+    'Too Long': 'text-gray-500 dark:text-gray-400',
   };
   const dots: Record<string, string> = {
-    Great: 'bg-green-400',
-    Average: 'bg-yellow-400',
-    Poor: 'bg-red-400',
-    'Too Long': 'bg-gray-400',
+    Great: 'bg-green-500',
+    Average: 'bg-yellow-500',
+    Poor: 'bg-red-500',
+    'Too Long': 'bg-gray-500',
   };
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${map[score] ?? 'text-gray-400'}`}>
-      <span className={`w-2 h-2 rounded-full ${dots[score] ?? 'bg-gray-400'}`} />
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${map[score] ?? 'text-gray-500 dark:text-gray-400'}`}>
+      <span className={`w-2 h-2 rounded-full ${dots[score] ?? 'bg-gray-500'}`} />
       {score}
     </span>
   );
@@ -29,49 +29,49 @@ function TitleScoreBadge({ score }: { score: string }) {
 
 function LabelBadge({ label }: { label: string }) {
   const map: Record<string, string> = {
-    Heroes: 'bg-blue-600 text-white',
-    Villains: 'bg-red-600 text-white',
-    Sidekicks: 'bg-yellow-500 text-white',
-    Zombies: 'bg-gray-700 text-gray-300',
+    Heroes: 'bg-blue-100 text-blue-700 dark:bg-blue-600 dark:text-white',
+    Villains: 'bg-red-100 text-red-700 dark:bg-red-600 dark:text-white',
+    Sidekicks: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500 dark:text-white',
+    Zombies: 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
   };
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold ${map[label] ?? 'bg-gray-700 text-gray-300'}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold ${map[label] ?? 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
       {label}
     </span>
   );
 }
 
 function GMCStatusBadge({ status }: { status: string }) {
-  if (status === 'approved') return <span className="inline-flex items-center gap-1 text-xs text-green-400"><span className="w-2 h-2 rounded-full bg-green-400" />Goedgekeurd</span>;
-  if (status === 'limited') return <span className="inline-flex items-center gap-1 text-xs text-yellow-400"><span className="w-2 h-2 rounded-full bg-yellow-400" />Beperkt</span>;
-  return <span className="inline-flex items-center gap-1 text-xs text-red-400"><span className="w-2 h-2 rounded-full bg-red-400" />Afgekeurd</span>;
+  if (status === 'approved') return <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400"><span className="w-2 h-2 rounded-full bg-green-500" />Goedgekeurd</span>;
+  if (status === 'limited') return <span className="inline-flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-400"><span className="w-2 h-2 rounded-full bg-yellow-500" />Beperkt</span>;
+  return <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400"><span className="w-2 h-2 rounded-full bg-red-500" />Afgekeurd</span>;
 }
 
 function GMCFixPanel({ issues, onClose }: { issues: any[]; onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl max-w-lg w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">GMC problemen & oplossingen</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 dark:text-gray-300 text-lg leading-none">×</button>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">GMC problemen & oplossingen</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-lg leading-none">&times;</button>
         </div>
         {issues.map((issue: any, i: number) => (
-          <div key={i} className="bg-gray-800/60 rounded-xl p-4 space-y-2">
+          <div key={i} className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold text-red-400">{issue.description}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{issue.type}</p>
+                <p className="text-xs font-semibold text-red-600 dark:text-red-400">{issue.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{issue.type}</p>
               </div>
               <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-                issue.priority === 'high' ? 'bg-red-900/50 text-red-400' :
-                issue.priority === 'medium' ? 'bg-yellow-900/50 text-yellow-400' :
-                'bg-gray-800 text-gray-400'
+                issue.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' :
+                issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' :
+                'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
               }`}>
                 {issue.priority === 'high' ? 'Urgent' : issue.priority === 'medium' ? 'Middel' : 'Laag'}
               </span>
             </div>
             <div className="border-l-2 border-indigo-500/40 pl-3">
-              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">💡 {issue.fix}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{issue.fix}</p>
             </div>
           </div>
         ))}
@@ -107,13 +107,13 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-2xl w-full p-6 space-y-5" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl max-w-2xl w-full p-6 space-y-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-white">Titel bewerken</h3>
-            <p className="text-xs text-gray-500 mt-0.5">#{product.id}</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Titel bewerken</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">#{product.id}</p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 dark:text-gray-300 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">&times;</button>
         </div>
 
         <div className="space-y-2">
@@ -125,13 +125,13 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
             value={title}
             onChange={e => setTitle(e.target.value)}
             rows={3}
-            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white resize-none focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white resize-none focus:outline-none focus:border-indigo-500 transition-colors"
           />
           <div className="flex items-center justify-between">
-            <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden mr-3">
+            <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mr-3">
               <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, (title.length / 150) * 100)}%` }} />
             </div>
-            <span className="text-xs text-gray-500 tabular-nums">{title.length} / 150</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{title.length} / 150</span>
           </div>
         </div>
 
@@ -139,27 +139,27 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
           <div className="flex items-center justify-between">
             <label className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI suggesties</label>
             <button onClick={generateAI} disabled={aiLoading}
-              className="text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50 transition-colors">
-              {aiLoading ? 'Genereren…' : '✦ Genereer met Claude'}
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 disabled:opacity-50 transition-colors">
+              {aiLoading ? 'Genereren...' : 'Genereer met Claude'}
             </button>
           </div>
           {suggestions.length > 0 && (
             <div className="space-y-2">
               {suggestions.map((s, i) => (
                 <button key={i} onClick={() => setTitle(s)}
-                  className="w-full text-left text-xs text-gray-600 dark:text-gray-300 bg-gray-800/60 border border-gray-700 hover:border-indigo-500/50 rounded-xl px-4 py-3 transition-colors">
+                  className="w-full text-left text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 hover:border-indigo-500/50 rounded-xl px-4 py-3 transition-colors">
                   {s}
                 </button>
               ))}
             </div>
           )}
           {suggestions.length === 0 && !aiLoading && (
-            <p className="text-xs text-gray-600">Klik op "Genereer met Claude" voor AI-geoptimaliseerde titelopties.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-500">Klik op &quot;Genereer met Claude&quot; voor AI-geoptimaliseerde titelopties.</p>
           )}
         </div>
 
         <div className="flex items-center gap-3 pt-1">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-200 transition-colors">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
             Annuleren
           </button>
           <button
@@ -173,9 +173,100 @@ function TitleEditor({ product, onClose, onSave }: { product: any; onClose: () =
   );
 }
 
+// ─── Fallback mock data for when API is not available ────────────────────────
+
+const mockProducts = [
+  {
+    id: 'TDP-001', sku: 'TDP-001', title: 'TDP Moxa Lamp - Infrarood Therapie voor Pijnverlichting en Spijsvertering',
+    clicks: 113, cost: 122, conversions: 4, conv_value: 796, roas: 651,
+    titleScore: 'Great', gmcStatus: 'approved', label: 'Heroes',
+    gmcIssues: [], feedScore: 80,
+    feedIssues: ['Geen productafbeelding'],
+  },
+  {
+    id: 'INF-002', sku: 'INF-002', title: 'Dubbele Infraroodlamp - Roodlicht Therapie voor Spierherstel',
+    clicks: 93, cost: 89, conversions: 4, conv_value: 739, roas: 835,
+    titleScore: 'Average', gmcStatus: 'approved', label: 'Heroes',
+    gmcIssues: [], feedScore: 60,
+    feedIssues: ['Geen productafbeelding', 'Beschrijving te kort of ontbreekt'],
+  },
+  {
+    id: 'LED-003', sku: 'LED-003', title: 'LED Gezichtsmasker',
+    clicks: 288, cost: 297, conversions: 2, conv_value: 268, roas: 90,
+    titleScore: 'Average', gmcStatus: 'limited', label: 'Villains',
+    gmcIssues: [
+      { description: 'Ontbrekende GTIN [gtin]', type: 'gtin', priority: 'high', fix: 'Voeg barcode/EAN toe aan het product in Shopify onder Inventory > Barcode.' },
+    ],
+    feedScore: 40,
+    feedIssues: ['Ontbrekende of ongeldige GTIN/barcode', 'Geen productafbeelding', 'Beschrijving te kort of ontbreekt'],
+  },
+  {
+    id: 'RLT-004', sku: 'RLT-004', title: 'Mvolo Roodlicht',
+    clicks: 266, cost: 216, conversions: 3, conv_value: 41, roas: 19,
+    titleScore: 'Poor', gmcStatus: 'approved', label: 'Villains',
+    gmcIssues: [], feedScore: 60,
+    feedIssues: ['Geen productafbeelding', 'Beschrijving te kort of ontbreekt'],
+  },
+  {
+    id: 'ELT-005', sku: 'ELT-005', title: 'Elite Series 306 Roodlicht Paneel',
+    clicks: 0, cost: 0, conversions: 0, conv_value: 0, roas: 0,
+    titleScore: 'Average', gmcStatus: 'approved', label: 'Zombies',
+    gmcIssues: [], feedScore: 60,
+    feedIssues: ['Geen productafbeelding', 'Beschrijving te kort of ontbreekt'],
+  },
+  {
+    id: 'ELT-006', sku: 'ELT-006', title: 'Elite series 506 Red Light Therapy Lamp Panel',
+    clicks: 0, cost: 0, conversions: 0, conv_value: 0, roas: 0,
+    titleScore: 'Average', gmcStatus: 'disapproved', label: 'Zombies',
+    gmcIssues: [
+      { description: 'Ontbrekende GTIN [gtin]', type: 'gtin', priority: 'high', fix: 'Voeg barcode/EAN toe aan het product in Shopify onder Inventory > Barcode.' },
+    ],
+    feedScore: 40,
+    feedIssues: ['Ontbrekende of ongeldige GTIN/barcode', 'Geen productafbeelding', 'Beschrijving te kort of ontbreekt', 'Product afgewezen door GMC'],
+  },
+  {
+    id: 'INF-007', sku: 'INF-007', title: 'Enkele kop Infraroodlamp Red Therapy Behandeling',
+    clicks: 0, cost: 0, conversions: 0, conv_value: 0, roas: 0,
+    titleScore: 'Average', gmcStatus: 'disapproved', label: 'Zombies',
+    gmcIssues: [
+      { description: 'Prijsmismatch gedetecteerd [price]', type: 'price', priority: 'high', fix: 'Controleer of Shopify prijs overeenkomt met de prijs op de landingspagina. Verberg geen prijzen achter apps.' },
+    ],
+    feedScore: 40,
+    feedIssues: ['Ontbrekende of ongeldige GTIN/barcode', 'Geen productafbeelding', 'Beschrijving te kort of ontbreekt', 'Product afgewezen door GMC'],
+  },
+  {
+    id: 'ELT-008', sku: 'ELT-008', title: 'Elite Series 206 Red Light Therapy Infrared Light Panel',
+    clicks: 0, cost: 0, conversions: 0, conv_value: 0, roas: 0,
+    titleScore: 'Average', gmcStatus: 'disapproved', label: 'Zombies',
+    gmcIssues: [
+      { description: 'Niet-overeenkomende domeinen [link]', type: 'link', priority: 'high', fix: 'Claim mgrproduct.nl in GMC via Website > Claimen. Zorg dat de feed-URL overeenkomt met het gclaimde domein.' },
+    ],
+    feedScore: 40,
+    feedIssues: ['Ontbrekende of ongeldige GTIN/barcode', 'Geen productafbeelding', 'Beschrijving te kort of ontbreekt', 'Product afgewezen door GMC'],
+  },
+];
+
+const mockStats = {
+  totalProducts: 8,
+  feedCoverageScore: 50,
+  disapproved: 3,
+  limited: 1,
+  titlePoor: 1,
+  missingGtin: 3,
+  heroes: 2,
+  villains: 2,
+  sidekicks: 0,
+  zombies: 4,
+  heroesConvValue: 1535,
+  villainsCost: 513,
+};
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export default function FeedPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(false);
   const [tab, setTab] = useState<'producten' | 'gmc' | 'health' | 'labels'>('producten');
   const [gmcPanel, setGmcPanel] = useState<any[] | null>(null);
   const [titleEditor, setTitleEditor] = useState<any | null>(null);
@@ -186,20 +277,31 @@ export default function FeedPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/feed');
-    const json = await res.json();
-    setData(json);
+    setApiError(false);
+    try {
+      const res = await fetch('/api/feed');
+      if (!res.ok) throw new Error('API error');
+      const json = await res.json();
+      if (json?.products && json.products.length > 0) {
+        setData(json);
+      } else {
+        setApiError(true);
+      }
+    } catch {
+      setApiError(true);
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const products = (data?.products ?? []).map((p: any) => ({
+  const products = ((apiError ? mockProducts : data?.products ?? [])).map((p: any) => ({
     ...p,
     title: savedTitles[p.id] ?? p.title,
   }));
 
-  const stats = data?.stats ?? {};
+  const stats = apiError ? mockStats : (data?.stats ?? {});
+  const gmcConnected = apiError ? false : (data?.gmcConnected ?? true);
 
   const filteredProducts = products.filter((p: any) => {
     if (labelFilter !== 'all' && p.label !== labelFilter) return false;
@@ -210,7 +312,7 @@ export default function FeedPage() {
   const disapprovedProducts = products.filter((p: any) => p.gmcStatus === 'disapproved' || p.gmcStatus === 'limited');
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+    <div className="space-y-6">
       {gmcPanel && <GMCFixPanel issues={gmcPanel} onClose={() => setGmcPanel(null)} />}
       {titleEditor && (
         <TitleEditor
@@ -220,134 +322,182 @@ export default function FeedPage() {
         />
       )}
 
-      
-      <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Feed Suite</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {stats.totalProducts ?? 0} producten &mdash; GMC
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+            Demo modus
+          </span>
+        </div>
+      </div>
 
-        {/* GMC alert banner */}
-        {!loading && disapprovedProducts.length > 0 && (
-          <div className="bg-red-950/30 border border-red-900/40 rounded-xl px-5 py-4 space-y-2">
-            <p className="text-xs font-semibold text-red-400 uppercase tracking-wider">
-              ⚠ {disapprovedProducts.length} producten hebben GMC problemen
-            </p>
-            {disapprovedProducts.slice(0, 3).map((p: any, i: number) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <span className="text-gray-600 dark:text-gray-300 truncate max-w-lg">{p.title?.substring(0, 60)}…</span>
-                <button onClick={() => setGmcPanel(p.gmcIssues)}
-                  className="shrink-0 ml-4 text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-                  Oplossen →
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* KPI strip */}
-        {!loading && (
-          <div className="grid grid-cols-6 gap-3">
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Feed coverage</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.feedCoverageScore}%</p>
-            </div>
-            <div className="bg-red-950/30 border border-red-900/30 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Afgekeurd GMC</p>
-              <p className="text-2xl font-bold text-red-400 mt-1">{stats.disapproved}</p>
-            </div>
-            <div className="bg-yellow-950/20 border border-yellow-900/20 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Beperkt zichtbaar</p>
-              <p className="text-2xl font-bold text-yellow-400 mt-1">{stats.limited}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Titel Poor</p>
-              <p className="text-2xl font-bold text-red-400 mt-1">{stats.titlePoor}</p>
-              <p className="text-xs text-gray-600">van {stats.totalProducts}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Ontbrekende GTIN</p>
-              <p className="text-2xl font-bold text-orange-400 mt-1">{stats.missingGtin}</p>
-            </div>
-            <div className="bg-blue-950/20 border border-blue-900/20 rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Heroes</p>
-              <p className="text-2xl font-bold text-blue-400 mt-1">{stats.heroes}</p>
-              <p className="text-xs text-gray-600">{stats.totalProducts > 0 ? Math.round((stats.heroes / stats.totalProducts) * 100) : 0}% van feed</p>
-            </div>
-          </div>
-        )}
-
-        {/* Label performance summary */}
-        {!loading && (
-          <div className="grid grid-cols-4 gap-3">
-            {[
-              { label: 'Heroes', color: 'blue', count: stats.heroes, convValue: stats.heroesConvValue, desc: 'Hoge ROAS, top converters' },
-              { label: 'Villains', color: 'red', count: stats.villains, convValue: stats.villainsCost, desc: 'Hoog budget, lage ROAS' },
-              { label: 'Sidekicks', color: 'yellow', count: stats.sidekicks, convValue: null, desc: 'Weinig clicks, laag budget' },
-              { label: 'Zombies', color: 'gray', count: stats.zombies, convValue: null, desc: 'Geen clicks, geen spend' },
-            ].map(({ label, color, count, convValue, desc }) => (
-              <button key={label}
-                onClick={() => setLabelFilter(labelFilter === label ? 'all' : label)}
-                className={`text-left bg-white dark:bg-gray-900 border rounded-xl px-4 py-4 transition-colors ${labelFilter === label ? 'border-indigo-500' : 'border-gray-200 dark:border-gray-800 hover:border-gray-700'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <LabelBadge label={label} />
-                  <span className={`text-2xl font-bold text-${color}-400`}>{count}</span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{desc}</p>
-                {convValue !== null && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {label === 'Heroes' ? `Omzet: ${formatEuro(convValue)}` : `Spend: ${formatEuro(convValue)}`}
-                  </p>
-                )}
+      {/* GMC alert banner */}
+      {!loading && disapprovedProducts.length > 0 && (
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl px-5 py-4 space-y-2">
+          <p className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider">
+            {disapprovedProducts.length} producten hebben GMC problemen
+          </p>
+          {disapprovedProducts.slice(0, 3).map((p: any, i: number) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span className="text-gray-700 dark:text-gray-300 truncate max-w-lg">{p.title?.substring(0, 60)}...</span>
+              <button onClick={() => p.gmcIssues?.length > 0 && setGmcPanel(p.gmcIssues)}
+                className="shrink-0 ml-4 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors">
+                Oplossen &rarr;
               </button>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
+      )}
 
-        {/* Tab nav */}
-        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
-          {([
-            ['producten', '📦 Producten'],
-            ['gmc', '🔴 GMC problemen'],
-            ['health', '🩺 Feed health'],
-            ['labels', '🏷 Label analyse'],
-          ] as const).map(([key, lbl]) => (
-            <button key={key} onClick={() => setTab(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === key ? 'bg-white text-gray-900' : 'text-gray-500 dark:text-gray-400 hover:text-gray-200'}`}>
-              {lbl}
-              {key === 'gmc' && stats.disapproved > 0 && (
-                <span className="ml-1.5 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{stats.disapproved}</span>
-              )}
+      {/* KPI strip */}
+      {!loading && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Feed coverage</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.feedCoverageScore}%</p>
+          </div>
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/30 rounded-xl px-4 py-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Afgekeurd GMC</p>
+            <p className="text-2xl font-bold text-red-500 dark:text-red-400 mt-1">{stats.disapproved}</p>
+          </div>
+          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/20 rounded-xl px-4 py-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Beperkt zichtbaar</p>
+            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{stats.limited}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Titel Poor</p>
+            <p className="text-2xl font-bold text-red-500 dark:text-red-400 mt-1">{stats.titlePoor}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">van {stats.totalProducts}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Ontbrekende GTIN</p>
+            <p className="text-2xl font-bold text-orange-500 dark:text-orange-400 mt-1">{stats.missingGtin}</p>
+          </div>
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/20 rounded-xl px-4 py-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Heroes</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{stats.heroes}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{stats.totalProducts > 0 ? Math.round((stats.heroes / stats.totalProducts) * 100) : 0}% van feed</p>
+          </div>
+        </div>
+      )}
+
+      {/* Label performance summary */}
+      {!loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            onClick={() => setLabelFilter(labelFilter === 'Heroes' ? 'all' : 'Heroes')}
+            className={`text-left rounded-xl px-4 py-4 transition-colors ${labelFilter === 'Heroes'
+              ? 'bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-400 dark:border-blue-500'
+              : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <LabelBadge label="Heroes" />
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.heroes}</span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Hoge ROAS, top converters</p>
+            {stats.heroesConvValue != null && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Omzet: {formatEuro(stats.heroesConvValue)}</p>
+            )}
+          </button>
+          <button
+            onClick={() => setLabelFilter(labelFilter === 'Villains' ? 'all' : 'Villains')}
+            className={`text-left rounded-xl px-4 py-4 transition-colors ${labelFilter === 'Villains'
+              ? 'bg-red-50 dark:bg-red-950/30 border-2 border-red-400 dark:border-red-500'
+              : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <LabelBadge label="Villains" />
+              <span className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.villains}</span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Hoog budget, lage ROAS</p>
+            {stats.villainsCost != null && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Spend: {formatEuro(stats.villainsCost)}</p>
+            )}
+          </button>
+          <button
+            onClick={() => setLabelFilter(labelFilter === 'Sidekicks' ? 'all' : 'Sidekicks')}
+            className={`text-left rounded-xl px-4 py-4 transition-colors ${labelFilter === 'Sidekicks'
+              ? 'bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-400 dark:border-yellow-500'
+              : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <LabelBadge label="Sidekicks" />
+              <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.sidekicks}</span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Weinig clicks, laag budget</p>
+          </button>
+          <button
+            onClick={() => setLabelFilter(labelFilter === 'Zombies' ? 'all' : 'Zombies')}
+            className={`text-left rounded-xl px-4 py-4 transition-colors ${labelFilter === 'Zombies'
+              ? 'bg-gray-100 dark:bg-gray-800/60 border-2 border-gray-400 dark:border-gray-500'
+              : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <LabelBadge label="Zombies" />
+              <span className="text-2xl font-bold text-gray-600 dark:text-gray-400">{stats.zombies}</span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Geen clicks, geen spend</p>
+          </button>
+        </div>
+      )}
+
+      {/* Tab nav */}
+      <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
+        {([
+          ['producten', 'Producten'],
+          ['gmc', 'GMC problemen'],
+          ['health', 'Feed health'],
+          ['labels', 'Label analyse'],
+        ] as const).map(([key, lbl]) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === key
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}>
+            {lbl}
+            {key === 'gmc' && stats.disapproved > 0 && (
+              <span className="ml-1.5 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{stats.disapproved}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Filters */}
+      {tab === 'producten' && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Label:</span>
+          {['all', 'Heroes', 'Villains', 'Sidekicks', 'Zombies'].map(l => (
+            <button key={l} onClick={() => setLabelFilter(l)}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${labelFilter === l
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}>
+              {l === 'all' ? 'Alle labels' : l}
+            </button>
+          ))}
+          <span className="text-xs text-gray-500 dark:text-gray-400 ml-3">GMC:</span>
+          {['all', 'approved', 'limited', 'disapproved'].map(g => (
+            <button key={g} onClick={() => setGmcFilter(g)}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${gmcFilter === g
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}>
+              {g === 'all' ? 'Alles' : g === 'approved' ? 'Goedgekeurd' : g === 'limited' ? 'Beperkt' : 'Afgekeurd'}
             </button>
           ))}
         </div>
+      )}
 
-        {/* Filters */}
-        {tab === 'producten' && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-gray-600">Label:</span>
-            {['all', 'Heroes', 'Villains', 'Sidekicks', 'Zombies'].map(l => (
-              <button key={l} onClick={() => setLabelFilter(l)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${labelFilter === l ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-200'}`}>
-                {l === 'all' ? 'Alle labels' : l}
-              </button>
-            ))}
-            <span className="text-xs text-gray-600 ml-3">GMC:</span>
-            {['all', 'approved', 'limited', 'disapproved'].map(g => (
-              <button key={g} onClick={() => setGmcFilter(g)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${gmcFilter === g ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-200'}`}>
-                {g === 'all' ? 'Alles' : g === 'approved' ? 'Goedgekeurd' : g === 'limited' ? 'Beperkt' : 'Afgekeurd'}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="text-center py-16 text-gray-600 animate-pulse">Feed laden…</div>
-        ) : (
-          <>
-            {/* PRODUCTEN TAB */}
-            {tab === 'producten' && (
-              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+      {loading ? (
+        <div className="text-center py-16 text-gray-500 dark:text-gray-400 animate-pulse">Feed laden...</div>
+      ) : (
+        <>
+          {/* PRODUCTEN TAB */}
+          {tab === 'producten' && (
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-200 dark:border-gray-800 text-gray-500 uppercase tracking-wider">
+                    <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       <th className="px-4 py-3 text-left">Product</th>
                       <th className="px-4 py-3 text-right">Clicks</th>
                       <th className="px-4 py-3 text-right">Kosten</th>
@@ -362,17 +512,17 @@ export default function FeedPage() {
                   </thead>
                   <tbody>
                     {filteredProducts.map((p: any) => (
-                      <tr key={p.id} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
+                      <tr key={p.id} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                         <td className="px-4 py-3 max-w-xs">
-                          <p className="text-gray-200 truncate font-medium" title={p.title}>{p.title?.substring(0, 45)}{p.title?.length > 45 ? '…' : ''}</p>
-                          <p className="text-gray-600 mt-0.5">{p.sku}</p>
+                          <p className="text-gray-900 dark:text-gray-200 truncate font-medium" title={p.title}>{p.title?.substring(0, 45)}{p.title?.length > 45 ? '...' : ''}</p>
+                          <p className="text-gray-500 dark:text-gray-500 mt-0.5">{p.sku}</p>
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">{p.clicks ?? 0}</td>
                         <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">{formatEuro(p.cost ?? 0)}</td>
                         <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">{p.conversions ?? 0}</td>
                         <td className="px-4 py-3 text-right tabular-nums text-gray-900 dark:text-white font-semibold">{formatEuro(p.conv_value ?? 0)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">
-                          <span className={p.roas >= 400 ? 'text-green-400' : p.roas >= 100 ? 'text-yellow-400' : 'text-red-400'}>
+                          <span className={p.roas >= 400 ? 'text-green-600 dark:text-green-400' : p.roas >= 100 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}>
                             {p.roas ?? 0}%
                           </span>
                         </td>
@@ -396,13 +546,13 @@ export default function FeedPage() {
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button onClick={() => setTitleEditor(p)}
-                              className="text-indigo-400 hover:text-indigo-300 text-xs transition-colors">
-                              ✏ Titel
+                              className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-xs transition-colors font-medium">
+                              Titel
                             </button>
                             {p.gmcIssues?.length > 0 && (
                               <button onClick={() => setGmcPanel(p.gmcIssues)}
-                                className="text-red-400 hover:text-red-300 text-xs transition-colors">
-                                🔧 Fix
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs transition-colors font-medium">
+                                Fix
                               </button>
                             )}
                           </div>
@@ -412,166 +562,208 @@ export default function FeedPage() {
                   </tbody>
                 </table>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* GMC TAB */}
-            {tab === 'gmc' && (
-              <div className="space-y-3">
-                {disapprovedProducts.length === 0 ? (
-                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-5 py-12 text-center">
-                    <p className="text-green-400 text-lg mb-2">✓ Geen GMC problemen gevonden</p>
-                    <p className="text-xs text-gray-600">Alle producten zijn goedgekeurd in Google Merchant Center.</p>
-                  </div>
-                ) : (
-                  disapprovedProducts.map((p: any) => (
-                    <div key={p.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-                      <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-800 flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-200 truncate">{p.title}</p>
-                          <p className="text-xs text-gray-600 mt-0.5">SKU: {p.sku} · {p.id}</p>
-                        </div>
-                        <GMCStatusBadge status={p.gmcStatus} />
-                      </div>
-                      <div className="px-5 py-4 space-y-3">
-                        {p.gmcIssues.map((issue: any, i: number) => (
-                          <div key={i} className="flex gap-4">
-                            <div className="shrink-0 mt-0.5">
-                              <span className={`inline-block w-2 h-2 rounded-full mt-1 ${issue.priority === 'high' ? 'bg-red-400' : 'bg-yellow-400'}`} />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <p className="text-xs font-semibold text-red-400">{issue.description}</p>
-                              <div className="flex items-start gap-2">
-                                <span className="text-indigo-400 text-xs shrink-0">💡 Oplossing:</span>
-                                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{issue.fix}</p>
-                              </div>
-                            </div>
-                            <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium h-fit ${
-                              issue.priority === 'high' ? 'bg-red-900/50 text-red-400' : 'bg-yellow-900/50 text-yellow-400'
-                            }`}>
-                              {issue.priority === 'high' ? 'Urgent' : 'Middel'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                )}
-                {!data?.gmcConnected && (
-                  <div className="bg-yellow-950/20 border border-yellow-900/30 rounded-xl px-5 py-4">
-                    <p className="text-xs text-yellow-400 font-semibold">Demo modus — GMC niet verbonden</p>
-                    <p className="text-xs text-gray-500 mt-1">Voeg GMC_CLIENT_ID, GMC_CLIENT_SECRET, GMC_REFRESH_TOKEN en GMC_MERCHANT_ID toe als GitHub Secrets voor live data.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* HEALTH TAB */}
-            {tab === 'health' && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Gemiddelde feed score</p>
-                    <p className="text-2xl font-bold text-white mt-1">
-                      {products.length > 0 ? Math.round(products.reduce((s: number, p: any) => s + p.feedScore, 0) / products.length) : 0}
-                      <span className="text-sm text-gray-500 dark:text-gray-400">/100</span>
-                    </p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Producten zonder problemen</p>
-                    <p className="text-2xl font-bold text-green-400 mt-1">
-                      {products.filter((p: any) => p.feedIssues.length === 0).length}
-                      <span className="text-sm text-gray-500 dark:text-gray-400"> / {products.length}</span>
-                    </p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Totale feed issues</p>
-                    <p className="text-2xl font-bold text-orange-400 mt-1">
-                      {products.reduce((s: number, p: any) => s + p.feedIssues.length, 0)}
-                    </p>
-                  </div>
+          {/* GMC TAB */}
+          {tab === 'gmc' && (
+            <div className="space-y-3">
+              {disapprovedProducts.length === 0 ? (
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-12 text-center">
+                  <p className="text-green-600 dark:text-green-400 text-lg mb-2">Geen GMC problemen gevonden</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Alle producten zijn goedgekeurd in Google Merchant Center.</p>
                 </div>
-
-                {products.filter((p: any) => p.feedIssues.length > 0).map((p: any) => (
-                  <div key={p.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
-                    <div className="flex items-start justify-between gap-4 mb-3">
+              ) : (
+                disapprovedProducts.map((p: any) => (
+                  <div key={p.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-200 truncate">{p.title}</p>
-                        <p className="text-xs text-gray-600 mt-0.5">{p.sku}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-200 truncate">{p.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">SKU: {p.sku} &middot; {p.id}</p>
                       </div>
-                      <div className="shrink-0 flex items-center gap-2">
-                        <div className="h-1.5 w-16 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-orange-500 rounded-full" style={{ width: `${p.feedScore}%` }} />
-                        </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{p.feedScore}/100</span>
-                      </div>
+                      <GMCStatusBadge status={p.gmcStatus} />
                     </div>
-                    <div className="space-y-1.5">
-                      {p.feedIssues.map((issue: string, i: number) => (
-                        <div key={i} className="flex items-center gap-2 text-xs">
-                          <span className="text-orange-400">⚠</span>
-                          <span className="text-gray-500 dark:text-gray-400">{issue}</span>
+                    <div className="px-5 py-4 space-y-3">
+                      {p.gmcIssues.map((issue: any, i: number) => (
+                        <div key={i} className="flex gap-4">
+                          <div className="shrink-0 mt-0.5">
+                            <span className={`inline-block w-2 h-2 rounded-full mt-1 ${issue.priority === 'high' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <p className="text-xs font-semibold text-red-600 dark:text-red-400">{issue.description}</p>
+                            <div className="flex items-start gap-2">
+                              <span className="text-indigo-600 dark:text-indigo-400 text-xs shrink-0">Oplossing:</span>
+                              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{issue.fix}</p>
+                            </div>
+                          </div>
+                          <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium h-fit ${
+                            issue.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400'
+                          }`}>
+                            {issue.priority === 'high' ? 'Urgent' : 'Middel'}
+                          </span>
                         </div>
                       ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* LABELS TAB */}
-            {tab === 'labels' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { label: 'Heroes', color: 'blue-400', bg: 'blue-950/20', border: 'blue-900/30', desc: 'ROAS ≥ 400% en meer dan 20 clicks. Verhoog budget voor deze producten.', products: products.filter((p: any) => p.label === 'Heroes') },
-                    { label: 'Villains', color: 'red-400', bg: 'red-950/20', border: 'red-900/30', desc: 'ROAS < 100% met meer dan €50 spend. Optimaliseer of pauzeer.', products: products.filter((p: any) => p.label === 'Villains') },
-                    { label: 'Sidekicks', color: 'yellow-400', bg: 'yellow-950/20', border: 'yellow-900/30', desc: 'Weinig clicks maar laag budget. Test met hogere biedingen.', products: products.filter((p: any) => p.label === 'Sidekicks') },
-                    { label: 'Zombies', color: 'gray-400', bg: 'gray-800/40', border: 'gray-700/50', desc: 'Geen clicks of spend. Controleer feed health en GMC status.', products: products.filter((p: any) => p.label === 'Zombies') },
-                  ].map(({ label, color, bg, border, desc, products: lp }) => (
-                    <div key={label} className={`bg-${bg} border border-${border} rounded-xl p-5`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <LabelBadge label={label} />
-                        <span className={`text-2xl font-bold text-${color}`}>{lp.length}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mb-4">{desc}</p>
-                      <div className="space-y-2">
-                        {lp.slice(0, 4).map((p: any) => (
-                          <div key={p.id} className="flex items-center justify-between text-xs">
-                            <span className="text-gray-500 dark:text-gray-400 truncate max-w-xs">{p.title?.substring(0, 35)}…</span>
-                            <span className={`tabular-nums font-medium ${p.roas >= 400 ? 'text-green-400' : p.roas >= 100 ? 'text-yellow-400' : 'text-red-400'}`}>
-                              {p.roas ?? 0}%
-                            </span>
-                          </div>
-                        ))}
-                        {lp.length > 4 && <p className="text-xs text-gray-600">+{lp.length - 4} meer</p>}
-                      </div>
-                    </div>
-                  ))}
+                ))
+              )}
+              {!gmcConnected && (
+                <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/30 rounded-xl px-5 py-4">
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400 font-semibold">Demo modus &mdash; GMC niet verbonden</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Voeg GMC_CLIENT_ID, GMC_CLIENT_SECRET, GMC_REFRESH_TOKEN en GMC_MERCHANT_ID toe als GitHub Secrets voor live data.</p>
                 </div>
+              )}
+            </div>
+          )}
 
-                {/* Title status overzicht */}
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-200 dark:border-gray-800 rounded-xl p-5">
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-4">Titel status overzicht</h3>
-                  <div className="grid grid-cols-4 gap-4">
-                    {[
-                      { score: 'Poor', color: 'red-400', count: products.filter((p: any) => p.titleScore === 'Poor').length },
-                      { score: 'Average', color: 'yellow-400', count: products.filter((p: any) => p.titleScore === 'Average').length },
-                      { score: 'Great', color: 'green-400', count: products.filter((p: any) => p.titleScore === 'Great').length },
-                      { score: 'Too Long', color: 'gray-400', count: products.filter((p: any) => p.titleScore === 'Too Long').length },
-                    ].map(({ score, color, count }) => (
-                      <div key={score} className="text-center">
-                        <TitleScoreBadge score={score} />
-                        <p className={`text-3xl font-bold text-${color} mt-2`}>{count}</p>
-                        <p className="text-xs text-gray-600">{products.length > 0 ? Math.round((count / products.length) * 100) : 0}%</p>
+          {/* HEALTH TAB */}
+          {tab === 'health' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Gemiddelde feed score</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                    {products.length > 0 ? Math.round(products.reduce((s: number, p: any) => s + p.feedScore, 0) / products.length) : 0}
+                    <span className="text-sm text-gray-500 dark:text-gray-400">/100</span>
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Producten zonder problemen</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                    {products.filter((p: any) => p.feedIssues.length === 0).length}
+                    <span className="text-sm text-gray-500 dark:text-gray-400"> / {products.length}</span>
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Totale feed issues</p>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">
+                    {products.reduce((s: number, p: any) => s + p.feedIssues.length, 0)}
+                  </p>
+                </div>
+              </div>
+
+              {products.filter((p: any) => p.feedIssues.length > 0).map((p: any) => (
+                <div key={p.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-200 truncate">{p.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{p.sku}</p>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <div className="h-1.5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${p.feedScore >= 75 ? 'bg-green-500' : p.feedScore >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${p.feedScore}%` }} />
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{p.feedScore}/100</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    {p.feedIssues.map((issue: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className="text-orange-500 dark:text-orange-400">&#9888;</span>
+                        <span className="text-gray-600 dark:text-gray-400">{issue}</span>
                       </div>
                     ))}
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {/* LABELS TAB */}
+          {tab === 'labels' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <LabelBadge label="Heroes" />
+                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{products.filter((p: any) => p.label === 'Heroes').length}</span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">ROAS &ge; 400% en meer dan 20 clicks. Verhoog budget voor deze producten.</p>
+                  <div className="space-y-2">
+                    {products.filter((p: any) => p.label === 'Heroes').slice(0, 4).map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-700 dark:text-gray-300 truncate max-w-xs">{p.title?.substring(0, 35)}...</span>
+                        <span className={`tabular-nums font-medium ${p.roas >= 400 ? 'text-green-600 dark:text-green-400' : p.roas >= 100 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {p.roas ?? 0}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <LabelBadge label="Villains" />
+                    <span className="text-2xl font-bold text-red-600 dark:text-red-400">{products.filter((p: any) => p.label === 'Villains').length}</span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">ROAS &lt; 100% met meer dan &euro;50 spend. Optimaliseer of pauzeer.</p>
+                  <div className="space-y-2">
+                    {products.filter((p: any) => p.label === 'Villains').slice(0, 4).map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-700 dark:text-gray-300 truncate max-w-xs">{p.title?.substring(0, 35)}...</span>
+                        <span className={`tabular-nums font-medium ${p.roas >= 400 ? 'text-green-600 dark:text-green-400' : p.roas >= 100 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {p.roas ?? 0}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/30 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <LabelBadge label="Sidekicks" />
+                    <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{products.filter((p: any) => p.label === 'Sidekicks').length}</span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">Weinig clicks maar laag budget. Test met hogere biedingen.</p>
+                  {products.filter((p: any) => p.label === 'Sidekicks').length === 0 && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 italic">Geen producten in deze categorie.</p>
+                  )}
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <LabelBadge label="Zombies" />
+                    <span className="text-2xl font-bold text-gray-600 dark:text-gray-400">{products.filter((p: any) => p.label === 'Zombies').length}</span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">Geen clicks of spend. Controleer feed health en GMC status.</p>
+                  <div className="space-y-2">
+                    {products.filter((p: any) => p.label === 'Zombies').slice(0, 4).map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400 truncate max-w-xs">{p.title?.substring(0, 35)}...</span>
+                        <span className="tabular-nums font-medium text-gray-500 dark:text-gray-500">
+                          {p.roas ?? 0}%
+                        </span>
+                      </div>
+                    ))}
+                    {products.filter((p: any) => p.label === 'Zombies').length > 4 && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500">+{products.filter((p: any) => p.label === 'Zombies').length - 4} meer</p>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
-          </>
-        )}
-      </main>
+
+              {/* Title status overzicht */}
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-200 mb-4">Titel status overzicht</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {[
+                    { score: 'Poor', color: 'text-red-500 dark:text-red-400', barBg: 'bg-red-500', count: products.filter((p: any) => p.titleScore === 'Poor').length },
+                    { score: 'Average', color: 'text-yellow-500 dark:text-yellow-400', barBg: 'bg-yellow-500', count: products.filter((p: any) => p.titleScore === 'Average').length },
+                    { score: 'Great', color: 'text-green-500 dark:text-green-400', barBg: 'bg-green-500', count: products.filter((p: any) => p.titleScore === 'Great').length },
+                    { score: 'Too Long', color: 'text-gray-500 dark:text-gray-400', barBg: 'bg-gray-500', count: products.filter((p: any) => p.titleScore === 'Too Long').length },
+                  ].map(({ score, color, barBg, count }) => (
+                    <div key={score} className="text-center">
+                      <TitleScoreBadge score={score} />
+                      <p className={`text-3xl font-bold ${color} mt-2`}>{count}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{products.length > 0 ? Math.round((count / products.length) * 100) : 0}%</p>
+                      <div className="mt-2 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className={`h-full ${barBg} rounded-full`} style={{ width: `${products.length > 0 ? (count / products.length) * 100 : 0}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

@@ -92,15 +92,19 @@ export async function GET(request: Request) {
 
     // ── 4. Voorraad × kanaal alerts ──────────────────────────────────────────
     // Haal Shopify inventory op
-    const shopifyRes = await fetch(
-      `https://${process.env.SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants`,
-      { headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_TOKEN! } }
-    );
-    const shopifyData = await shopifyRes.json();
     const inventory: Record<string, { title: string; stock: number; price: number }> = {};
-    for (const p of shopifyData.products ?? []) {
-      for (const v of p.variants ?? []) {
-        if (v.sku) inventory[String(v.sku)] = { title: p.title, stock: v.inventory_quantity, price: parseFloat(v.price) };
+    if (process.env.SHOPIFY_STORE && process.env.SHOPIFY_TOKEN) {
+      const shopifyRes = await fetch(
+        `https://${process.env.SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants`,
+        { headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_TOKEN } }
+      );
+      if (shopifyRes.ok) {
+        const shopifyData = await shopifyRes.json();
+        for (const p of shopifyData.products ?? []) {
+          for (const v of p.variants ?? []) {
+            if (v.sku) inventory[String(v.sku)] = { title: p.title, stock: v.inventory_quantity, price: parseFloat(v.price) };
+          }
+        }
       }
     }
 

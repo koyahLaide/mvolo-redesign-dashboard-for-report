@@ -15,9 +15,7 @@ import {
   Lightbulb,
   BarChart3,
   Crosshair,
-  ClipboardList,
-  RotateCcw,
-  CreditCard,
+  Rss,
   Sun,
   Moon,
   X,
@@ -44,12 +42,7 @@ const navItems = [
   { label: "Strategie", icon: Lightbulb, href: "/strategie" },
   { label: "Finance", icon: BarChart3, href: "/finance" },
   { label: "Competitors", icon: Crosshair, href: "/competitor-prices" },
-];
-
-const feedSuiteItems = [
-  { label: "Orders Feed", icon: ClipboardList, href: "/feed/orders" },
-  { label: "Returns Feed", icon: RotateCcw, href: "/feed/returns" },
-  { label: "Ad Spend Feed", icon: CreditCard, href: "/feed/ad-spend" },
+  { label: "Feed Suite", icon: Rss, href: "/feed" },
 ];
 
 /* ── Component ── */
@@ -113,29 +106,6 @@ export default function Sidebar({
             </Link>
           );
         })}
-
-        {/* ── Feed Suite section ── */}
-        <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-800">
-          <p className="px-3 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-            Feed Suite
-          </p>
-          {feedSuiteItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => {
-                  if (window.innerWidth < 1024) setSidebarOpen(false);
-                }}
-                className={linkClass(item.href)}
-              >
-                <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
 
         {/* ── Dark Mode Toggle ── */}
         <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-800">

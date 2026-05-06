@@ -52,15 +52,19 @@ export async function GET() {
     const cogsPath = path.join(process.cwd(), 'data', 'products-cogs.json');
     const cogsData = JSON.parse(fs.readFileSync(cogsPath, 'utf-8'));
 
-    const shopifyRes = await fetch(
-      `https://${process.env.SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants`,
-      { headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_TOKEN! } }
-    );
-    const shopifyData = await shopifyRes.json();
     const inventory: Record<string, { title: string; stock: number }> = {};
-    for (const p of shopifyData.products ?? []) {
-      for (const v of p.variants ?? []) {
-        if (v.sku) inventory[String(v.sku)] = { title: p.title, stock: v.inventory_quantity };
+    if (process.env.SHOPIFY_STORE && process.env.SHOPIFY_TOKEN) {
+      const shopifyRes = await fetch(
+        `https://${process.env.SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants`,
+        { headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_TOKEN } }
+      );
+      if (shopifyRes.ok) {
+        const shopifyData = await shopifyRes.json();
+        for (const p of shopifyData.products ?? []) {
+          for (const v of p.variants ?? []) {
+            if (v.sku) inventory[String(v.sku)] = { title: p.title, stock: v.inventory_quantity };
+          }
+        }
       }
     }
 

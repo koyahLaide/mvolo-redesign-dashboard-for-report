@@ -61,12 +61,13 @@ export default function InventoryPage() {
     setError(null);
     try {
       const res = await fetch('/api/inventory');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setProducts(data.products ?? []);
       setLastUpdated(new Date());
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Onbekende fout');
     } finally {
       setLoading(false);
     }

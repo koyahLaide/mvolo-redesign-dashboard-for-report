@@ -2,6 +2,10 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import {
+  ShoppingCart, DollarSign, TrendingUp, Users, UserCheck,
+  Target, BarChart3, RefreshCw, Share2, Search,
+} from 'lucide-react';
 import ActionBanner from './components/ActionBanner';
 import {
   PieChart, Pie, Cell, Tooltip, Legend,
@@ -162,10 +166,17 @@ function formatLabel(s: string) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function KpiCard({ label, value, sub, loading }: { label: string; value: string; sub?: string; loading?: boolean }) {
+function KpiCard({ label, value, sub, loading, icon: Icon, iconBg, iconColor }: { label: string; value: string; sub?: string; loading?: boolean; icon?: React.ElementType; iconBg?: string; iconColor?: string }) {
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col gap-1 shadow-sm">
-      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-2 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+        {Icon && (
+          <div className={`p-1.5 rounded-lg ${iconBg ?? 'bg-gray-100 dark:bg-gray-800'}`}>
+            <Icon className={`w-4 h-4 ${iconColor ?? 'text-gray-500 dark:text-gray-400'}`} />
+          </div>
+        )}
+      </div>
       {loading
         ? <span className="text-2xl font-bold text-gray-300 dark:text-gray-600 animate-pulse">Laden…</span>
         : <span className="text-2xl font-bold text-gray-900 dark:text-white">{value}</span>
@@ -385,8 +396,6 @@ const PERIOD_LABELS: { key: Period; label: string }[] = [
   { key: 'all',     label: 'Alles' },
 ];
 
-function MaandMargeGrafiek() { return null; }
-
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -412,21 +421,26 @@ export default function DashboardPage() {
     copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
   }
 
-  const loadStats = useCallback((p: Period, isRefresh = false) => {
+  const loadStats = useCallback(async (p: Period, isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError(null);
-    fetch(`/api/stats?period=${p}&platform=${platform}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`API error ${r.status}`);
-        return r.json();
-      })
-      .then((data) => { setStats(data); setLastUpdated(new Date()); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => { setLoading(false); setRefreshing(false); });
+    try {
+      const res = await fetch(`/api/stats?period=${p}&platform=${platform}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setStats(data);
+      setLastUpdated(new Date());
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Onbekende fout');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [platform]);
 
-  useEffect(() => { loadStats(period); }, [period, platform, loadStats]);
+  useEffect(() => { loadStats(period); }, [period, loadStats]);
 
   useEffect(() => {
     const SIX_HOURS = 6 * 60 * 60 * 1000;
@@ -436,14 +450,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetch('/api/insights')
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : Promise.reject(r.status))
       .then((d) => setInsights(d.insights ?? []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     fetch('/api/funnel?days=30')
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : Promise.reject(r.status))
       .then((d) => setFunnelData(d))
       .catch(() => {});
   }, []);
@@ -502,16 +516,17 @@ export default function DashboardPage() {
 
       <div className="space-y-8">
 
-        {/* Page Title + Filters */}
+                {/* Page Title + Filters */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Mvolo Attribution Dashboard</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Shopify order attribution by marketing channel</p>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Search */}
             <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Order zoeken..."
@@ -522,9 +537,8 @@ export default function DashboardPage() {
                     window.location.href = `/orders?search=${encodeURIComponent(searchQuery.trim())}`;
                   }
                 }}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all w-48 group-hover:w-64"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all w-48 group-hover:w-64"
               />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </div>
 
             {/* Live indicator */}
@@ -535,7 +549,6 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isFresh ? 'bg-emerald-500 animate-pulse' : 'bg-orange-500'}`} />
                   <span>
-                    Laatste update:{' '}
                     {lastUpdated.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -548,8 +561,8 @@ export default function DashboardPage() {
               disabled={refreshing}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-all disabled:opacity-50"
             >
-              <span className={refreshing ? 'animate-spin inline-block' : ''}>↻</span>
-              {refreshing ? 'Laden…' : 'Nu verversen'}
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Laden…' : 'Verversen'}
             </button>
 
             {/* Share */}
@@ -561,20 +574,21 @@ export default function DashboardPage() {
                   : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-500'
               }`}
             >
-              {copied ? '✓ Gekopieerd!' : '⬡ Deel'}
+              <Share2 className="w-3.5 h-3.5" />
+              {copied ? 'Gekopieerd!' : 'Deel'}
             </button>
           </div>
         </div>
 
         {/* Period & Platform Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1">
             {PERIOD_LABELS.map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setPeriod(key)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  period === key ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  period === key ? 'bg-indigo-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 {label}
@@ -587,8 +601,8 @@ export default function DashboardPage() {
               <button
                 key={key}
                 onClick={() => setPlatform(key)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  platform === key ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  platform === key ? 'bg-indigo-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 {key === 'bol' && <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />}
@@ -598,28 +612,59 @@ export default function DashboardPage() {
           </div>
         </div>
 
+
         {/* KPI Cards — Row 1 */}
-        <div className="grid grid-cols-2 lg:grid-cols-7 gap-4">
-          <KpiCard label="Totaal orders" value={totalOrders.toLocaleString('nl-NL')} loading={refreshing} />
-          <KpiCard label="Totale omzet" value={formatEuro(stats.totalRevenue)} loading={refreshing} />
+        <div className="grid grid-cols-2 lg:grid-cols-7 gap-3">
+          <KpiCard
+            label="Totaal orders"
+            value={totalOrders.toLocaleString('nl-NL')}
+            loading={refreshing}
+            icon={ShoppingCart}
+            iconBg="bg-indigo-100 dark:bg-indigo-900/30"
+            iconColor="text-indigo-600 dark:text-indigo-400"
+          />
+          <KpiCard
+            label="Totale omzet"
+            value={formatEuro(stats.totalRevenue)}
+            loading={refreshing}
+            icon={DollarSign}
+            iconBg="bg-green-100 dark:bg-green-900/30"
+            iconColor="text-green-600 dark:text-green-400"
+          />
           <KpiCard
             label="Beste kanaal"
             value={formatLabel(stats.bestChannel)}
             sub={`${stats.channels[0]?.orders} orders`}
             loading={refreshing}
+            icon={TrendingUp}
+            iconBg="bg-blue-100 dark:bg-blue-900/30"
+            iconColor="text-blue-600 dark:text-blue-400"
           />
-          <KpiCard label="Gem. orderwaarde" value={formatEuro(stats.avgOrderValue)} loading={refreshing} />
+          <KpiCard
+            label="Gem. orderwaarde"
+            value={formatEuro(stats.avgOrderValue)}
+            loading={refreshing}
+            icon={BarChart3}
+            iconBg="bg-purple-100 dark:bg-purple-900/30"
+            iconColor="text-purple-600 dark:text-purple-400"
+          />
           <KpiCard
             label="Nieuwe klanten"
             value={stats.newCustomers.toLocaleString('nl-NL')}
             sub="eerste bestelling"
             loading={refreshing}
+            icon={Users}
+            iconBg="bg-cyan-100 dark:bg-cyan-900/30"
+            iconColor="text-cyan-600 dark:text-cyan-400"
           />
           <KpiCard
             label="% Terugkerend"
             value={`${returningPct}%`}
             sub={`${stats.returningCustomers} terugkerende orders`}
             loading={refreshing}
+            icon={UserCheck}
+            iconBg="bg-amber-100 dark:bg-amber-900/30"
+            iconColor="text-amber-600 dark:text-amber-400"
           />
           {(() => {
             const totalGA4Sess = (stats.ga4ByChannel ?? []).reduce((s, r) => s + r.sessions, 0);
@@ -632,6 +677,9 @@ export default function DashboardPage() {
                 value={cr !== null ? `${cr}%` : 'n/b'}
                 sub={cr !== null ? `${totalOrders} orders / ${totalGA4Sess.toLocaleString('nl-NL')} sessies` : 'geen GA4 data'}
                 loading={refreshing}
+                icon={Target}
+                iconBg="bg-rose-100 dark:bg-rose-900/30"
+                iconColor="text-rose-600 dark:text-rose-400"
               />
             );
           })()}
@@ -639,10 +687,31 @@ export default function DashboardPage() {
 
         {/* KPI Cards — Row 2: Ad Spend */}
         {(stats.totalSpend > 0 || stats.overallRoas > 0) && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard label="Totale advertentiekosten" value={formatEuro(stats.totalSpend)} sub="Meta + Google Ads" />
-            <KpiCard label="ROAS" value={`${stats.overallRoas}×`} sub="omzet / adspend" />
-            <KpiCard label="POAS" value={`${stats.overallPoas}×`} sub="winst / adspend" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <KpiCard
+              label="Totale adspend"
+              value={formatEuro(stats.totalSpend)}
+              sub="Meta + Google Ads"
+              icon={DollarSign}
+              iconBg="bg-red-100 dark:bg-red-900/30"
+              iconColor="text-red-600 dark:text-red-400"
+            />
+            <KpiCard
+              label="ROAS"
+              value={`${stats.overallRoas}×`}
+              sub="omzet / adspend"
+              icon={TrendingUp}
+              iconBg="bg-emerald-100 dark:bg-emerald-900/30"
+              iconColor="text-emerald-600 dark:text-emerald-400"
+            />
+            <KpiCard
+              label="POAS"
+              value={`${stats.overallPoas}×`}
+              sub="winst / adspend"
+              icon={BarChart3}
+              iconBg="bg-violet-100 dark:bg-violet-900/30"
+              iconColor="text-violet-600 dark:text-violet-400"
+            />
             <KpiCard
               label="CAC (gem.)"
               value={stats.spendByChannel.length > 0
@@ -653,6 +722,9 @@ export default function DashboardPage() {
                 : '—'
               }
               sub="kosten per nieuwe klant"
+              icon={Users}
+              iconBg="bg-orange-100 dark:bg-orange-900/30"
+              iconColor="text-orange-600 dark:text-orange-400"
             />
           </div>
         )}

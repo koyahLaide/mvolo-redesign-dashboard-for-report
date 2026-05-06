@@ -44,27 +44,25 @@ export default function GeoPage() {
   const topCities = (data?.cities ?? []).slice(0, 20);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
-      
-      <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-8 py-8 space-y-6">
         {activeTab === 'kaart' && (
           <>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
-                <p className="text-xs text-gray-500">Totaal orders</p>
-                <p className="text-2xl font-bold text-white mt-1">{data?.totals?.total_orders ?? 0}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Totaal orders</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{data?.totals?.total_orders ?? 0}</p>
               </div>
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
-                <p className="text-xs text-gray-500">Orders met stadsdata</p>
-                <p className="text-2xl font-bold text-indigo-400 mt-1">{data?.totals?.orders_with_city ?? 0}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Orders met stadsdata</p>
+                <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{data?.totals?.orders_with_city ?? 0}</p>
               </div>
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
-                <p className="text-xs text-gray-500">Totaal omzet</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">{formatEuro(data?.totals?.total_revenue ?? 0)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Totaal omzet</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{formatEuro(data?.totals?.total_revenue ?? 0)}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
                 <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-800">
                   <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Orders per stad (NL + BE)</h2>
@@ -104,7 +102,7 @@ export default function GeoPage() {
                   </div>
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500">
+                      <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
                         <th className="px-4 py-2 text-left">Land</th>
                         <th className="px-4 py-2 text-right">Orders</th>
                         <th className="px-4 py-2 text-right">Omzet</th>
@@ -114,8 +112,8 @@ export default function GeoPage() {
                       {(data?.countries ?? []).slice(0, 8).map((c: any) => (
                         <tr key={c.shipping_country} className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/20">
                           <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{c.shipping_country}</td>
-                          <td className="px-4 py-2 text-right text-indigo-400 tabular-nums">{c.orders}</td>
-                          <td className="px-4 py-2 text-right text-green-400 tabular-nums">{formatEuro(c.revenue)}</td>
+                          <td className="px-4 py-2 text-right text-indigo-600 dark:text-indigo-400 tabular-nums">{c.orders}</td>
+                          <td className="px-4 py-2 text-right text-green-600 dark:text-green-400 tabular-nums">{formatEuro(c.revenue)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -131,11 +129,11 @@ export default function GeoPage() {
                       const pct = Math.round((city.orders / maxOrders) * 100);
                       return (
                         <div key={city.city} className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400 w-28 flex-shrink-0 truncate">{city.city}</span>
-                          <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 w-28 flex-shrink-0 truncate">{city.city}</span>
+                          <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                             <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
                           </div>
-                          <span className="text-xs text-gray-300 tabular-nums w-6 text-right">{city.orders}</span>
+                          <span className="text-xs text-gray-700 dark:text-gray-300 tabular-nums w-6 text-right">{city.orders}</span>
                         </div>
                       );
                     })}
@@ -149,26 +147,26 @@ export default function GeoPage() {
         {activeTab === 'visitors' && (
           <>
             {data?.sessionStats && (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
-                  <p className="text-xs text-gray-500">Getrackte sessies</p>
-                  <p className="text-2xl font-bold text-white mt-1">{data.sessionStats.total_sessions}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Getrackte sessies</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{data.sessionStats.total_sessions}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">{data.sessionStats.unique_visitors} unieke bezoekers</p>
                 </div>
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
-                  <p className="text-xs text-gray-500">Gem. sessies voor aankoop</p>
-                  <p className="text-2xl font-bold text-indigo-400 mt-1">{data.sessionStats.avg_sessions_before_purchase}x</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Gem. sessies voor aankoop</p>
+                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{data.sessionStats.avg_sessions_before_purchase}x</p>
                   <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">max {data.sessionStats.max_sessions} sessies</p>
                 </div>
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
-                  <p className="text-xs text-gray-500">Rage clicks</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Rage clicks</p>
                   <p className="text-2xl font-bold mt-1" style={{ color: (data.sessionStats.total_rage_clicks ?? 0) > 0 ? '#ef4444' : '#22c55e' }}>
                     {data.sessionStats.total_rage_clicks ?? 0}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">frustratie signaal</p>
                 </div>
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4">
-                  <p className="text-xs text-gray-500">Dead clicks</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Dead clicks</p>
                   <p className="text-2xl font-bold mt-1" style={{ color: (data.sessionStats.total_dead_clicks ?? 0) > 5 ? '#f59e0b' : '#22c55e' }}>
                     {data.sessionStats.total_dead_clicks ?? 0}
                   </p>
@@ -184,7 +182,7 @@ export default function GeoPage() {
               </div>
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 uppercase tracking-wider">
+                  <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     <th className="px-5 py-2 text-left">Land</th>
                     <th className="px-5 py-2 text-right">Visitors</th>
                     <th className="px-5 py-2 text-right">Orders</th>
@@ -198,12 +196,12 @@ export default function GeoPage() {
                   {(data?.visitorGeo ?? []).map((r: any) => (
                     <tr key={r.country} className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/20">
                       <td className="px-5 py-2.5 text-gray-700 dark:text-gray-300 font-medium">{r.country}</td>
-                      <td className="px-5 py-2.5 text-right text-gray-300 tabular-nums">{r.visitors}</td>
-                      <td className="px-5 py-2.5 text-right text-indigo-400 tabular-nums">{r.orders}</td>
-                      <td className="px-5 py-2.5 text-right tabular-nums text-green-400">{r.visitors > 0 ? Math.round((r.orders / r.visitors) * 100) : 0}%</td>
-                      <td className="px-5 py-2.5 text-right text-gray-400 tabular-nums">{r.avg_sessions_before_purchase}x</td>
-                      <td className="px-5 py-2.5 text-right tabular-nums" style={{ color: r.rage_clicks > 0 ? '#ef4444' : '#374151' }}>{r.rage_clicks || '—'}</td>
-                      <td className="px-5 py-2.5 text-right tabular-nums" style={{ color: r.dead_clicks > 0 ? '#f59e0b' : '#374151' }}>{r.dead_clicks || '—'}</td>
+                      <td className="px-5 py-2.5 text-right text-gray-700 dark:text-gray-300 tabular-nums">{r.visitors}</td>
+                      <td className="px-5 py-2.5 text-right text-indigo-600 dark:text-indigo-400 tabular-nums">{r.orders}</td>
+                      <td className="px-5 py-2.5 text-right tabular-nums text-green-600 dark:text-green-400">{r.visitors > 0 ? Math.round((r.orders / r.visitors) * 100) : 0}%</td>
+                      <td className="px-5 py-2.5 text-right text-gray-500 dark:text-gray-400 tabular-nums">{r.avg_sessions_before_purchase}x</td>
+                      <td className="px-5 py-2.5 text-right tabular-nums" style={{ color: r.rage_clicks > 0 ? '#ef4444' : '#9ca3af' }}>{r.rage_clicks || '—'}</td>
+                      <td className="px-5 py-2.5 text-right tabular-nums" style={{ color: r.dead_clicks > 0 ? '#f59e0b' : '#9ca3af' }}>{r.dead_clicks || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -220,9 +218,9 @@ export default function GeoPage() {
                     const maxV = Math.max(...(data?.returnVisits ?? []).map((x: any) => x.visitors), 1);
                     return (
                       <div key={r.bucket} className="flex items-center gap-3">
-                        <span className="text-xs text-gray-400 w-24 flex-shrink-0">{r.bucket}</span>
-                        <div className="flex-1 h-5 bg-gray-800 rounded overflow-hidden relative">
-                          <div className="h-full bg-indigo-600/60 rounded" style={{ width: `${(r.visitors / maxV) * 100}%` }} />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 w-24 flex-shrink-0">{r.bucket}</span>
+                        <div className="flex-1 h-5 bg-gray-200 dark:bg-gray-800 rounded overflow-hidden relative">
+                          <div className="h-full bg-indigo-500/60 dark:bg-indigo-600/60 rounded" style={{ width: `${(r.visitors / maxV) * 100}%` }} />
                           <span className="absolute inset-0 flex items-center px-2 text-xs text-gray-900 dark:text-white font-semibold">{r.visitors} bezoekers</span>
                         </div>
                       </div>
@@ -233,7 +231,7 @@ export default function GeoPage() {
             )}
           </>
         )}
-      </main>
+
     </div>
   );
 }
