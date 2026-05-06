@@ -239,11 +239,11 @@ async function migrate() {
       'updated_at',
     ]);
 
-    /* 
+     
     await migrateTable(sqlite, pg, 'sync_log', [
       'synced_at', 'orders_fetched', 'orders_new', 'status', 'error'
     ]);
-    */
+    
 
     console.log(chalk.green.bold('\n  ✔ Full Migration complete!\n'));
   } catch (err) {
@@ -259,56 +259,63 @@ async function migrate() {
 async function migrateTable(sqlite, pg, tableName, columns) {
   process.stdout.write(chalk.gray(`  Migrating ${tableName.padEnd(20)} ... `));
 
-  let rows = sqlite.prepare(`SELECT * FROM "${tableName}"`).all();
-  if (rows.length === 0) {
-    console.log(chalk.yellow('Skipped (no data)'));
-    return;
-  }
+  const rows = sqlite.prepare(`SELECT * FROM "${tableName}"`).all();
 
-  // Deduplicate and aggregate ad_spend (Collapses ~15,000 raw sync rows into ~600 unique ad-days)
-  // This prevents double-counting spend in the dashboard if sync scripts were run multiple times.
-  if (tableName === 'ad_spend') {
-    const uniqueMap = new Map();
-    for (const row of rows) {
-      const key = `${row.date}|${row.channel}|${row.campaign_name}|${row.adset_name}|${row.ad_name}`;
-      if (uniqueMap.has(key)) {
-        const existing = uniqueMap.get(key);
-        existing.spend += row.spend || 0;
-        existing.impressions += row.impressions || 0;
-        existing.clicks += row.clicks || 0;
-        existing.purchases += row.purchases || 0;
-      } else {
-        uniqueMap.set(key, { ...row });
-      }
-    }
-    rows = Array.from(uniqueMap.values());
-  }
-
-  // 1. Truncate table in Supabase
-  await pg.query(`TRUNCATE TABLE "${tableName}" CASCADE`);
-
-  // 2. Build the insert query
-  const colNames = columns.map((c) => `"${c}"`).join(', ');
-  const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-  const query = `
-    INSERT INTO "${tableName}" (${colNames})
-    VALUES (${placeholders})
-  `;
-
+  // 1. Start transaction
   await pg.query('BEGIN');
   try {
-    for (const row of rows) {
-      const values = columns.map((col) => {
-        let val = row[col];
-        // Convert SQLite 0/1 to PG booleans for specific columns
-        const boolCols = ['is_new_customer', 'had_rage_click', 'had_dead_click', 'price_changed'];
-        if (boolCols.includes(col)) {
-          return val === null ? null : !!val;
-        }
-        return val;
-      });
-      await pg.query(query, values);
+    // 2. Drop unique constraint for ad_spend to allow 1:1 migration of raw data (with duplicates)
+    if (tableName === 'ad_spend') {
+      await pg.query(`
+        ALTER TABLE "ad_spend" 
+        DROP CONSTRAINT IF EXISTS "ad_spend_date_channel_campaign_name_adset_name_ad_name_key"
+      `);
     }
+
+    // 3. Truncate table in Supabase (inside transaction)
+    await pg.query(`TRUNCATE TABLE "${tableName}" CASCADE`);
+
+    if (rows.length === 0) {
+      await pg.query('COMMIT');
+      console.log(chalk.yellow('Truncated (0 source rows)'));
+      return;
+    }
+
+    // 3. Insert in batches (500 rows per query)
+    const BATCH_SIZE = 500;
+    const colNames = columns.map((c) => `"${c}"`).join(', ');
+
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const chunk = rows.slice(i, i + BATCH_SIZE);
+      const values = [];
+      const valuePlaceholders = [];
+
+      chunk.forEach((row) => {
+        const rowPlaceholders = [];
+        columns.forEach((col) => {
+          let val = row[col];
+          // Convert SQLite 0/1 to PG booleans for specific columns
+          const boolCols = ['is_new_customer', 'had_rage_click', 'had_dead_click', 'price_changed'];
+          if (boolCols.includes(col)) {
+            val = val === null ? null : !!val;
+          }
+          values.push(val);
+          rowPlaceholders.push(`$${values.length}`);
+        });
+        valuePlaceholders.push(`(${rowPlaceholders.join(', ')})`);
+      });
+
+      const batchQuery = `
+        INSERT INTO "${tableName}" (${colNames})
+        VALUES ${valuePlaceholders.join(', ')}
+      `;
+      await pg.query(batchQuery, values);
+      
+      if (rows.length > BATCH_SIZE) {
+        process.stdout.write(chalk.gray(`\r  Migrating ${tableName.padEnd(20)} ... ${Math.min(i + BATCH_SIZE, rows.length)}/${rows.length} `));
+      }
+    }
+
     await pg.query('COMMIT');
     console.log(chalk.green(`Replaced with ${rows.length} rows`));
   } catch (err) {
