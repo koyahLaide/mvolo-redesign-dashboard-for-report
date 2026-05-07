@@ -1,16 +1,16 @@
 'use strict';
 
-const { getLastSyncedAt, checkIsNewCustomer, insertOrder } = require('../../db/queries.js');
+const { getLastSyncedAt, checkIsNewCustomer, insertOrder } = require('../../db/queriesv2.js');
 const { attributeOrder } = require('../attribution');
 
 const { fetchOrders } = require('../../connectors/shopify.js');
 const chalk = require('chalk');
 
-async function syncShopify(db) {
+async function syncShopify(pool) {
   const attributedOrders = [];
   let ordersNew = 0;
   // Determine start date for incremental sync
-  const lastSync = getLastSyncedAt(db);
+  const lastSync = await getLastSyncedAt(pool);
   if (lastSync) {
     console.log(chalk.gray(`  Last successful sync: ${lastSync}`));
     console.log(chalk.gray(`  Fetching orders created after that timestamp...\n`));
@@ -23,8 +23,8 @@ async function syncShopify(db) {
 
   for (const order of orders) {
     const attribution = attributeOrder(order);
-    const isNewCustomer = checkIsNewCustomer(db, order.customer_email);
-    const isNew = insertOrder(db, order, attribution, isNewCustomer);
+    const isNewCustomer = await checkIsNewCustomer(pool, order.customer_email);
+    const isNew = await insertOrder(pool, order, attribution, isNewCustomer);
     if (isNew) ordersNew++;
     attributedOrders.push({ ...order, ...attribution });
   }
