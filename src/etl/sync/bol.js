@@ -1,10 +1,10 @@
 'use strict';
 
 const { fetchOrders } = require('../../connectors/bol.js');
-const { insertOrder } = require('../../db/queries.js');
+const { insertOrder } = require('../../db/queriesv2.js');
 const chalk = require('chalk');
 
-async function syncBol(db) {
+async function syncBol(pool) {
   const orders = await fetchOrders();
   console.log(chalk.white(`  Orders fetched from Bol.com: ${chalk.bold(orders.length)}`));
   let ordersNew = 0;
@@ -22,7 +22,7 @@ async function syncBol(db) {
   };
 
   for (const order of orders) {
-    const isNew = insertOrder(db, order, bolAttribution, 1);
+    const isNew = insertOrder(pool, order, bolAttribution, 1);
     if (isNew) ordersNew++;
     attributedOrders.push({ ...order, ...bolAttribution });
   }
