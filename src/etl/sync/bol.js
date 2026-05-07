@@ -22,7 +22,7 @@ async function syncBol(pool) {
   };
 
   for (const order of orders) {
-    const isNew = insertOrder(pool, order, bolAttribution, 1);
+    const isNew = await insertOrder(pool, order, bolAttribution, 1);
     if (isNew) ordersNew++;
     attributedOrders.push({ ...order, ...bolAttribution });
   }
