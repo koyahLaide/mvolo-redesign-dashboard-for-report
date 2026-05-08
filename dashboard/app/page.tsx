@@ -387,13 +387,25 @@ function OrderModal({ channel, period, onClose }: { channel: string; period: Per
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const PERIOD_LABELS: { key: Period; label: string }[] = [
-  { key: 'today',   label: 'Vandaag' },
-  { key: 'week',    label: 'Deze week' },
-  { key: 'month',   label: 'Deze maand' },
-  { key: 'quarter', label: 'Dit kwartaal' },
-  { key: 'year',    label: 'Dit jaar' },
-  { key: 'all',     label: 'Alles' },
+function useIsDark() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.classList.contains('dark'));
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
+
+const PERIOD_LABELS: { key: Period; label: string; short: string }[] = [
+  { key: 'today',   label: 'Vandaag',      short: 'Vandaag' },
+  { key: 'week',    label: 'Deze week',    short: 'Week' },
+  { key: 'month',   label: 'Deze maand',   short: 'Maand' },
+  { key: 'quarter', label: 'Dit kwartaal', short: 'Kwartaal' },
+  { key: 'year',    label: 'Dit jaar',     short: 'Jaar' },
+  { key: 'all',     label: 'Alles',        short: 'Alles' },
 ];
 
 export default function DashboardPage() {
@@ -413,6 +425,15 @@ export default function DashboardPage() {
   const [funnelData, setFunnelData] = useState<FunnelData | null>(null);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDark = useIsDark();
+
+  const tooltipStyle = {
+    background: isDark ? '#1f2937' : '#ffffff',
+    border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
+    borderRadius: 8,
+  };
+  const tooltipItemStyle = { color: isDark ? '#f3f4f6' : '#111827' };
+  const tooltipLabelStyle = { color: isDark ? '#9ca3af' : '#6b7280' };
 
   function handleShare() {
     navigator.clipboard.writeText(window.location.href).catch(() => {});
@@ -523,7 +544,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Shopify order attribution by marketing channel</p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             {/* Search */}
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
@@ -537,7 +558,7 @@ export default function DashboardPage() {
                     window.location.href = `/orders?search=${encodeURIComponent(searchQuery.trim())}`;
                   }
                 }}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all w-48 group-hover:w-64"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all w-full max-w-xs"
               />
             </div>
 
@@ -581,9 +602,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Period & Platform Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1">
-            {PERIOD_LABELS.map(({ key, label }) => (
+            {PERIOD_LABELS.map(({ key, label, short }) => (
               <button
                 key={key}
                 onClick={() => setPeriod(key)}
@@ -591,7 +612,8 @@ export default function DashboardPage() {
                   period === key ? 'bg-indigo-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
-                {label}
+                <span className="hidden md:inline">{label}</span>
+                <span className="md:hidden">{short}</span>
               </button>
             ))}
           </div>
@@ -614,7 +636,7 @@ export default function DashboardPage() {
 
 
         {/* KPI Cards — Row 1 */}
-        <div className="grid grid-cols-2 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
           <KpiCard
             label="Totaal orders"
             value={totalOrders.toLocaleString('nl-NL')}
@@ -748,9 +770,9 @@ export default function DashboardPage() {
                     `${Number(value)} orders (${((Number(value) / totalOrders) * 100).toFixed(1)}%)`,
                     formatLabel(String(name ?? "")),
                   ]}
-                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }}
-                  labelStyle={{ color: '#6b7280' }}
-                  itemStyle={{ color: '#111827' }}
+                  contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
                 />
                 <Legend formatter={(value) => (
                   <span className="text-gray-500 dark:text-gray-400 text-xs">{formatLabel(value)}</span>
@@ -764,7 +786,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-4">Omzet per dag — laatste 30 dagen</h2>
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={stats.daily} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                 <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={(d: string) => d.slice(5)} tickLine={false} axisLine={false} />
                 <YAxis yAxisId="rev" tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={48} />
                 <YAxis yAxisId="ord" orientation="right" tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} width={32} />
@@ -782,13 +804,13 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-4">Adspend vs Omzet vs Winst — laatste 30 dagen</h2>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={stats.dailySpend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                 <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={(d: string) => d.slice(5)} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={48} />
                 <Tooltip
-                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                  contentStyle={tooltipStyle}
                   formatter={(value, name) => [formatEuro(Number(value)), name === 'spend' ? 'Adspend' : name === 'revenue' ? 'Omzet' : 'Winst']}
-                  itemStyle={{ color: '#111827' }} labelStyle={{ color: '#6b7280' }}
+                  itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle}
                 />
                 <Line type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="revenue" />
                 <Line type="monotone" dataKey="profit" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="profit" />
@@ -952,8 +974,8 @@ export default function DashboardPage() {
                     </Pie>
                     <Tooltip
                       formatter={(value, name) => [`${Number(value)} orders (${((Number(value) / totalDirect) * 100).toFixed(1)}%)`, DIRECT_LABELS[String(name)] ?? String(name)]}
-                      contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }}
-                      labelStyle={{ color: '#6b7280' }} itemStyle={{ color: '#111827' }}
+                      contentStyle={tooltipStyle}
+                      labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle}
                     />
                     <Legend formatter={(value) => <span className="text-gray-500 dark:text-gray-400 text-xs">{DIRECT_LABELS[value] ?? value}</span>} />
                   </PieChart>
@@ -1037,10 +1059,10 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">% Nieuw vs % Terugkerend</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={customerSegmentData} margin={{ top: 0, right: 0, left: 0, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} vertical={false} />
                 <XAxis dataKey="channel" tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} angle={-25} textAnchor="end" interval={0} />
                 <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} domain={[0, 100]} width={36} />
-                <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }} formatter={(value, name) => [`${value}%`, name === 'nieuw' ? 'Nieuw' : 'Terugkerend']} itemStyle={{ color: '#111827' }} labelStyle={{ color: '#6b7280' }} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [`${value}%`, name === 'nieuw' ? 'Nieuw' : 'Terugkerend']} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
                 <Bar dataKey="nieuw" name="nieuw" stackId="a" fill="#10b981" />
                 <Bar dataKey="terugkerend" name="terugkerend" stackId="a" fill="#6366f1" radius={[4, 4, 0, 0]} />
                 <Legend formatter={(value) => <span className="text-gray-500 dark:text-gray-400 text-xs">{value === 'nieuw' ? 'Nieuw' : 'Terugkerend'}</span>} wrapperStyle={{ paddingTop: 8 }} />
@@ -1051,10 +1073,10 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Gem. orderwaarde — nieuw vs terugkerend</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={customerSegmentData} margin={{ top: 0, right: 0, left: 0, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} vertical={false} />
                 <XAxis dataKey="channel" tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} angle={-25} textAnchor="end" interval={0} />
                 <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `€${Math.round(v)}`} width={48} />
-                <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }} formatter={(value, name) => [formatEuro(Number(value)), name === 'avgNew' ? 'Gem. nieuw' : 'Gem. terugkerend']} itemStyle={{ color: '#111827' }} labelStyle={{ color: '#6b7280' }} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [formatEuro(Number(value)), name === 'avgNew' ? 'Gem. nieuw' : 'Gem. terugkerend']} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
                 <Bar dataKey="avgNew" name="avgNew" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="avgReturning" name="avgReturning" fill="#6366f1" radius={[4, 4, 0, 0]} />
                 <Legend formatter={(value) => <span className="text-gray-500 dark:text-gray-400 text-xs">{value === 'avgNew' ? 'Gem. nieuw' : 'Gem. terugkerend'}</span>} wrapperStyle={{ paddingTop: 8 }} />
@@ -1070,10 +1092,10 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Omzet per dag van de week</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={weekdayData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} vertical={false} />
                 <XAxis dataKey="dag" tick={{ fill: '#6b7280', fontSize: 12 }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} width={44} />
-                <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }} formatter={(value, name) => [name === 'revenue' ? formatEuro(Number(value)) : `${Number(value)} orders`, name === 'revenue' ? 'Omzet' : 'Orders']} itemStyle={{ color: '#111827' }} labelStyle={{ color: '#6b7280' }} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [name === 'revenue' ? formatEuro(Number(value)) : `${Number(value)} orders`, name === 'revenue' ? 'Omzet' : 'Orders']} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
                 <Bar dataKey="revenue" name="revenue" radius={[4, 4, 0, 0]}>
                   {weekdayData.map((entry) => (
                     <Cell key={entry.dag} fill={entry.revenue === maxWdRevenue && maxWdRevenue > 0 ? '#f59e0b' : '#6366f1'} />
@@ -1085,7 +1107,8 @@ export default function DashboardPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Aantal orders per dag van de week</p>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="grid grid-cols-7 gap-2 min-w-[280px]">
               {weekdayData.map((d) => {
                 const maxOrders = Math.max(...weekdayData.map((x) => x.orders), 1);
                 const isBest = d.orders === Math.max(...weekdayData.map((x) => x.orders));
@@ -1100,10 +1123,12 @@ export default function DashboardPage() {
                 );
               })}
             </div>
+            </div>
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Orders per uur van de dag (heatmap)</p>
-            <div className="grid grid-cols-12 gap-1">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="grid grid-cols-12 gap-1 min-w-[480px]">
               {hourData.map((h) => {
                 const intensity = maxHourOrders > 0 ? h.orders / maxHourOrders : 0;
                 const opacity = 0.08 + intensity * 0.92;
@@ -1117,6 +1142,7 @@ export default function DashboardPage() {
                 );
               })}
             </div>
+            </div>
             <p className="text-xs text-gray-400 dark:text-gray-600 mt-2">Donkerder = meer orders — hover voor details</p>
           </div>
         </div>
@@ -1126,6 +1152,7 @@ export default function DashboardPage() {
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-300">Top 5 dagen op omzet</h2>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
@@ -1149,6 +1176,7 @@ export default function DashboardPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Customer Journey */}
@@ -1217,10 +1245,10 @@ export default function DashboardPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Sessies per dag</p>
                 <ResponsiveContainer width="100%" height={160}>
                   <LineChart data={stats.ga4Daily} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} tickFormatter={(v: string) => v.slice(5)} />
                     <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} width={36} />
-                    <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} labelStyle={{ color: '#6b7280' }} formatter={(v: unknown) => [(v as number).toLocaleString('nl-NL'), 'sessies']} />
+                    <Tooltip contentStyle={{ ...tooltipStyle, fontSize: 12 }} labelStyle={tooltipLabelStyle} formatter={(v: unknown) => [(v as number).toLocaleString('nl-NL'), 'sessies']} />
                     <Line type="monotone" dataKey="sessions" stroke="#6366f1" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -1434,7 +1462,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 w-52 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 w-40 sm:w-52 flex-shrink-0">
                           {step.dropoff_pct !== null && step.dropoff_pct > 0 && (
                             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${step.dropoff_pct >= 60 ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400' : step.dropoff_pct >= 30 ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
                               -{step.dropoff_pct}%
