@@ -258,7 +258,8 @@ function OrderModal({ channel, period, onClose }: { channel: string; period: Per
   useEffect(() => {
     setLoading(true);
     setFetchError(null);
-    fetch(`/api/orders?channel=${encodeURIComponent(channel)}&period=${period}`)
+    const PERIOD_DAYS: Record<string, string> = { today: '1', week: '7', month: '30', quarter: '90', year: '365', all: 'all' };
+    fetch(`/api/orders?channel=${encodeURIComponent(channel)}&period=${PERIOD_DAYS[period] ?? period}`)
       .then((r) => {
         if (!r.ok) throw new Error(`API ${r.status}`);
         return r.json();

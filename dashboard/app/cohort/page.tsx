@@ -45,7 +45,7 @@ export default function CohortPage() {
   const totalWinbackKlanten = data?.winbackTotal?.total_klanten ?? 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
 
       {/* KPI banner */}
       {data && (
@@ -76,7 +76,8 @@ export default function CohortPage() {
       )}
 
       {/* Tab nav */}
-      <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
+      <div className="overflow-x-auto">
+      <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 min-w-max">
         {([
           ['ltv', 'LTV per kanaal'],
           ['winback', 'Winback'],
@@ -91,6 +92,7 @@ export default function CohortPage() {
           </button>
         ))}
       </div>
+      </div>
 
       {loading ? (
         <div className="text-center py-16 text-gray-500 dark:text-gray-400 animate-pulse">Laden…</div>
@@ -104,7 +106,9 @@ export default function CohortPage() {
                   <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Lifetime Value per eerste kanaal</h2>
                   <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Welk kanaal brengt de meest waardevolle klanten?</p>
                 </div>
-                <div className="p-6 space-y-4">
+                <div className="p-6">
+                  <div className="overflow-x-auto">
+                  <div className="space-y-4 min-w-[580px]">
                   {(data?.ltvByChannel ?? []).map((ch: any) => {
                     const color = channelColor(ch.first_channel);
                     return (
@@ -123,6 +127,8 @@ export default function CohortPage() {
                       </div>
                     );
                   })}
+                  </div>
+                  </div>
                 </div>
               </div>
 
@@ -132,6 +138,7 @@ export default function CohortPage() {
                   <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Herhaalgedrag per kanaal</h2>
                   <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Hoe vaak koopt een klant per kanaal opnieuw?</p>
                 </div>
+                <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
@@ -168,6 +175,7 @@ export default function CohortPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               {/* Nieuwe vs terugkerende per maand */}
@@ -237,7 +245,9 @@ export default function CohortPage() {
                     <p className="text-xs text-gray-400 dark:text-gray-600">{formatEuro(totalWinbackLtv)} historische LTV</p>
                   </div>
                 </div>
-                <div className="p-6 space-y-3">
+                <div className="p-6">
+                  <div className="overflow-x-auto">
+                  <div className="space-y-3 min-w-[560px]">
                   {(data?.winback ?? []).map((r: any) => {
                     const color = channelColor(r.laatste_kanaal);
                     return (
@@ -256,6 +266,8 @@ export default function CohortPage() {
                       </div>
                     );
                   })}
+                  </div>
+                  </div>
                 </div>
               </div>
             </div>

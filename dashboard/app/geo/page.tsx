@@ -44,7 +44,28 @@ export default function GeoPage() {
   const topCities = (data?.cities ?? []).slice(0, 20);
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+
+      {/* Filters & tab nav */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          {[{ key: 'all', label: 'Alles' }, { key: '7', label: '7d' }, { key: '30', label: '30d' }, { key: '90', label: '90d' }].map(p => (
+            <button key={p.key} onClick={() => setPeriod(p.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${period === p.key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}`}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 sm:ml-auto">
+          {(['kaart', 'visitors'] as const).map(t => (
+            <button key={t} onClick={() => setActiveTab(t)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTab === t ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}>
+              {t === 'kaart' ? 'Kaart' : 'Visitors'}
+            </button>
+          ))}
+        </div>
+      </div>
+
         {activeTab === 'kaart' && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -180,6 +201,7 @@ export default function GeoPage() {
                 <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Visitors vs orders per land</h2>
                 <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Op basis van tracker.js sessies gekoppeld aan orders</p>
               </div>
+              <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -206,6 +228,7 @@ export default function GeoPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {(data?.returnVisits ?? []).length > 0 && (

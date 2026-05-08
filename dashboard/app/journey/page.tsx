@@ -113,7 +113,7 @@ export default function JourneyPage() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
         {loading && (
           <div className="text-center py-24 text-gray-500 dark:text-gray-400 animate-pulse">Laden…</div>
         )}
@@ -241,7 +241,8 @@ export default function JourneyPage() {
               {stats.ga4Journeys?.length > 0 && (
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Eerste kanaal → sessiekanaal (top 10 paden)</p>
-                  <div className="space-y-1.5">
+                  <div className="overflow-x-auto">
+                  <div className="space-y-1.5 min-w-[400px]">
                     {stats.ga4Journeys.slice(0, 10).map((row, i) => {
                       const max  = stats.ga4Journeys[0]?.sessions || 1;
                       const pct  = Math.round((row.sessions / max) * 100);
@@ -258,6 +259,7 @@ export default function JourneyPage() {
                         </div>
                       );
                     })}
+                  </div>
                   </div>
                 </div>
               )}
@@ -470,7 +472,7 @@ export default function JourneyPage() {
                             <span className="text-sm text-gray-700 dark:text-gray-300">{fmtLabel(j.channel)}</span>
                             <span className="text-xs text-gray-400 dark:text-gray-600">({j.total}×)</span>
                           </div>
-                          <div className="flex gap-8 text-right">
+                          <div className="flex gap-4 sm:gap-8 text-right">
                             <div>
                               <p className="text-xs text-gray-500 dark:text-gray-400">gem. sessies</p>
                               <p className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{j.avg_sessions}</p>

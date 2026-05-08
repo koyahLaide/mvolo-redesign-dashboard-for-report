@@ -22,21 +22,29 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const period   = searchParams.get('period')   || 'all';
     const platform = searchParams.get('platform') || 'all';
+    const channel  = searchParams.get('channel')  || '';
     const q        = searchParams.get('q')        || '';
 
     const conditions: string[] = [];
 
-    // Period: numeric = days back, 'all' = no filter
-    const periodDays = parseInt(period);
+    // Period: named labels or numeric days back, 'all' = no filter
+    const PERIOD_MAP: Record<string, number> = { today: 1, week: 7, month: 30, quarter: 90, year: 365 };
+    const periodDays = PERIOD_MAP[period] ?? parseInt(period);
     if (!isNaN(periodDays)) {
       conditions.push(`created_at >= date('now', '-${periodDays} days')`);
     }
 
-    // Platform
+    // Platform (orders page filter)
     if (platform === 'bol') {
       conditions.push(`channel = 'bol_marketplace'`);
     } else if (platform === 'shopify') {
       conditions.push(`channel != 'bol_marketplace'`);
+    }
+
+    // Channel (dashboard modal filter)
+    if (channel) {
+      const safeChannel = channel.replace(/'/g, "''");
+      conditions.push(`channel = '${safeChannel}'`);
     }
 
     // Search
@@ -59,6 +67,9 @@ export async function GET(request: Request) {
       'ALTER TABLE orders ADD COLUMN customer_email TEXT',
       'ALTER TABLE orders ADD COLUMN customer_id TEXT',
       'ALTER TABLE orders ADD COLUMN is_new_customer INTEGER',
+      'ALTER TABLE orders ADD COLUMN financial_status TEXT',
+      'ALTER TABLE orders ADD COLUMN fulfillment_status TEXT',
+      'ALTER TABLE orders ADD COLUMN order_number TEXT',
     ];
     for (const sql of migrations) {
       try { db.run(sql); } catch { /* already exists */ }

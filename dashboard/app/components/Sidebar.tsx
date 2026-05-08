@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   X,
+  SearchCheck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -43,6 +44,7 @@ const navItems = [
   { label: "Finance", icon: BarChart3, href: "/finance" },
   { label: "Competitors", icon: Crosshair, href: "/competitor-prices" },
   { label: "Feed Suite", icon: Rss, href: "/feed" },
+  { label: "SEO", icon: SearchCheck, href: "/seo" },
 ];
 
 /* ── Component ── */

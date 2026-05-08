@@ -34,7 +34,7 @@ export default function StrategiePage() {
   const maxContrib = Math.max(...(data?.contributionMargin ?? []).map((c: any) => Math.abs(c.contribution ?? 0)), 1);
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
 
       <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
         {([

@@ -16,14 +16,24 @@ export default function OrdersPage() {
   const [platform, setPlatform] = useState('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ period, platform });
-    if (search) params.set('q', search);
-    const res = await fetch(`/api/orders?${params}`);
-    setData(await res.json());
-    setLoading(false);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ period, platform });
+      if (search) params.set('q', search);
+      const res = await fetch(`/api/orders?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      setData(json);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Onbekende fout');
+    } finally {
+      setLoading(false);
+    }
   }, [period, platform, search]);
 
   useEffect(() => { load(); }, [load]);
@@ -96,6 +106,13 @@ export default function OrdersPage() {
           />
         </div>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          Fout bij laden: {error}
+        </div>
+      )}
 
       {/* Orders table */}
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
