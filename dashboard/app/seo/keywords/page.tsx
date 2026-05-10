@@ -507,8 +507,8 @@ export default function KeywordsPage() {
                               Positie Geschiedenis (12 weken)
                             </p>
                             <p className="text-[10px] text-gray-400 dark:text-gray-600 mb-1">Lager = beter</p>
-                            <div className="h-[120px]">
-                              <ResponsiveContainer width="100%" height="100%">
+                            <div>
+                              <ResponsiveContainer width="100%" height={120}>
                                 <LineChart
                                   data={kw.history.map((pos, idx) => ({ week: `W${idx + 1}`, pos }))}
                                   margin={{ top: 4, right: 4, bottom: 0, left: -20 }}

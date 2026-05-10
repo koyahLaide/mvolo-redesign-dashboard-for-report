@@ -5,9 +5,11 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell,
 } from 'recharts';
+import Link from 'next/link';
 import {
   Search, Globe, TrendingUp, Link2, Shield,
   ArrowUpRight, ArrowDownRight, Eye, Clock,
+  KeyRound, Crosshair, FileText, Wrench,
 } from 'lucide-react';
 
 // ── Dark mode hook ────────────────────────────────────────────────────────────
@@ -244,8 +246,8 @@ export default function SeoPage() {
           </span>
         </div>
 
-        <div className="h-[280px] sm:h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
+        <div>
+          <ResponsiveContainer width="100%" height={300}>
             <LineChart data={TRAFFIC_DATA} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis
@@ -419,8 +421,8 @@ export default function SeoPage() {
           </p>
         </div>
 
-        <div className="h-[220px] sm:h-[260px]">
-          <ResponsiveContainer width="100%" height="100%">
+        <div>
+          <ResponsiveContainer width="100%" height={240}>
             <BarChart
               data={RANKING_DATA}
               layout="vertical"
@@ -462,6 +464,32 @@ export default function SeoPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── Module Navigation ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { href: '/seo/keywords',   icon: KeyRound,  color: '#3B82F6', title: 'Keywords',       sub: 'Posities, history, SERP features & intent' },
+          { href: '/seo/competitors', icon: Crosshair, color: '#EC4899', title: 'Concurrenten',   sub: 'Keyword gap, backlinks & traffic vergelijking' },
+          { href: '/seo/content',    icon: FileText,  color: '#10B981', title: 'Content Audit',  sub: 'SEO score per pagina, checklists & suggesties' },
+          { href: '/seo/technical',  icon: Wrench,    color: '#F59E0B', title: 'Technische SEO', sub: 'Crawl fouten, Core Web Vitals & indexatie' },
+        ].map(m => (
+          <Link
+            key={m.href}
+            href={m.href}
+            className="bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 p-4 flex items-start gap-3 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md transition-all group"
+            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+          >
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: m.color + '18' }}>
+              <m.icon size={16} style={{ color: m.color }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{m.title}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 leading-snug">{m.sub}</p>
+            </div>
+            <ArrowUpRight size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-blue-500 flex-shrink-0 mt-1 transition-colors" />
+          </Link>
+        ))}
       </div>
 
     </div>

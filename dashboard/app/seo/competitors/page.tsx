@@ -324,8 +324,8 @@ export default function CompetitorsPage() {
         style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)' }}
       >
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Organisch Verkeer Vergelijking</h2>
-        <div className="h-[280px] sm:h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
+        <div>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={TRAFFIC_TREND} margin={{ top: 4, right: 8, bottom: 0, left: -8 }} barGap={2} barCategoryGap="25%">
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
               <XAxis dataKey="month" tick={{ fill: tickColor, fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -335,7 +335,7 @@ export default function CompetitorsPage() {
                 tickLine={false}
                 tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
               />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [v.toLocaleString('nl-NL'), '']} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v) => [typeof v === 'number' ? v.toLocaleString('nl-NL') : v, '']} />
               <Legend wrapperStyle={legendStyle} />
               <Bar dataKey="mvolo"     name="Mvolo"     fill="#3B82F6" radius={[4, 4, 0, 0]} />
               <Bar dataKey="luminette" name="Luminette" fill="#8B5CF6" radius={[4, 4, 0, 0]} />

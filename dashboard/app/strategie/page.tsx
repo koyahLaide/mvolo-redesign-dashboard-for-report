@@ -36,7 +36,8 @@ export default function StrategiePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
 
-      <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
+      <div className="overflow-x-auto">
+      <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit min-w-max">
         {([
           ['reorder', 'Predictive Reorder'],
           ['bundles', 'Bundle Intelligence'],
@@ -50,6 +51,7 @@ export default function StrategiePage() {
             {label}
           </button>
         ))}
+      </div>
       </div>
 
       {loading ? (

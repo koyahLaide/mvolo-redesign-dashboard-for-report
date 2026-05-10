@@ -90,7 +90,7 @@ export default function Sidebar({
       </div>
 
       {/* ── Navigation ── */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1" translate="no">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (

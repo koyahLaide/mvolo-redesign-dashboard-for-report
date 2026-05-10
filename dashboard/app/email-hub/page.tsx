@@ -87,7 +87,7 @@ function EmailHubContent() {
   const ss = flowsData?.subStats ?? {};
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
       {loading ? (
         <div className="text-center py-16 text-gray-500 dark:text-gray-400 animate-pulse">Laden…</div>
       ) : (
@@ -214,7 +214,9 @@ function EmailHubContent() {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
                   <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">€ per email per dag</h2>
                 </div>
-                <div className="p-6 space-y-3">
+                <div className="p-6">
+                  <div className="overflow-x-auto">
+                  <div className="space-y-3 min-w-[420px]">
                   {dowStats.map((d: any, i: number) => (
                     <div key={d.dow} className="flex items-center gap-4">
                       <div className="flex items-center gap-2 w-24 flex-shrink-0">
@@ -231,6 +233,8 @@ function EmailHubContent() {
                       </div>
                     </div>
                   ))}
+                  </div>
+                  </div>
                 </div>
                 <p className="px-6 pb-4 text-xs text-gray-400 dark:text-gray-600">* Open rates geïnfleerd door iOS Mail Privacy</p>
               </div>

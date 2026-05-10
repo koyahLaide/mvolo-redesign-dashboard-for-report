@@ -51,11 +51,11 @@ export default function FinancePage() {
   const totalBtwTeBetalen = pnl.reduce((s: number, r: any) => s + (r.btw_te_betalen ?? 0), 0);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+    <div className="text-gray-900 dark:text-white">
 
       {/* Top bar with mode switch */}
-      <div className="border-b border-gray-200 dark:border-gray-800 px-8 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="border-b border-gray-200 dark:border-gray-800 px-4 sm:px-8 py-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-y-3">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Finance</h1>
             <p className="text-xs text-gray-500 mt-0.5">Winst & verlies · BTW · returns</p>
@@ -80,7 +80,7 @@ export default function FinancePage() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
 
         {/* KPI banner */}
         {!loading && (
@@ -109,7 +109,8 @@ export default function FinancePage() {
         )}
 
         {/* Tab nav */}
-        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit">
+        <div className="overflow-x-auto">
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-1 w-fit min-w-max">
           {([
             ['pnl', '📊 Winst & Verlies'],
             ['btw', '🧾 BTW Overzicht'],
@@ -121,6 +122,7 @@ export default function FinancePage() {
               {label}
             </button>
           ))}
+        </div>
         </div>
 
         {loading ? (
@@ -365,6 +367,7 @@ export default function FinancePage() {
                     <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Return rate per kanaal</h2>
                     <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Gebaseerd op financial_status = refunded of partially_refunded</p>
                   </div>
+                  <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
@@ -401,12 +404,14 @@ export default function FinancePage() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
 
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
                     <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Returns {mode === 'quarterly' ? 'per kwartaal' : 'per maand'}</h2>
                   </div>
+                  <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 uppercase tracking-wider">
@@ -435,12 +440,13 @@ export default function FinancePage() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             )}
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }
