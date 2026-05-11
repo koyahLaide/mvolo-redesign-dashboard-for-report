@@ -40,15 +40,15 @@ function extractPmFields(noteAttributes) {
     map[name] = value;
   }
 
-  if (!map.pm_src && !map.pm_cmp) return null;  // no ProfitMetrics data
+  if (!map.pm_src && !map.pm_cmp) return null; // no ProfitMetrics data
 
   return {
-    utm_source:   map.pm_src  ?? null,
-    utm_medium:   map.pm_med  ?? null,
-    utm_campaign: map.pm_cmp  ?? null,
-    utm_content:  map.pm_cnt  ?? null,
-    utm_term:     map.pm_trm  ?? null,
-    landing_page: map.pm_lp   ?? null,
+    utm_source: map.pm_src ?? null,
+    utm_medium: map.pm_med ?? null,
+    utm_campaign: map.pm_cmp ?? null,
+    utm_content: map.pm_cnt ?? null,
+    utm_term: map.pm_trm ?? null,
+    landing_page: map.pm_lp ?? null,
   };
 }
 
@@ -60,16 +60,16 @@ function extractPmFields(noteAttributes) {
  * @returns {Promise<Object|null>}
  */
 async function fetchPmMetafield(orderId) {
-  const store   = process.env.SHOPIFY_STORE;
-  const token   = process.env.SHOPIFY_TOKEN;
+  const store = process.env.SHOPIFY_STORE;
+  const token = process.env.SHOPIFY_TOKEN;
   const baseUrl = `https://${store}/admin/api/${API_VERSION}`;
   try {
     const res = await axios.get(`${baseUrl}/orders/${orderId}/metafields.json`, {
       headers: { 'X-Shopify-Access-Token': token },
-      params:  { namespace: 'profitmetrics', key: 'attribution' },
+      params: { namespace: 'profitmetrics', key: 'attribution' },
     });
     const mf = (res.data.metafields ?? []).find(
-      (m) => m.namespace === 'profitmetrics' && m.key === 'attribution'
+      (m) => m.namespace === 'profitmetrics' && m.key === 'attribution',
     );
     if (!mf) return null;
     return typeof mf.value === 'string' ? JSON.parse(mf.value) : mf.value;
@@ -93,8 +93,8 @@ async function fetchPmMetafield(orderId) {
  * @returns {Promise<{processed: number, enriched: number}>}
  */
 async function enrichFromProfitMetrics(db, { fetchMetafields = false, dateFrom, dateTo } = {}) {
-  const STORE    = process.env.SHOPIFY_STORE;
-  const TOKEN    = process.env.SHOPIFY_TOKEN;
+  const STORE = process.env.SHOPIFY_STORE;
+  const TOKEN = process.env.SHOPIFY_TOKEN;
   const BASE_URL = `https://${STORE}/admin/api/${API_VERSION}`;
 
   if (!STORE || !TOKEN) {
@@ -111,18 +111,30 @@ async function enrichFromProfitMetrics(db, { fetchMetafields = false, dateFrom, 
 
   const dateFilter = [];
   if (dateFrom) dateFilter.push(`created_at_min=${dateFrom}T00:00:00Z`);
-  if (dateTo)   dateFilter.push(`created_at_max=${dateTo}T23:59:59Z`);
+  if (dateTo) dateFilter.push(`created_at_max=${dateTo}T23:59:59Z`);
 
   const baseParams = {
-    status:  'any',
-    limit:   250,
-    fields:  'id,order_number,note_attributes',
+    status: 'any',
+    limit: 250,
+    fields: 'id,order_number,note_attributes',
     ...(dateFrom && { created_at_min: `${dateFrom}T00:00:00Z` }),
-    ...(dateTo   && { created_at_max: `${dateTo}T23:59:59Z` }),
+    ...(dateTo && { created_at_max: `${dateTo}T23:59:59Z` }),
   };
 
   const headers = { 'X-Shopify-Access-Token': TOKEN };
 
+  const updateQuery = `
+      UPDATE orders
+      SET
+        utm_source   = COALESCE($1, utm_source),
+        medium       = COALESCE($2, medium),
+        utm_campaign = COALESCE($3, utm_campaign),
+        utm_content  = COALESCE($4, utm_content),
+        utm_term     = COALESCE($5, utm_term)
+      WHERE id = $6
+    `;
+
+  /*
   const updateStmt = db.prepare(`
     UPDATE orders
     SET
@@ -133,11 +145,12 @@ async function enrichFromProfitMetrics(db, { fetchMetafields = false, dateFrom, 
       utm_term     = COALESCE(@utm_term,     utm_term)
     WHERE id = @id
   `);
+  */
 
   let processed = 0;
-  let enriched  = 0;
-  let pageInfo  = null;
-  let first     = true;
+  let enriched = 0;
+  let pageInfo = null;
+  let first = true;
 
   while (true) {
     if (!first) await delay(500);
@@ -153,8 +166,16 @@ async function enrichFromProfitMetrics(db, { fetchMetafields = false, dateFrom, 
 
       if (pm) {
         const { landing_page: _lp, ...pmFields } = pm;
-      const result = updateStmt.run({ id: String(order.id), ...pmFields });
-        if (result.changes > 0) enriched++;
+        // const result = updateStmt.run({ id: String(order.id), ...pmFields });
+        const result = await db.query(updateQuery, [
+          pmFields.utm_source,
+          pmFields.utm_medium,
+          pmFields.utm_campaign,
+          pmFields.utm_content,
+          pmFields.utm_term,
+          String(order.id),
+        ]);
+        if (result.rowCount > 0) enriched++; // changed .changes to .rowCount
       }
 
       // Optional: fetch metafield for deeper touch data
@@ -162,19 +183,22 @@ async function enrichFromProfitMetrics(db, { fetchMetafields = false, dateFrom, 
         const attr = await fetchPmMetafield(String(order.id));
         if (attr?.first_touch?.utm) {
           const utms = attr.first_touch.utm;
-          db.prepare(`
-            UPDATE orders
-            SET
-              utm_campaign = COALESCE(@utm_campaign, utm_campaign),
-              utm_content  = COALESCE(@utm_content,  utm_content),
-              utm_term     = COALESCE(@utm_term,     utm_term)
-            WHERE id = @id AND (utm_campaign IS NULL OR utm_campaign = '')
-          `).run({
-            id:           String(order.id),
-            utm_campaign: utms.utm_campaign ?? utms.utm_id ?? null,
-            utm_content:  utms.utm_content  ?? null,
-            utm_term:     utms.utm_term     ?? null,
-          });
+          await db.query(
+            `
+          UPDATE orders
+          SET
+            utm_campaign = COALESCE($1, utm_campaign),
+            utm_content  = COALESCE($2, utm_content),
+            utm_term     = COALESCE($3, utm_term)
+          WHERE id = $4 AND (utm_campaign IS NULL OR utm_campaign = '')
+        `,
+            [
+              utms.utm_campaign ?? utms.utm_id ?? null,
+              utms.utm_content ?? null,
+              utms.utm_term ?? null,
+              String(order.id),
+            ],
+          );
         }
         await delay(300);
       }

@@ -22,6 +22,7 @@ async function initSupabase() {
   } finally {
     client.release();
   }
+  return pool;
 }
 
 module.exports = { initSupabase };
