@@ -6,12 +6,32 @@ import Sidebar from "./Sidebar";
 export default function ClientShell({ children }: { children: ReactNode }) {
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("mvolo-dark-mode") === "true";
-    setDarkMode(saved);
-    document.documentElement.classList.toggle("dark", saved);
+    const saved = localStorage.getItem("mvolo-dark-mode");
+    const hasDarkClass = document.documentElement.classList.contains("dark");
+    if (saved === "true" || hasDarkClass) {
+      setDarkMode(true);
+      document.documentElement.classList.add("dark");
+    } else {
+      setDarkMode(false);
+      document.documentElement.classList.remove("dark");
+    }
+    // Start sidebar closed on mobile, open on desktop
+    setSidebarOpen(window.innerWidth >= 1024);
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [sidebarOpen]);
 
   const toggleDarkMode = () => {
     const next = !darkMode;
@@ -53,17 +73,16 @@ export default function ClientShell({ children }: { children: ReactNode }) {
 
       {/* ── Main content ── */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Page content — removed header, adjusted top padding */}
         <div className="flex-1 p-4 sm:p-6 bg-[#F9FAFB] dark:bg-[#111827] overflow-y-auto">
           {children}
         </div>
       </main>
 
       {/* ── Floating hamburger — only shows when sidebar is closed on mobile ── */}
-      {!sidebarOpen && (
+      {mounted && !sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed top-4 left-4 z-30 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors lg:hidden"
+          className="fixed top-4 left-4 z-30 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           aria-label="Open sidebar"
         >
           <svg

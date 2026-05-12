@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -18,8 +19,11 @@ import {
   Rss,
   Sun,
   Moon,
-  X,
-  SearchCheck,
+  ChevronDown,
+  Search,
+  FileText,
+  Shield,
+  Menu,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -29,7 +33,6 @@ interface SidebarProps {
   setSidebarOpen: (open: boolean) => void;
 }
 
-/* ── Navigation links matching the real Mvolo routes ── */
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/" },
   { label: "Alle Orders", icon: ShoppingCart, href: "/orders" },
@@ -44,10 +47,15 @@ const navItems = [
   { label: "Finance", icon: BarChart3, href: "/finance" },
   { label: "Competitors", icon: Crosshair, href: "/competitor-prices" },
   { label: "Feed Suite", icon: Rss, href: "/feed" },
-  { label: "SEO", icon: SearchCheck, href: "/seo" },
 ];
 
-/* ── Component ── */
+const seoSubItems = [
+  { label: "Keywords", icon: Globe, href: "/seo/keywords" },
+  { label: "Concurrentie", icon: Crosshair, href: "/seo/competitors" },
+  { label: "Content Audit", icon: FileText, href: "/seo/content" },
+  { label: "Technisch", icon: Shield, href: "/seo/technical" },
+];
+
 export default function Sidebar({
   darkMode,
   toggleDarkMode,
@@ -55,17 +63,28 @@ export default function Sidebar({
   setSidebarOpen,
 }: SidebarProps) {
   const pathname = usePathname();
+  const [seoOpen, setSeoOpen] = useState(false);
+
+  useEffect(() => {
+    if (pathname.startsWith("/seo")) {
+      setSeoOpen(true);
+    }
+  }, [pathname]);
 
   function isActive(href: string) {
-    return href === "/"
-      ? pathname === "/"
-      : pathname === href || pathname.startsWith(href + "/");
+    if (href === "/") return pathname === "/";
+    if (href === "/seo") return pathname === "/seo";
+    return pathname === href || pathname.startsWith(href + "/");
   }
 
   function linkClass(href: string) {
     return isActive(href)
       ? "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white shadow-sm shadow-blue-600/25"
       : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 transition-colors";
+  }
+
+  function handleNavClick() {
+    if (window.innerWidth < 1024) setSidebarOpen(false);
   }
 
   return (
@@ -82,10 +101,10 @@ export default function Sidebar({
         </Link>
         <button
           onClick={() => setSidebarOpen(false)}
-          className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-white transition-colors"
+          className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-white dark:hover:bg-gray-800 transition-colors"
           aria-label="Sluit sidebar"
         >
-          <X className="w-4 h-4" />
+          <Menu className="w-5 h-5" />
         </button>
       </div>
 
@@ -97,10 +116,7 @@ export default function Sidebar({
             <Link
               key={item.label}
               href={item.href}
-              onClick={() => {
-                // Auto-close sidebar on mobile after navigation
-                if (window.innerWidth < 1024) setSidebarOpen(false);
-              }}
+              onClick={handleNavClick}
               className={linkClass(item.href)}
             >
               <Icon className="w-[18px] h-[18px] flex-shrink-0" />
@@ -108,6 +124,58 @@ export default function Sidebar({
             </Link>
           );
         })}
+
+        {/* ── SEO Module (collapsible) ── */}
+        <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+          {/* Main SEO link */}
+          <Link
+            href="/seo"
+            onClick={handleNavClick}
+            className={linkClass("/seo")}
+          >
+            <Search className="w-[18px] h-[18px] flex-shrink-0" />
+            <span className="flex-1">SEO</span>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSeoOpen(!seoOpen);
+              }}
+              className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
+              aria-label={seoOpen ? "Sluit SEO menu" : "Open SEO menu"}
+            >
+              <ChevronDown
+                className={`w-4 h-4 text-current transition-transform duration-200 ${
+                  seoOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+          </Link>
+
+          {/* Collapsible sub-items */}
+          <div
+            className={`overflow-hidden transition-all duration-200 ease-in-out ${
+              seoOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className="pl-4 pt-1 space-y-0.5">
+              {seoSubItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={handleNavClick}
+                    className={linkClass(item.href)}
+                  >
+                    <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
 
         {/* ── Dark Mode Toggle ── */}
         <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-800">
