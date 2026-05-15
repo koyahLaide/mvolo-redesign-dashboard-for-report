@@ -2,6 +2,7 @@
 
 import { useState, useEffect, ReactNode } from "react";
 import Sidebar from "./Sidebar";
+import AIChatbot from "./AIChatbot";
 
 export default function ClientShell({ children }: { children: ReactNode }) {
   const [darkMode, setDarkMode] = useState<boolean>(false);
@@ -100,6 +101,9 @@ export default function ClientShell({ children }: { children: ReactNode }) {
           </svg>
         </button>
       )}
+
+      {/* ── AI Chatbot ── */}
+      <AIChatbot />
     </div>
   );
 }
