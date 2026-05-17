@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
 
-const DATA_DIR = path.resolve(__dirname, '../../data');
+const DATA_DIR = path.resolve(__dirname, '../../dashboard/data'); // old path: ../data/
 const DB_PATH = path.join(DATA_DIR, 'mvolo.db');
 
 let _db = null;
@@ -287,23 +287,41 @@ function initDb() {
     'ALTER TABLE visitor_sessions ADD COLUMN had_dead_click INTEGER DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN scroll_depth REAL DEFAULT 0',
     'ALTER TABLE visitor_sessions ADD COLUMN clarity_session_id TEXT',
-    'ALTER TABLE order_items ADD COLUMN marketplace TEXT DEFAULT \'shopify\'',
-    'ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT \'\'',
+    "ALTER TABLE order_items ADD COLUMN marketplace TEXT DEFAULT 'shopify'",
+    "ALTER TABLE order_items ADD COLUMN channel TEXT DEFAULT ''",
     /*
     'ALTER TABLE competitor_prices ADD COLUMN prev_price REAL',
     'ALTER TABLE competitor_prices ADD COLUMN price_change_pct REAL',
     'ALTER TABLE competitor_prices ADD COLUMN price_changed INTEGER DEFAULT 0',
     */
   ];
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_date ON klaviyo_metrics(date)`); } catch { }
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_name ON klaviyo_metrics(metric_name)`); } catch { }
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)`); } catch { }
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_sku ON order_items(sku)`); } catch { }
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_date ON order_items(order_date)`); } catch { }
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_comp_date ON competitor_prices(date)`); } catch { }
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_comp_cat  ON competitor_prices(category)`); } catch { }
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_date ON klaviyo_metrics(date)`);
+  } catch {}
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_klaviyo_metrics_name ON klaviyo_metrics(metric_name)`);
+  } catch {}
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)`);
+  } catch {}
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_sku ON order_items(sku)`);
+  } catch {}
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_order_items_date ON order_items(order_date)`);
+  } catch {}
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_comp_date ON competitor_prices(date)`);
+  } catch {}
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_comp_cat  ON competitor_prices(category)`);
+  } catch {}
   for (const sql of migrationColumns) {
-    try { db.exec(sql); } catch { /* column already exists */ }
+    try {
+      db.exec(sql);
+    } catch {
+      /* column already exists */
+    }
   }
 
   _db = db;

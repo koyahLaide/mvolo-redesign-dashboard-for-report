@@ -2,34 +2,36 @@
 
 async function rebuildDailyMetrics({ db, from, to }) {
   // Aggregate spend per date+channel from ad_spend
-  const spendAgg = db
-    .prepare(
+  const spendAgg = (
+    await db.query(
       `
-    SELECT date, channel, ROUND(SUM(spend), 2) as spend
-    FROM ad_spend
-    WHERE date >= ? AND date <= ?
-    GROUP BY date, channel
-  `,
+  SELECT date, channel, ROUND(SUM(spend)::numeric, 2) as spend
+  FROM ad_spend
+  WHERE date >= $1 AND date <= $2
+  GROUP BY date, channel
+`,
+      [from, to],
     )
-    .all(from, to);
+  ).rows;
 
-  // Aggregate orders per date+channel from orders
-  const ordersAgg = db
-    .prepare(
+  // Aggregate orders per date+channel from orders, this time in Supabase
+  const ordersAgg = (
+    await db.query(
       `
-    SELECT
-      DATE(created_at) as date,
-      channel,
-      COUNT(*)                                                      as orders,
-      ROUND(SUM(total_price), 2)                                    as revenue,
-      ROUND(SUM(COALESCE(profit, 0)), 2)                            as profit,
-      SUM(CASE WHEN is_new_customer = 1 THEN 1 ELSE 0 END)          as new_customers
-    FROM orders
-    WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
-    GROUP BY DATE(created_at), channel
-  `,
+  SELECT
+    created_at::date                                              as date,
+    channel,
+    COUNT(*)                                                      as orders,
+    ROUND(SUM(total_price)::numeric, 2)                           as revenue,
+    ROUND(SUM(COALESCE(profit, 0))::numeric, 2)                   as profit,
+    SUM(is_new_customer::int)                                     as new_customers
+  FROM orders
+  WHERE created_at >= $1::date AND created_at < ($2::date + interval '1 day')
+  GROUP BY created_at::date, channel
+`,
+      [from, to],
     )
-    .all(from, to);
+  ).rows;
 
   // Build a map: "date__channel" → metrics
   const metricsMap = new Map();
@@ -68,31 +70,50 @@ async function rebuildDailyMetrics({ db, from, to }) {
     }
   }
 
-  const upsertMetrics = db.prepare(`
-    INSERT INTO daily_metrics
-      (date, channel, spend, revenue, profit, orders, new_customers, roas, poas, cac)
-    VALUES
-      (@date, @channel, @spend, @revenue, @profit, @orders, @new_customers, @roas, @poas, @cac)
-    ON CONFLICT(date, channel) DO UPDATE SET
-      spend         = excluded.spend,
-      revenue       = excluded.revenue,
-      profit        = excluded.profit,
-      orders        = excluded.orders,
-      new_customers = excluded.new_customers,
-      roas          = excluded.roas,
-      poas          = excluded.poas,
-      cac           = excluded.cac
-  `);
-
-  let metricsUpserted = 0;
-  for (const m of metricsMap.values()) {
-    const roas = m.spend > 0 ? Math.round((m.revenue / m.spend) * 100) / 100 : 0;
-    const poas = m.spend > 0 ? Math.round((m.profit / m.spend) * 100) / 100 : 0;
-    const cac = m.new_customers > 0 ? Math.round((m.spend / m.new_customers) * 100) / 100 : 0;
-    upsertMetrics.run({ ...m, roas, poas, cac });
-    metricsUpserted++;
+  const metricsUpserted = metricsMap.size;
+  if (metricsUpserted > 0) {
+    const values = [];
+    const placeholders = [];
+    let i = 1;
+    for (const m of metricsMap.values()) {
+      const roas = m.spend > 0 ? Math.round((m.revenue / m.spend) * 100) / 100 : 0;
+      const poas = m.spend > 0 ? Math.round((m.profit / m.spend) * 100) / 100 : 0;
+      const cac = m.new_customers > 0 ? Math.round((m.spend / m.new_customers) * 100) / 100 : 0;
+      placeholders.push(
+        `($${i}, $${i + 1}, $${i + 2}, $${i + 3}, $${i + 4}, $${i + 5}, $${i + 6}, $${i + 7}, $${i + 8}, $${i + 9})`,
+      );
+      values.push(
+        m.date,
+        m.channel,
+        m.spend,
+        m.revenue,
+        m.profit,
+        m.orders,
+        m.new_customers,
+        roas,
+        poas,
+        cac,
+      );
+      i += 10;
+    }
+    await db.query(
+      `
+      INSERT INTO daily_metrics
+        (date, channel, spend, revenue, profit, orders, new_customers, roas, poas, cac)
+      VALUES ${placeholders.join(',')}
+      ON CONFLICT(date, channel) DO UPDATE SET
+        spend         = excluded.spend,
+        revenue       = excluded.revenue,
+        profit        = excluded.profit,
+        orders        = excluded.orders,
+        new_customers = excluded.new_customers,
+        roas          = excluded.roas,
+        poas          = excluded.poas,
+        cac           = excluded.cac
+    `,
+      values,
+    );
   }
-
   return { upserted: metricsUpserted };
 }
 
