@@ -26,7 +26,7 @@ async function rebuildDailyMetrics({ db, from, to }) {
     ROUND(SUM(COALESCE(profit, 0))::numeric, 2)                   as profit,
     SUM(is_new_customer::int)                                     as new_customers
   FROM orders
-  WHERE created_at::date >= $1 AND created_at::date <= $2
+  WHERE created_at >= $1::date AND created_at < ($2::date + interval '1 day')
   GROUP BY created_at::date, channel
 `,
       [from, to],

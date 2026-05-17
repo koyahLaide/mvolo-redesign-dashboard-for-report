@@ -29,9 +29,10 @@ function daysAgo(n) {
 /**
  * Upserts rows into ad_spend and recalculates daily_metrics.
  *
- * @param {import('node:sqlite').DatabaseSync} db
- * @param {string} dateFrom  YYYY-MM-DD
- * @param {string} dateTo    YYYY-MM-DD
+ * @param {import('pg').Pool} pool
+ * @param {Object} [options]
+ * @param {string} [options.dateFrom]  YYYY-MM-DD
+ * @param {string} [options.dateTo]    YYYY-MM-DD
  */
 async function runSpendSync(pool, { dateFrom, dateTo } = {}) {
   const from = dateFrom ?? daysAgo(30);
@@ -59,38 +60,57 @@ async function runSpendSync(pool, { dateFrom, dateTo } = {}) {
   }
 
   // ── 3. Upsert into ad_spend ──────────────────────────────────────────────────
-  // Delete existing rows for the date range first to avoid duplicates, this is for sync from dateFrom to dateTo only
-  await pool.query(`DELETE FROM ad_spend WHERE date >= $1 AND date <= $2`, [from, to]);
-  if (allSpendRows.length > 0) {
-    const values = [];
-    const placeholders = [];
-    let i = 1;
-    for (const row of allSpendRows) {
-      placeholders.push(
-        `($${i}, $${i + 1}, $${i + 2}, $${i + 3}, $${i + 4}, $${i + 5}, $${i + 6}, $${i + 7}, $${i + 8}, $${i + 9})`,
-      );
-      values.push(
-        row.date,
-        row.channel,
-        row.campaign_name,
-        row.adset_name,
-        row.ad_name,
-        row.spend,
-        row.impressions,
-        row.clicks,
-        row.purchases,
-        row.currency,
-      );
-      i += 10;
+  // Delete existing rows for the date range first to avoid duplicates, wrapped in a Postgres transaction.
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    await client.query(`DELETE FROM ad_spend WHERE date >= $1 AND date <= $2`, [from, to]);
+    
+    if (allSpendRows.length > 0) {
+      const CHUNK_SIZE = 1000;
+      for (let chunkStart = 0; chunkStart < allSpendRows.length; chunkStart += CHUNK_SIZE) {
+        const chunk = allSpendRows.slice(chunkStart, chunkStart + CHUNK_SIZE);
+        const values = [];
+        const placeholders = [];
+        let i = 1;
+        
+        for (const row of chunk) {
+          placeholders.push(
+            `($${i}, $${i + 1}, $${i + 2}, $${i + 3}, $${i + 4}, $${i + 5}, $${i + 6}, $${i + 7}, $${i + 8}, $${i + 9})`
+          );
+          values.push(
+            row.date,
+            row.channel,
+            row.campaign_name,
+            row.adset_name,
+            row.ad_name,
+            row.spend,
+            row.impressions,
+            row.clicks,
+            row.purchases,
+            row.currency
+          );
+          i += 10;
+        }
+        
+        const insertSql = `
+          INSERT INTO ad_spend
+            (date, channel, campaign_name, adset_name, ad_name, spend, impressions, clicks, purchases, currency)
+          VALUES ${placeholders.join(',')}
+        `;
+        await client.query(insertSql, values);
+      }
     }
-    const insertSql = `
-      INSERT INTO ad_spend
-        (date, channel, campaign_name, adset_name, ad_name, spend, impressions, clicks, purchases, currency)
-      VALUES ${placeholders.join(',')}
-    `;
-    await pool.query(insertSql, values);
+    
+    await client.query('COMMIT');
+    console.log(chalk.green(`  [spend-sync] Inserted ${allSpendRows.length} ad_spend rows`));
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
-  console.log(chalk.green(`  [spend-sync] Inserted ${allSpendRows.length} ad_spend rows`));
 
   // ── 4. Enrich orders with ProfitMetrics pm_* attribution via Shopify ────────
   try {
@@ -105,7 +125,6 @@ async function runSpendSync(pool, { dateFrom, dateTo } = {}) {
   }
 
   // ── 5. Rebuild daily_metrics for the date range ──────────────────────────────
-  // Aggregate spend per date+channel from ad_spend
   try {
     const dailyMetrics = await rebuildDailyMetrics({ db: pool, from: from, to: to });
     console.log(chalk.green(`  [spend-sync] Upserted ${dailyMetrics.upserted} metrics`));
@@ -114,22 +133,22 @@ async function runSpendSync(pool, { dateFrom, dateTo } = {}) {
   }
   console.log(chalk.bold.green(`  [spend-sync] Done ✓`));
 }
+
 module.exports = { runSpendSync };
 
 // ── CLI entry point ───────────────────────────────────────────────────────────
 if (require.main === module) {
   require('dotenv').config();
-  const { initDb } = require('../db/db');
-  const db = initDb();
+  const { pool } = require('../db/db');
 
   console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-  console.log(chalk.cyan.bold('  Mvolo Dashboard — Spend Sync'));
+  console.log(chalk.cyan.bold('  Mvolo Dashboard — Spend Sync (Supabase)'));
   console.log(chalk.cyan(`  ${new Date().toLocaleString()}`));
   console.log(chalk.cyan('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
 
-  runSpendSync(pool) // 2. Pass the pool
+  runSpendSync(pool)
     .then(async () => {
-      await pool.end(); // 3. Properly close the pool
+      await pool.end();
       process.exit(0);
     })
     .catch(async (err) => {
