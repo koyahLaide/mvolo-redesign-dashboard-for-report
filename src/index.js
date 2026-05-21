@@ -5,7 +5,7 @@ const cron = require('node-cron');
 const chalk = require('chalk');
 const { initSupabase } = require('./db/init_schema');
 const { pool } = require('./db/db');
-const { runSync } = require('./etl/sync');
+const { runSync } = require('./etl/syncv2');
 const { runSpendSync } = require('./etl/spend-syncv2');
 
 const CRON_SCHEDULE = '0 */6 * * *'; // Every 6 hours
