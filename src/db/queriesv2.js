@@ -16,20 +16,20 @@ async function getLastSyncedAt(pool) {
 }
 
 /**
- * Returns 1 if the given email has never placed an order in the DB, 0 otherwise.
+ * Returns true if the given email has never placed an order in the DB, false otherwise.
  * When email is null/empty, treats the customer as new.
  *
  * @param {import('pg').Pool} pool
  * @param {string|null} email
- * @returns {Promise<number>} 1 = new, 0 = returning
+ * @returns {Promise<boolean>} true = new, false = returning
  */
 async function checkIsNewCustomer(pool, email) {
-  if (!email) return 1;
+  if (!email) return true;
   const result = await pool.query(
     `SELECT id FROM orders WHERE customer_email = $1 LIMIT 1`,
     [email]
   );
-  return result.rows.length > 0 ? 0 : 1;
+  return result.rows.length === 0;
 }
 
 /**
@@ -38,7 +38,7 @@ async function checkIsNewCustomer(pool, email) {
  * @param {import('pg').Pool} pool
  * @param {Object} order
  * @param {Object} attribution
- * @param {number} isNewCustomer - 1 if new, 0 if returning
+ * @param {boolean} isNewCustomer - true if new, false if returning
  * @returns {Promise<boolean>} true if the row was newly inserted
  */
 async function insertOrder(pool, order, attribution, isNewCustomer) {
