@@ -1,8 +1,8 @@
 'use strict';
 
 const chalk = require('chalk');
-const { initDb } = require('../db/schema');
-const { logSync } = require('../db/queries');
+const pool = require('../db/db').pool;
+const { logSync } = require('../db/queriesv2');
 const { summarizeAttribution } = require('./attribution');
 
 // Imports all sync per api
@@ -14,7 +14,6 @@ const { syncShopify } = require('./sync/shopify');
 
 async function runSync() {
   const syncedAt = new Date().toISOString();
-  const db = initDb();
 
   console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
   console.log(chalk.cyan.bold('  Mvolo Dashboard — Sync started'));
@@ -27,14 +26,14 @@ async function runSync() {
 
   try {
     //Shopify Sync
-    const shopifyInfo = await syncShopify(db);
+    const shopifyInfo = await syncShopify(pool);
     ordersFetched += shopifyInfo.length;
     ordersNew += shopifyInfo.ordersNew;
     attributedOrders.push(...shopifyInfo.attributedOrders);
 
     try {
       // Bol Sync
-      const bolInfo = await syncBol(db);
+      const bolInfo = await syncBol(pool);
       ordersFetched += bolInfo.length;
       ordersNew += bolInfo.ordersNew;
       attributedOrders.push(...bolInfo.attributedOrders);
@@ -44,20 +43,20 @@ async function runSync() {
 
     //Ga4 Sync
     try {
-      await syncGa4(db);
+      await syncGa4(pool);
     } catch (err) {
       console.warn(chalk.yellow(`  GA4 sync skipped: ${err.message}`));
     }
     //Clarity Sync
     try {
-      await syncClarity(db);
+      await syncClarity(pool);
     } catch (err) {
       console.warn(chalk.yellow(`  Clarity sync skipped: ${err.message}`));
     }
 
     try {
       //Klaviyo Sync
-      await syncKlaviyo(db, syncedAt);
+      await syncKlaviyo(pool, syncedAt);
     } catch (err) {
       console.warn(chalk.yellow(`  Klaviyo sync skipped: ${err.message}`));
     }
@@ -66,7 +65,7 @@ async function runSync() {
     const summary = summarizeAttribution(attributedOrders);
 
     // Log to sync_log
-    logSync(db, { syncedAt, ordersFetched, ordersNew, status: 'success' });
+    await logSync(pool, { syncedAt, ordersFetched, ordersNew, status: 'success' });
 
     // ── Print summary ──────────────────────────────────────────────
     console.log(chalk.green.bold('  ✔ Sync complete\n'));
@@ -74,7 +73,7 @@ async function runSync() {
     console.log(chalk.white(`  ${'New orders saved'.padEnd(30)} ${chalk.bold(ordersNew)}`));
     console.log(
       chalk.white(
-        `  ${'Already in DB (skipped)'.padEnd(30)} ${chalk.bold(ordersFetched - ordersNew)}\n`,
+        `  ${'Already in database (skipped)'.padEnd(30)} ${chalk.bold(ordersFetched - ordersNew)}\n`,
       ),
     );
 
@@ -109,7 +108,13 @@ async function runSync() {
 
     console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
   } catch (err) {
-    logSync(db, { syncedAt, ordersFetched, ordersNew, status: 'error', error: err.message });
+    await logSync(pool, {
+      syncedAt,
+      ordersFetched,
+      ordersNew,
+      status: 'error',
+      error: err.message,
+    });
     console.error(chalk.red(`\n  ✖ Sync failed: ${err.message}\n`));
     throw err;
   }
