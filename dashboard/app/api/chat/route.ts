@@ -5,11 +5,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // Strip UTF-8 BOM (U+FEFF) that Windows tools can silently inject into env vars
+  const rawKey = process.env.ANTHROPIC_API_KEY ?? '';
+  const apiKey = rawKey.charCodeAt(0) === 0xFEFF ? rawKey.slice(1).trim() : rawKey.trim();
 
   if (!apiKey) {
     return NextResponse.json(
-      { error: 'ANTHROPIC_API_KEY is not set in .env.local' },
+      { error: 'ANTHROPIC_API_KEY is not set in environment variables' },
       { status: 500 }
     );
   }
@@ -31,13 +33,16 @@ export async function POST(req: NextRequest) {
 Here is the current dashboard data context:
 ${dashboardContext}
 
-Rules:
-- Be concise and direct
-- Use Dutch for labels/terms but respond in English
-- Reference specific numbers when available
-- If you don't have data for something, say so honestly
-- Format numbers with proper currency (€) and percentages
-- Keep responses short — 2-3 sentences max unless asked for detail`,
+FORMATTING RULES — follow these exactly:
+- Never use markdown: no **, no *, no #, no backticks, no underscores for formatting
+- Use plain text only
+- For bullet points use "•" followed by a space
+- Separate sections with a blank line
+- Keep responses short and direct — 2-4 lines for simple questions, up to 8 lines for detailed ones
+- Always reference specific numbers from the context when available
+- Format currency as € with Dutch number formatting (e.g. €184.320)
+- If you don't have data for something, say so honestly in one sentence
+- Respond in English, use Dutch only for specific metric names (e.g. ROAS, POAS)`,
       messages: [{ role: 'user', content: message }],
     });
 
@@ -51,7 +56,7 @@ Rules:
     console.error('[/api/chat]', error?.status, error?.message);
     const msg =
       error?.status === 401
-        ? 'Invalid ANTHROPIC_API_KEY — check your .env.local'
+        ? 'Invalid ANTHROPIC_API_KEY — check your environment variables'
         : error?.message ?? 'Unknown error';
     return NextResponse.json({ error: msg }, { status: error?.status ?? 500 });
   }

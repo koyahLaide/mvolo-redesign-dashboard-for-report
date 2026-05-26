@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, KeyboardEvent, ReactNode } from "react";
 import { MessageCircle, X, SendHorizontal } from "lucide-react";
 
 interface Message {
@@ -53,13 +53,53 @@ function formatTime(date: Date): string {
   return date.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
 }
 
+function renderContent(text: string, isUser: boolean) {
+  const lines = text.split("\n");
+  const elements: ReactNode[] = [];
+  let i = 0;
+  let k = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.trim() === "") {
+      elements.push(<div key={k++} className="h-1.5" />);
+    } else if (line.trim().startsWith("•")) {
+      const bullets: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith("•")) {
+        bullets.push(lines[i].trim().slice(1).trim());
+        i++;
+      }
+      elements.push(
+        <ul key={k++} className="space-y-1 mt-0.5">
+          {bullets.map((b, bi) => (
+            <li key={bi} className="flex items-start gap-1.5">
+              <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${isUser ? "bg-blue-200" : "bg-blue-400 dark:bg-blue-500"}`} />
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    } else {
+      elements.push(<p key={k++} className="leading-relaxed">{line}</p>);
+    }
+    i++;
+  }
+
+  return <div className="space-y-1 text-sm">{elements}</div>;
+}
+
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -127,8 +167,8 @@ export default function AIChatbot() {
       <div
         className={`
           fixed bottom-24 right-4 sm:right-6 z-50
-          w-[calc(100vw-2rem)] sm:w-[420px]
-          h-[70vh] sm:h-[560px]
+          w-[calc(100vw-2rem)] sm:w-105
+          h-[70vh] sm:h-140
           bg-white dark:bg-gray-900
           rounded-2xl shadow-2xl
           border border-gray-200 dark:border-gray-700
@@ -143,9 +183,9 @@ export default function AIChatbot() {
         aria-label="Mvolo AI Assistant"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
               <span className="text-white font-bold text-xs">AI</span>
             </div>
             <div>
@@ -180,11 +220,13 @@ export default function AIChatbot() {
                   }
                 `}
               >
-                {msg.content}
+                {renderContent(msg.content, msg.role === "user")}
               </div>
-              <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 px-1">
-                {formatTime(msg.timestamp)}
-              </span>
+              {mounted && (
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 px-1">
+                  {formatTime(msg.timestamp)}
+                </span>
+              )}
             </div>
           ))}
 
@@ -214,7 +256,7 @@ export default function AIChatbot() {
         </div>
 
         {/* Input */}
-        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-shrink-0">
+        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 shrink-0">
           <input
             ref={inputRef}
             type="text"
@@ -228,7 +270,7 @@ export default function AIChatbot() {
           <button
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="ml-2 p-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+            className="ml-2 p-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
             aria-label="Verstuur bericht"
           >
             <SendHorizontal className="w-4 h-4" />
