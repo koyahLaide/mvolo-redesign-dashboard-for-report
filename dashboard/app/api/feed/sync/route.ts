@@ -78,8 +78,6 @@ function transformProduct(shopifyProduct: any) {
     ? shopifyProduct.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
     : [];
 
-  const shopifyUrl = `https://${SHOPIFY_STORE.replace('.myshopify.com', '')}.com/products/${shopifyProduct.handle}`;
-
   return {
     shopify_id: String(shopifyProduct.id),
     name_nl: shopifyProduct.title,
@@ -90,11 +88,8 @@ function transformProduct(shopifyProduct: any) {
     brand: shopifyProduct.vendor || 'Mvolo',
     price_eur: price > 0 ? price : null,
     sale_price_eur: compareAtPrice && compareAtPrice > price ? price : null,
-    // If compare_at_price exists, that's the "original" and current price is the sale
-    // But we store price_eur as the selling price, sale_price_eur only if discounted
     image_url: primaryImage,
     additional_images: additionalImages.length > 0 ? additionalImages : null,
-    product_url: shopifyUrl,
     shopify_handle: shopifyProduct.handle,
     shopify_status: shopifyProduct.status,
     shopify_product_type: shopifyProduct.product_type || null,
@@ -103,6 +98,7 @@ function transformProduct(shopifyProduct: any) {
     weight_grams: variant.grams || null,
     description_nl: stripHtml(shopifyProduct.body_html || ''),
     last_shopify_sync: new Date().toISOString(),
+    // product_url intentionally omitted — stored per-market in feed_product_content
   };
 }
 
@@ -121,16 +117,32 @@ export async function POST(request: Request) {
 
     console.log('[Feed Sync] Starting Shopify → Supabase sync...');
 
-    // 1. Fetch all active Shopify products
+    // 1. Load markets to build per-language domain map
+    const { data: markets } = await supabase
+      .from('markets')
+      .select('code, language_code, storefront_domain, status')
+      .not('storefront_domain', 'is', null)
+      .order('status'); // 'primary' before 'secondary' so primary domain wins per language
+
+    // First occurrence per language_code = primary market's domain
+    const langDomainMap = new Map<string, string>(); // language_code → storefront_domain
+    for (const m of (markets ?? [])) {
+      if (m.language_code && m.storefront_domain && !langDomainMap.has(m.language_code)) {
+        langDomainMap.set(m.language_code, m.storefront_domain);
+      }
+    }
+    console.log(`[Feed Sync] Domains: ${[...langDomainMap.entries()].map(([l, d]) => `${l}→${d}`).join(', ')}`);
+
+    // 2. Fetch all active Shopify products
     const shopifyProducts = await fetchAllShopifyProducts();
     console.log(`[Feed Sync] Fetched ${shopifyProducts.length} active products from Shopify`);
 
-    // 2. Transform to our format
+    // 3. Transform (no product_url — handled per-market in feed_product_content)
     const products = shopifyProducts.map(transformProduct);
 
-    // 3. Upsert into Supabase — match on shopify_id
+    // 4. Upsert into Supabase — match on shopify_id
     let synced = 0;
-    let errors: string[] = [];
+    const errors: string[] = [];
 
     for (const product of products) {
       const { data, error } = await supabase
@@ -140,19 +152,13 @@ export async function POST(request: Request) {
         .single();
 
       if (error) {
-        // If shopify_id doesn't have a unique constraint yet, try matching on EAN
         if (error.code === '23505' || error.message.includes('unique')) {
-          // Try update by EAN instead
           if (product.ean) {
             const { error: updateError } = await supabase
               .from('products')
               .update(product)
               .eq('ean', product.ean);
-
-            if (!updateError) {
-              synced++;
-              continue;
-            }
+            if (!updateError) { synced++; continue; }
           }
         }
         errors.push(`${product.name_nl}: ${error.message}`);
@@ -161,21 +167,38 @@ export async function POST(request: Request) {
 
       synced++;
 
-      // 4. Create/update NL content entry
-      if (data?.id) {
-        await supabase
-          .from('feed_product_content')
-          .upsert(
-            {
+      if (data?.id && product.shopify_handle) {
+        // 5. NL content — full upsert (title + description + URL)
+        const nlDomain = langDomainMap.get('nl') ?? 'mvolo.nl';
+        await supabase.from('feed_product_content').upsert({
+          product_id: data.id,
+          language: 'nl',
+          title: product.name_nl,
+          description: product.description_nl?.substring(0, 5000) ?? null,
+          product_url: `https://${nlDomain}/products/${product.shopify_handle}`,
+        }, { onConflict: 'product_id,language' }).select();
+
+        // 6. Other languages — update URL only; insert skeleton row if none exists yet
+        for (const [langCode, domain] of langDomainMap) {
+          if (langCode === 'nl') continue;
+          const langUrl = `https://${domain}/products/${product.shopify_handle}`;
+
+          const { data: updated } = await supabase
+            .from('feed_product_content')
+            .update({ product_url: langUrl })
+            .eq('product_id', data.id)
+            .eq('language', langCode)
+            .select('id');
+
+          if (!updated || updated.length === 0) {
+            // No row yet — insert URL-only skeleton (title/description filled by AI enrichment later)
+            await supabase.from('feed_product_content').insert({
               product_id: data.id,
-              language: 'nl',
-              title: product.name_nl,
-              description: product.description_nl?.substring(0, 5000) || null,
-              product_url: product.product_url,
-            },
-            { onConflict: 'product_id,language' }
-          )
-          .select();
+              language: langCode,
+              product_url: langUrl,
+            });
+          }
+        }
       }
     }
 
