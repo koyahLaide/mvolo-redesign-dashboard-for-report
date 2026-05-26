@@ -9,6 +9,7 @@ const supabase = createClient(
 type Condition = { field: string; operator: string; value?: string | number };
 type Rule = {
   id: string; name: string; type: 'filter' | 'transform';
+  scope: 'master' | 'partner'; channel: string | null;
   conditions: Condition[]; actions: Record<string, any>;
   priority: number; active: boolean;
 };
@@ -35,16 +36,63 @@ function evalCondition(product: Record<string, any>, c: Condition): boolean {
   }
 }
 
-function applyRules(products: Record<string, any>[], rules: Rule[]): Record<string, any>[] {
-  const active = [...rules].filter(r => r.active).sort((a, b) => a.priority - b.priority);
+function applyTransformAction(out: Record<string, any>, actions: Record<string, any>): Record<string, any> {
+  const p = { ...out };
+  const at = actions.action_type;
+
+  if (at === 'find_replace' || (!at && !actions.set_field)) {
+    const field = FIELD_MAP[actions.field] ?? actions.field;
+    if (field && p[field] != null) {
+      const src = String(p[field]);
+      const find = actions.find ?? '';
+      const repl = actions.replace ?? '';
+      p[field] = actions.use_regex
+        ? (() => { try { return src.replace(new RegExp(find, 'gi'), repl); } catch { return src; } })()
+        : src.split(find).join(repl);
+    }
+  } else if (at === 'prepend_if_missing') {
+    const field = FIELD_MAP[actions.field] ?? actions.field;
+    if (field) {
+      const cur = String(p[field] ?? '');
+      const pfx = String(actions.value ?? '');
+      if (!cur.toLowerCase().startsWith(pfx.toLowerCase())) p[field] = pfx + cur;
+    }
+  } else if (at === 'append_if_missing') {
+    const field = FIELD_MAP[actions.field] ?? actions.field;
+    if (field) {
+      const cur = String(p[field] ?? '');
+      const sfx = String(actions.value ?? '');
+      if (!cur.toLowerCase().endsWith(sfx.toLowerCase())) p[field] = cur + sfx;
+    }
+  } else if (at === 'copy_field') {
+    const from = FIELD_MAP[actions.from_field] ?? actions.from_field;
+    const to   = FIELD_MAP[actions.to_field]   ?? actions.to_field;
+    if (from && to) p[to] = p[from];
+  } else {
+    // Legacy: { set_field, value } OR { action_type: 'set_field', set_field, value }
+    const { set_field, value } = actions;
+    if (set_field && value !== undefined) p[FIELD_MAP[set_field] ?? set_field] = value;
+  }
+  return p;
+}
+
+function applyRules(products: Record<string, any>[], rules: Rule[], channel?: string): Record<string, any>[] {
+  // Master rules first (apply to all channels), then partner rules for this channel
+  const active = [...rules]
+    .filter(r => r.active)
+    .filter(r => r.scope !== 'partner' || !channel || r.channel === channel)
+    .sort((a, b) => {
+      if ((a.scope ?? 'master') !== (b.scope ?? 'master')) return (a.scope ?? 'master') === 'master' ? -1 : 1;
+      return a.priority - b.priority;
+    });
+
   return products
     .filter(p => !active.some(r => r.type === 'filter' && (r.conditions ?? []).every(c => evalCondition(p, c))))
     .map(p => {
       let out = { ...p };
       for (const r of active) {
         if (r.type === 'transform' && (r.conditions ?? []).every(c => evalCondition(out, c))) {
-          const { set_field, value } = r.actions ?? {};
-          if (set_field && value !== undefined) out[set_field] = value;
+          out = applyTransformAction(out, r.actions ?? {});
         }
       }
       return out;
@@ -199,19 +247,45 @@ export async function GET(request: Request) {
 
     // 6. Rules
     const { data: rules } = await supabase
-      .from('feed_rules').select('id,name,type,conditions,actions,priority,active').order('priority');
+      .from('feed_rules').select('id,name,type,scope,channel,conditions,actions,priority,active').order('priority');
 
-    // 7. Apply rules
-    const filtered = applyRules(enriched, (rules ?? []) as Rule[]);
+    // 7. Apply active A/B test assignments
+    const productIds = enriched.map(p => p.id);
+    const { data: abAssignments } = await supabase
+      .from('feed_ab_assignments')
+      .select('product_id,ab_group,value_a,value_b,feed_ab_tests(field,status)')
+      .in('product_id', productIds);
 
-    // 8. Mark fetch time (not for previews)
+    const abMap: Record<string, { group: string; value_a: string | null; value_b: string | null; field: string }> = {};
+    for (const a of abAssignments ?? []) {
+      const test = (a as any).feed_ab_tests;
+      if (test?.status === 'active') {
+        abMap[a.product_id] = { group: a.ab_group, value_a: a.value_a, value_b: a.value_b, field: test.field };
+      }
+    }
+
+    const enrichedWithAb = enriched.map(p => {
+      const ab = abMap[p.id];
+      if (!ab) return p;
+      const val = ab.group === 'A' ? ab.value_a : ab.value_b;
+      if (!val) return p;
+      if (ab.field === 'title')       return { ...p, _title: val };
+      if (ab.field === 'description') return { ...p, _description: val, _description_short: null };
+      if (ab.field === 'image')       return { ...p, image_url: val };
+      return p;
+    });
+
+    // 8. Apply rules (master first, then partner rules for this channel)
+    const filtered = applyRules(enrichedWithAb, (rules ?? []) as Rule[], channel);
+
+    // 9. Mark fetch time (not for previews)
     if (!isPreview) {
       await supabase.from('feed_market_configs')
         .update({ last_fetched_at: new Date().toISOString() })
         .eq('id', config.id);
     }
 
-    // 9. Preview response
+    // 10. Preview response
     if (isPreview) {
       return NextResponse.json({
         market: marketCode, channel,
@@ -229,7 +303,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // 10. Full feed
+    // 11. Full feed
     if (channel === 'google') {
       return new Response(buildGoogleXml(filtered, market), {
         headers: {

@@ -18,7 +18,8 @@ type FeedConfig = { id: string; market_id: string; channel: string; feed_name: s
 type Alert      = { id: string; type: string; severity: string; message: string; product_id: string | null; channel: string | null; created_at: string };
 type Stats      = { totalProducts: number; feedReady: number; withIssues: number; activeFeeds: number; activeRules: number };
 type Condition  = { field: string; operator: string; value?: string };
-type Rule       = { id: string; name: string; type: 'filter'|'transform'; conditions: Condition[]; actions: Record<string,string>; priority: number; active: boolean; created_at: string };
+type Rule       = { id: string; name: string; type: 'filter'|'transform'; scope: 'master'|'partner'; channel: string|null; conditions: Condition[]; actions: Record<string,any>; priority: number; active: boolean; created_at: string };
+type ActionType = 'set_field'|'find_replace'|'prepend_if_missing'|'append_if_missing'|'copy_field';
 type FeedPreview= { total_before_rules: number; total_after_rules: number; excluded: number; products: { id:string; title:string; price:number|null; ean:string|null; sku:string|null; image:string|null }[] };
 type Variant    = { id: string; label: string; compliance: 'green'|'orange'; channel?: string; season?: string; title: string; description_short?: string; description_long?: string };
 type ReviewItem = { id: string; product_id: string; language: string; title: string|null; description: string|null; description_short: string|null; description_long: string|null; ai_variants: Variant[]|null; ai_status: string; selected_variant_id: string|null; channel_optimized_for: string|null; season: string|null; ctr_14d: number|null; product: { id:string; name_nl:string; image_url:string|null; category:string|null; price_eur:number|null }|null };
@@ -86,14 +87,25 @@ export default function FeedSuitePage() {
   const [copied,        setCopied]         = useState<string|null>(null);
   // Rules tab
   const [newRuleOpen,   setNewRuleOpen]    = useState(false);
+  const [editingRule,   setEditingRule]    = useState<Rule|null>(null);
+  const [partnerCh,     setPartnerCh]      = useState('google');
   const [ruleName,      setRuleName]       = useState('');
   const [ruleType,      setRuleType]       = useState<'filter'|'transform'>('filter');
+  const [ruleScope,     setRuleScope]      = useState<'master'|'partner'>('master');
+  const [ruleCh,        setRuleCh]         = useState('google');
   const [ruleConds,     setRuleConds]      = useState<Condition[]>([{...BLANK_COND}]);
+  const [ruleActionType,setRuleActionType] = useState<ActionType>('set_field');
   const [ruleSetField,  setRuleSetField]   = useState('title');
   const [ruleSetValue,  setRuleSetValue]   = useState('');
+  const [ruleFindVal,   setRuleFindVal]    = useState('');
+  const [ruleReplaceVal,setRuleReplaceVal] = useState('');
+  const [ruleUseRegex,  setRuleUseRegex]   = useState(false);
+  const [ruleCopyFrom,  setRuleCopyFrom]   = useState('title');
+  const [ruleCopyTo,    setRuleCopyTo]     = useState('description');
   const [savingRule,    setSavingRule]     = useState(false);
   const [ruleError,     setRuleError]      = useState<string|null>(null);
   const [deletingRule,  setDeletingRule]   = useState<string|null>(null);
+  const [copyingAll,    setCopyingAll]     = useState(false);
   // AI tab
   const [aiLang,        setAiLang]         = useState('nl');
   const [aiChannel,     setAiChannel]      = useState('all');
@@ -176,20 +188,85 @@ export default function FeedSuitePage() {
   function updateCond(i:number, k:keyof Condition, v:string) {
     setRuleConds(prev => prev.map((c,j) => j===i?{...c,[k]:v}:c));
   }
+  function buildRuleActions(): Record<string,any> {
+    if (ruleType === 'filter') return { type: 'exclude' };
+    if (ruleActionType === 'set_field')          return { action_type:'set_field',          set_field:ruleSetField, value:ruleSetValue };
+    if (ruleActionType === 'find_replace')       return { action_type:'find_replace',       field:ruleSetField, find:ruleFindVal, replace:ruleReplaceVal, use_regex:ruleUseRegex };
+    if (ruleActionType === 'prepend_if_missing') return { action_type:'prepend_if_missing', field:ruleSetField, value:ruleSetValue };
+    if (ruleActionType === 'append_if_missing')  return { action_type:'append_if_missing',  field:ruleSetField, value:ruleSetValue };
+    if (ruleActionType === 'copy_field')         return { action_type:'copy_field',         from_field:ruleCopyFrom, to_field:ruleCopyTo };
+    return {};
+  }
+
+  function resetRuleForm() {
+    setRuleName(''); setRuleType('filter'); setRuleScope('master'); setRuleCh('google');
+    setRuleConds([{...BLANK_COND}]); setRuleActionType('set_field');
+    setRuleSetField('title'); setRuleSetValue(''); setRuleFindVal(''); setRuleReplaceVal('');
+    setRuleUseRegex(false); setRuleCopyFrom('title'); setRuleCopyTo('description');
+    setEditingRule(null); setNewRuleOpen(false);
+  }
+
+  function openEditRule(rule: Rule) {
+    setEditingRule(rule); setRuleName(rule.name); setRuleType(rule.type);
+    setRuleScope(rule.scope ?? 'master'); setRuleCh(rule.channel ?? 'google');
+    setRuleConds((rule.conditions ?? []).length ? rule.conditions : [{...BLANK_COND}]);
+    const at: ActionType = rule.actions?.action_type ?? (rule.actions?.set_field ? 'set_field' : 'set_field');
+    setRuleActionType(at);
+    setRuleSetField(rule.actions?.set_field ?? rule.actions?.field ?? 'title');
+    setRuleSetValue(rule.actions?.value ?? '');
+    setRuleFindVal(rule.actions?.find ?? ''); setRuleReplaceVal(rule.actions?.replace ?? '');
+    setRuleUseRegex(rule.actions?.use_regex ?? false);
+    setRuleCopyFrom(rule.actions?.from_field ?? 'title'); setRuleCopyTo(rule.actions?.to_field ?? 'description');
+    setNewRuleOpen(true);
+  }
+
   async function saveRule() {
     if (!ruleName.trim()) { setRuleError('Geef een naam op'); return; }
     setSavingRule(true); setRuleError(null);
     try {
-      const actions = ruleType==='transform' ? { set_field:ruleSetField, value:ruleSetValue } : {};
-      const res = await fetch('/api/feed/rules', { method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ name:ruleName.trim(), type:ruleType, conditions:ruleConds, actions, priority:rules.length*10+10, active:true }) });
+      const payload = {
+        name: ruleName.trim(), type: ruleType, scope: ruleScope,
+        channel: ruleScope === 'partner' ? ruleCh : null,
+        conditions: ruleConds, actions: buildRuleActions(),
+        priority: editingRule ? editingRule.priority : rules.filter(r=>r.scope===ruleScope).length*10+10,
+        active: editingRule ? editingRule.active : true,
+        ...(editingRule ? { id: editingRule.id } : {}),
+      };
+      const method = editingRule ? 'PATCH' : 'POST';
+      const res = await fetch('/api/feed/rules', { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error);
-      setRules(prev => [...prev, d.rule]);
-      setNewRuleOpen(false); setRuleName(''); setRuleType('filter');
-      setRuleConds([{...BLANK_COND}]); setRuleSetField('title'); setRuleSetValue('');
+      if (editingRule) setRules(prev => prev.map(r => r.id===editingRule.id ? d.rule : r));
+      else setRules(prev => [...prev, d.rule]);
+      resetRuleForm();
     } catch(e:any) { setRuleError(e.message); }
     finally { setSavingRule(false); }
+  }
+
+  async function duplicateRule(rule: Rule, targetScope?: 'master'|'partner', targetChannel?: string) {
+    const res = await fetch('/api/feed/rules?action=duplicate', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ id:rule.id, scope:targetScope??rule.scope, channel:targetChannel??rule.channel }) });
+    const d = await res.json();
+    if (res.ok) setRules(prev => [...prev, d.rule]);
+  }
+
+  async function moveRule(rule: Rule, dir: 'up'|'down') {
+    await fetch('/api/feed/rules', { method:'PATCH', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ id:rule.id, action:`move_${dir}` }) });
+    const res = await fetch('/api/feed/rules');
+    const d = await res.json();
+    if (res.ok) setRules(d.rules??[]);
+  }
+
+  async function copyAllToPartner() {
+    setCopyingAll(true);
+    try {
+      const res = await fetch('/api/feed/rules?action=copy_all_to_partner', { method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ channel: partnerCh }) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setRules(prev => [...prev, ...(d.rules??[])]);
+    } finally { setCopyingAll(false); }
   }
 
   // ── AI enrichment ─────────────────────────────────────────────────────────────
@@ -509,80 +586,192 @@ export default function FeedSuitePage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* Rules                                                                 */}
+      {/* Rules — ProductCaster-stijl twee kolommen                            */}
       {/* ══════════════════════════════════════════════════════════════════════ */}
-      {tab==='rules' && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div><h3 className="font-semibold text-gray-200">{rules.length} regels</h3><p className="text-xs text-gray-500 mt-0.5">{rules.filter(r=>r.active).length} actief</p></div>
-            <button onClick={()=>setNewRuleOpen(o=>!o)} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">{newRuleOpen?'✕ Annuleer':'+ Nieuwe Regel'}</button>
-          </div>
-          {newRuleOpen && (
-            <div className="mb-4 bg-gray-900/70 border border-indigo-900/50 rounded-xl p-5">
-              <h4 className="text-sm font-semibold text-gray-200 mb-4">Nieuwe Feed Regel</h4>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div><label className="text-xs text-gray-400 mb-1 block">Naam *</label><input value={ruleName} onChange={e=>setRuleName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" /></div>
-                <div><label className="text-xs text-gray-400 mb-1 block">Type *</label><select value={ruleType} onChange={e=>setRuleType(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="filter">Filter — uitsluit</option><option value="transform">Transform — aanpassen</option></select></div>
-              </div>
-              <div className="mb-4">
-                <label className="text-xs text-gray-400 mb-2 block">Als</label>
-                {ruleConds.map((c,i) => (
-                  <div key={i} className="flex items-center gap-2 mb-2">
-                    <select value={c.field} onChange={e=>updateCond(i,'field',e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 w-32">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
-                    <select value={c.operator} onChange={e=>updateCond(i,'operator',e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 w-36">{OPS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select>
-                    {!NO_VAL_OPS.includes(c.operator)&&<input value={c.value??''} onChange={e=>updateCond(i,'value',e.target.value)} placeholder="waarde..." className="flex-1 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>}
-                    {ruleConds.length>1&&<button onClick={()=>setRuleConds(prev=>prev.filter((_,j)=>j!==i))} className="text-gray-600 hover:text-red-400 text-lg">×</button>}
-                    <span className="text-xs text-gray-600 whitespace-nowrap">{products.filter(p=>evalCond(p,c)).length}p</span>
+      {tab==='rules' && (()=>{
+        const masterRules  = rules.filter(r=>(r.scope??'master')==='master').sort((a,b)=>a.priority-b.priority);
+        const partnerRules = rules.filter(r=>r.scope==='partner'&&r.channel===partnerCh).sort((a,b)=>a.priority-b.priority);
+
+        const describeAction = (r:Rule) => {
+          const a = r.actions??{};
+          const at = a.action_type;
+          if (r.type==='filter') return <span className="text-amber-500">→ Uitsluit van feed</span>;
+          if (at==='find_replace') return <span className="text-indigo-400">→ Vervang <span className="font-mono text-xs">"{a.find}"</span> door <span className="font-mono text-xs">"{a.replace}"</span>{a.use_regex?' (regex)':''} in {FIELD_NL[a.field]??a.field}</span>;
+          if (at==='prepend_if_missing') return <span className="text-indigo-400">→ Prepend <span className="font-mono text-xs">"{a.value}"</span> in {FIELD_NL[a.field]??a.field}</span>;
+          if (at==='append_if_missing') return <span className="text-indigo-400">→ Append <span className="font-mono text-xs">"{a.value}"</span> in {FIELD_NL[a.field]??a.field}</span>;
+          if (at==='copy_field') return <span className="text-indigo-400">→ Kopieer {FIELD_NL[a.from_field]??a.from_field} → {FIELD_NL[a.to_field]??a.to_field}</span>;
+          const sf = a.set_field??a.field; const val = a.value;
+          if (sf) return <span className="text-indigo-400">→ Stel <span className="font-mono text-xs">{FIELD_NL[sf]??sf}</span> op <span className="font-mono text-xs">"{val}"</span></span>;
+          return <span className="text-gray-500">—</span>;
+        };
+
+        const RuleCard = ({ rule, isLast, isFirst }: { rule:Rule; isLast:boolean; isFirst:boolean }) => {
+          const aff = products.filter(p=>(rule.conditions??[]).every(c=>evalCond(p,c))).length;
+          return (
+            <div className={'border rounded-lg p-3 transition-all '+(rule.active?'bg-gray-900/60 border-gray-700/60':'bg-gray-900/20 border-gray-800/30 opacity-50')}>
+              <div className="flex items-start gap-2">
+                {/* Toggle */}
+                <button onClick={()=>toggleRule(rule.id,!rule.active)} className={'relative w-8 h-4 rounded-full shrink-0 mt-0.5 transition-colors '+(rule.active?'bg-indigo-600':'bg-gray-700')}>
+                  <span className={'absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform '+(rule.active?'translate-x-4':'translate-x-0.5')} />
+                </button>
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-sm font-medium text-gray-200 truncate">{rule.name}</span>
+                    <span className={'text-xs px-1.5 py-0.5 rounded shrink-0 '+(rule.type==='filter'?'bg-amber-950/50 text-amber-400':'bg-indigo-950/50 text-indigo-400')}>{rule.type==='filter'?'Filter':'Transform'}</span>
+                    <span className="text-xs text-gray-600 shrink-0">#{rule.priority}</span>
                   </div>
-                ))}
-                <button onClick={()=>setRuleConds(prev=>[...prev,{...BLANK_COND}])} className="text-xs text-indigo-400 hover:text-indigo-300">+ Conditie</button>
-              </div>
-              <div className="mb-4">
-                {ruleType==='filter'
-                  ? <div className="flex items-center gap-2 text-sm"><span className="text-gray-400">Dan:</span><span className="px-2 py-1 bg-red-950/40 text-red-400 border border-red-900/50 rounded text-xs">Uitsluit van alle feeds</span></div>
-                  : <div><label className="text-xs text-gray-400 mb-1 block">Dan: stel in</label><div className="flex items-center gap-2"><select value={ruleSetField} onChange={e=>setRuleSetField(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 w-32">{FIELDS.filter(f=>f!=='price').map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select><span className="text-gray-500 text-sm">op</span><input value={ruleSetValue} onChange={e=>setRuleSetValue(e.target.value)} className="flex-1 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/></div></div>}
-              </div>
-              {ruleError&&<p className="text-xs text-red-400 mb-3">{ruleError}</p>}
-              <div className="flex gap-2">
-                <button onClick={saveRule} disabled={savingRule} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{savingRule?'Opslaan...':'Opslaan'}</button>
-                <button onClick={()=>setNewRuleOpen(false)} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
+                  <div className="mt-0.5 text-xs text-gray-500 truncate">
+                    {(rule.conditions??[]).map((c,i)=><span key={i}>{i>0&&<span className="text-gray-700 mx-1">EN</span>}<span className="text-gray-400">{FIELD_NL[c.field]??c.field}</span> {OPS.find(o=>o.v===c.operator)?.l??c.operator}{c.value&&<span className="text-indigo-400"> "{c.value}"</span>}</span>)}
+                  </div>
+                  <div className="mt-0.5 text-xs">{describeAction(rule)}{aff>0&&<span className="text-gray-600 ml-1">· {aff}p</span>}</div>
+                </div>
+                {/* Actions */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button onClick={()=>moveRule(rule,'up')} disabled={isFirst} className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-300 disabled:opacity-20 text-xs">↑</button>
+                  <button onClick={()=>moveRule(rule,'down')} disabled={isLast} className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-300 disabled:opacity-20 text-xs">↓</button>
+                  <button onClick={()=>openEditRule(rule)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-indigo-400 text-xs rounded hover:bg-indigo-950/30" title="Bewerken">✎</button>
+                  <button onClick={()=>duplicateRule(rule)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-300 text-xs rounded hover:bg-gray-800" title="Dupliceer">⎘</button>
+                  {(rule.scope??'master')==='master'
+                    ? <button onClick={()=>duplicateRule(rule,'partner',partnerCh)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-amber-400 text-xs rounded hover:bg-amber-950/20" title={`Kopieer naar ${partnerCh}`}>→P</button>
+                    : <button onClick={()=>duplicateRule(rule,'master')} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-blue-400 text-xs rounded hover:bg-blue-950/20" title="Kopieer naar Master">→M</button>}
+                  <button onClick={()=>deleteRule(rule.id)} disabled={deletingRule===rule.id} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-red-400 disabled:opacity-50 text-xs rounded hover:bg-red-950/20">✕</button>
+                </div>
               </div>
             </div>
-          )}
-          <div className="space-y-2">
-            {rules.length===0&&!newRuleOpen&&<div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><div className="text-3xl mb-3">📋</div><p className="text-sm text-gray-500">Geen regels. Maak er een aan.</p></div>}
-            {rules.map(rule => {
-              const aff = products.filter(p => (rule.conditions??[]).every(c => evalCond(p,c))).length;
-              return (
-                <div key={rule.id} className={'border rounded-xl p-4 transition-opacity '+(rule.active?'bg-gray-900/50 border-gray-800/50':'bg-gray-900/20 border-gray-800/30 opacity-60')}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <button onClick={()=>toggleRule(rule.id,!rule.active)} className={'relative w-9 h-5 rounded-full shrink-0 mt-0.5 transition-colors '+(rule.active?'bg-indigo-600':'bg-gray-700')}>
-                        <span className={'absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform '+(rule.active?'translate-x-4':'translate-x-0.5')} />
-                      </button>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-200">{rule.name}</span>
-                          <span className={'text-xs px-1.5 py-0.5 rounded '+(rule.type==='filter'?'bg-amber-950/50 text-amber-400':'bg-indigo-950/50 text-indigo-400')}>{rule.type==='filter'?'Filter':'Transform'}</span>
-                          <span className="text-xs text-gray-600">p{rule.priority}</span>
-                        </div>
-                        <div className="mt-1 text-xs text-gray-500">
-                          {(rule.conditions??[]).map((c,i)=><span key={i} className="mr-3 inline-flex gap-1"><span className="text-gray-400">{FIELD_NL[c.field]??c.field}</span><span>{OPS.find(o=>o.v===c.operator)?.l??c.operator}</span>{c.value&&<span className="text-indigo-400">"{c.value}"</span>}{i<rule.conditions.length-1&&<span className="text-gray-600 ml-1">EN</span>}</span>)}
-                        </div>
-                        <div className="mt-1 text-xs">
-                          {rule.type==='filter'?<span className="text-amber-500">→ Uitsluit</span>:<span className="text-indigo-400">→ Stel <span className="font-mono">{rule.actions?.set_field}</span> op "<span className="font-mono">{rule.actions?.value}</span>"</span>}
-                          {aff>0&&<span className="text-gray-600 ml-2">({aff}p)</span>}
-                        </div>
-                      </div>
+          );
+        };
+
+        return (
+          <div>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div><h3 className="font-semibold text-gray-200">{rules.length} regels totaal</h3><p className="text-xs text-gray-500 mt-0.5">{rules.filter(r=>r.active).length} actief · {masterRules.length} master · {rules.filter(r=>r.scope==='partner').length} partner</p></div>
+              <button onClick={()=>{resetRuleForm();setNewRuleOpen(o=>!o);}} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">{newRuleOpen&&!editingRule?'✕ Annuleer':'+ Nieuwe Regel'}</button>
+            </div>
+
+            {/* Rule form */}
+            {(newRuleOpen||editingRule) && (
+              <div className="mb-5 bg-gray-900/70 border border-indigo-900/50 rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-gray-200 mb-4">{editingRule?'Regel bewerken':'Nieuwe Feed Regel'}</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div><label className="text-xs text-gray-400 mb-1 block">Naam *</label><input value={ruleName} onChange={e=>setRuleName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" /></div>
+                  <div><label className="text-xs text-gray-400 mb-1 block">Type</label><select value={ruleType} onChange={e=>setRuleType(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="filter">Filter — uitsluit</option><option value="transform">Transform</option></select></div>
+                  <div><label className="text-xs text-gray-400 mb-1 block">Scope</label><select value={ruleScope} onChange={e=>setRuleScope(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="master">Master (alle feeds)</option><option value="partner">Partner (per kanaal)</option></select></div>
+                  {ruleScope==='partner'&&<div><label className="text-xs text-gray-400 mb-1 block">Kanaal</label><select value={ruleCh} onChange={e=>setRuleCh(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="google">Google Shopping</option><option value="meta">Meta Catalog</option><option value="awin">Awin</option></select></div>}
+                </div>
+                {/* Conditions */}
+                <div className="mb-4">
+                  <label className="text-xs text-gray-400 mb-2 block">Als (alle condities gelden)</label>
+                  {ruleConds.map((c,i)=>(
+                    <div key={i} className="flex items-center gap-2 mb-2">
+                      <select value={c.field} onChange={e=>updateCond(i,'field',e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 w-28">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                      <select value={c.operator} onChange={e=>updateCond(i,'operator',e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 w-36">{OPS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select>
+                      {!NO_VAL_OPS.includes(c.operator)&&<input value={c.value??''} onChange={e=>updateCond(i,'value',e.target.value)} placeholder="waarde..." className="flex-1 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>}
+                      {ruleConds.length>1&&<button onClick={()=>setRuleConds(prev=>prev.filter((_,j)=>j!==i))} className="text-gray-600 hover:text-red-400">×</button>}
+                      <span className="text-xs text-gray-600 w-8 shrink-0">{products.filter(p=>evalCond(p,c)).length}p</span>
                     </div>
-                    <button onClick={()=>deleteRule(rule.id)} disabled={deletingRule===rule.id} className="text-xs text-gray-600 hover:text-red-400 disabled:opacity-50 px-2 py-1 rounded hover:bg-red-950/20">{deletingRule===rule.id?'...':'Verwijder'}</button>
+                  ))}
+                  <button onClick={()=>setRuleConds(prev=>[...prev,{...BLANK_COND}])} className="text-xs text-indigo-400 hover:text-indigo-300">+ EN-conditie</button>
+                </div>
+                {/* Action */}
+                <div className="mb-4">
+                  {ruleType==='filter'
+                    ? <div className="flex items-center gap-2"><span className="text-xs text-gray-400">Dan:</span><span className="px-2 py-1 bg-red-950/40 text-red-400 border border-red-900/50 rounded text-xs">Uitsluit van feed</span></div>
+                    : <div>
+                        <label className="text-xs text-gray-400 mb-2 block">Dan</label>
+                        <div className="flex flex-wrap items-start gap-2">
+                          <select value={ruleActionType} onChange={e=>setRuleActionType(e.target.value as ActionType)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">
+                            <option value="set_field">Stel veld in op waarde</option>
+                            <option value="find_replace">Find &amp; Replace in veld</option>
+                            <option value="prepend_if_missing">Prepend als niet aanwezig</option>
+                            <option value="append_if_missing">Append als niet aanwezig</option>
+                            <option value="copy_field">Kopieer veld naar veld</option>
+                          </select>
+                          {ruleActionType==='copy_field' ? <>
+                            <select value={ruleCopyFrom} onChange={e=>setRuleCopyFrom(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                            <span className="text-gray-500 text-sm py-1.5">→</span>
+                            <select value={ruleCopyTo} onChange={e=>setRuleCopyTo(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                          </> : ruleActionType==='find_replace' ? <>
+                            <span className="text-xs text-gray-400 py-1.5">in</span>
+                            <select value={ruleSetField} onChange={e=>setRuleSetField(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                            <input value={ruleFindVal} onChange={e=>setRuleFindVal(e.target.value)} placeholder="zoek..." className="w-28 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                            <span className="text-gray-500 text-sm py-1.5">→</span>
+                            <input value={ruleReplaceVal} onChange={e=>setRuleReplaceVal(e.target.value)} placeholder="vervang..." className="w-28 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                            <label className="flex items-center gap-1 text-xs text-gray-400 py-1.5 cursor-pointer"><input type="checkbox" checked={ruleUseRegex} onChange={e=>setRuleUseRegex(e.target.checked)} className="accent-indigo-500"/>regex</label>
+                          </> : <>
+                            <span className="text-xs text-gray-400 py-1.5">veld</span>
+                            <select value={ruleSetField} onChange={e=>setRuleSetField(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                            <span className="text-xs text-gray-400 py-1.5">{ruleActionType==='set_field'?'op':ruleActionType==='prepend_if_missing'?'prepend':'append'}</span>
+                            <input value={ruleSetValue} onChange={e=>setRuleSetValue(e.target.value)} placeholder="waarde..." className="flex-1 min-w-32 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                          </>}
+                        </div>
+                      </div>}
+                </div>
+                {ruleError&&<p className="text-xs text-red-400 mb-3">{ruleError}</p>}
+                <div className="flex gap-2">
+                  <button onClick={saveRule} disabled={savingRule} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{savingRule?'Opslaan...':(editingRule?'Bijwerken':'Opslaan')}</button>
+                  <button onClick={resetRuleForm} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
+                </div>
+              </div>
+            )}
+
+            {/* Two-column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* ── Master Feed ── */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-200">Master Feed</h4>
+                    <p className="text-xs text-gray-500">{masterRules.length} regels · geldt voor alle kanalen</p>
+                  </div>
+                  <button onClick={()=>{resetRuleForm();setRuleScope('master');setNewRuleOpen(true);}} className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">+ Regel</button>
+                </div>
+                <div className="space-y-2">
+                  {masterRules.length===0&&<div className="bg-gray-900/30 border border-gray-800/30 rounded-lg p-6 text-center text-xs text-gray-600">Geen master regels</div>}
+                  {masterRules.map((r,i)=><RuleCard key={r.id} rule={r} isFirst={i===0} isLast={i===masterRules.length-1}/>)}
+                </div>
+              </div>
+
+              {/* ── Partner Feed ── */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-200">Partner Feed</h4>
+                    <p className="text-xs text-gray-500">{partnerRules.length} regels · kanaal-specifiek</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select value={partnerCh} onChange={e=>setPartnerCh(e.target.value)} className="text-xs px-2 py-1 bg-gray-800 border border-gray-700 rounded-lg text-gray-300">
+                      <option value="google">Google Shopping</option>
+                      <option value="meta">Meta Catalog</option>
+                      <option value="awin">Awin</option>
+                    </select>
+                    <button onClick={()=>{resetRuleForm();setRuleScope('partner');setRuleCh(partnerCh);setNewRuleOpen(true);}} className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">+ Regel</button>
                   </div>
                 </div>
-              );
-            })}
+                <div className="space-y-2">
+                  {partnerRules.length===0&&(
+                    <div className="bg-gray-900/30 border border-gray-800/30 border-dashed rounded-lg p-6 text-center">
+                      <p className="text-xs text-gray-600 mb-3">Geen {partnerCh} partner regels</p>
+                      <button onClick={copyAllToPartner} disabled={copyingAll||masterRules.length===0} className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 rounded-lg">
+                        {copyingAll?'Kopiëren...`':'⎘ Kopieer alle Master regels'}
+                      </button>
+                    </div>
+                  )}
+                  {partnerRules.length>0&&<>
+                    <div className="flex justify-end mb-1">
+                      <button onClick={copyAllToPartner} disabled={copyingAll||masterRules.length===0} className="text-xs text-gray-600 hover:text-gray-300 disabled:opacity-50">
+                        {copyingAll?'..':'⎘ Kopieer alle Master'}
+                      </button>
+                    </div>
+                    {partnerRules.map((r,i)=><RuleCard key={r.id} rule={r} isFirst={i===0} isLast={i===partnerRules.length-1}/>)}
+                  </>}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {/* AI Enrichments                                                        */}
