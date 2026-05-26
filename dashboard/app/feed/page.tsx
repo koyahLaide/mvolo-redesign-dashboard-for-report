@@ -27,7 +27,8 @@ type Batch      = { id: string; language: string; field: string; channel: string
 type Version    = { id: string; channel: string; version_number: number; product_count: number; note: string|null; created_at: string; markets: { code: string; name: string } | null };
 type ChangelogEntry = { id: string; field: string; old_value: string|null; new_value: string|null; source: string; language: string|null; created_at: string; product_id: string|null; product_name: string|null };
 type TabKey     = 'overview'|'products'|'feeds'|'rules'|'ai'|'ab_testing'|'versions'|'alerts'|'labels';
-type ABTest     = { id:string; name:string; field:'title'|'description'|'image'; status:'draft'|'active'|'completed'|'paused'; product_count:number; variant_a_label:string; variant_b_label:string; created_at:string; started_at:string|null; ended_at:string|null; winner:string|null; metrics:{ A:{impressions:number;clicks:number;conversions:number;revenue:number}; B:{impressions:number;clicks:number;conversions:number;revenue:number} }; significance:{ significant:boolean; p_value:number; ctrA:number; ctrB:number; needs_more_data:boolean } };
+type ABTest     = { id:string; name:string; field:'title'|'description'|'image'; status:'draft'|'active'|'completed'|'paused'; product_count:number; variant_a_label:string; variant_b_label:string; created_at:string; started_at:string|null; ended_at:string|null; winner:string|null; hypothesis:string|null; hypothesis_category:string|null; hypothesis_tags:string[]|null; conclusion:string|null; confidence_level:string|null; learning:string|null; metrics:{ A:{impressions:number;clicks:number;conversions:number;revenue:number}; B:{impressions:number;clicks:number;conversions:number;revenue:number} }; significance:{ significant:boolean; p_value:number; ctrA:number; ctrB:number; needs_more_data:boolean } };
+type Learning   = { id:string; test_id:string|null; category:string; learning:string; impact_pct:number|null; confidence:string; applies_to_channels:string[]; applies_to_markets:string[]; applies_to_categories:string[]; is_active:boolean; created_at:string };
 type CustomLabel= { product_id:string; custom_label_0:string|null; custom_label_1:string|null; custom_label_2:string|null; custom_label_3:string|null; custom_label_4:string|null; label_0_override:boolean; label_1_override:boolean; label_2_override:boolean; label_3_override:boolean; label_4_override:boolean };
 type PanelTab   = 'status'|'content'|'rules'|'images'|'changelog';
 type PanelData  = { content:Record<string,any>; images:any[]; changelog:any[]; feed_status:any[]; ab_assignments:any[] };
@@ -177,6 +178,15 @@ export default function FeedSuitePage() {
   const [creatingTest,  setCreatingTest]   = useState(false);
   const [testError,     setTestError]      = useState<string|null>(null);
   const [applyingWinner,setApplyingWinner] = useState<string|null>(null);
+  const [abSubTab,      setAbSubTab]       = useState<'tests'|'learnings'>('tests');
+  const [learnings,     setLearnings]      = useState<Learning[]>([]);
+  const [learningsLoad, setLearningsLoad]  = useState(false);
+  const [lcFilter,      setLcFilter]       = useState('all');
+  // Hypothesis form (per test, keyed by test id)
+  const [hypothesisEdit,setHypothesisEdit] = useState<{id:string;hypothesis:string;category:string;tags:string}|null>(null);
+  // Close-with-learning form
+  const [closingTest,   setClosingTest]    = useState<{id:string;conclusion:string;learning:string;impact:string;confidence:string}|null>(null);
+  const [closingTestId, setClosingTestId]  = useState<string|null>(null);
   // Alerts
   const [alertTypeFilter,setAlertTypeFilter]=useState('all');
   const [acknowledging, setAcknowledging]  = useState<string|null>(null);
@@ -374,7 +384,7 @@ export default function FeedSuitePage() {
   useEffect(() => {
     if (tab === 'ai') { loadReviewQueue(); loadBatches(); }
     if (tab === 'versions') { loadVersions(); }
-    if (tab === 'ab_testing') { loadABTests(); }
+    if (tab === 'ab_testing') { loadABTests(); loadLearnings(); }
     if (tab === 'labels') { loadLabels(); }
   }, [tab, aiLang]);
 
@@ -483,6 +493,30 @@ export default function FeedSuitePage() {
     setApplyingWinner(testId);
     try { await patchTest(testId,{action:'apply_winner'}); }
     finally { setApplyingWinner(null); }
+  }
+  async function saveHypothesis() {
+    if (!hypothesisEdit) return;
+    const tags = hypothesisEdit.tags.split(',').map(t=>t.trim()).filter(Boolean);
+    await patchTest(hypothesisEdit.id, { action:'update_hypothesis', hypothesis:hypothesisEdit.hypothesis, hypothesis_category:hypothesisEdit.category, hypothesis_tags:tags });
+    setHypothesisEdit(null);
+  }
+  async function closeWithLearning() {
+    if (!closingTest) return;
+    setClosingTestId(closingTest.id);
+    try {
+      await fetch('/api/feed/ab-tests', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id:closingTest.id, action:'close_with_learning', conclusion:closingTest.conclusion, learning:closingTest.learning, impact_pct:closingTest.impact?Number(closingTest.impact):null, confidence_level:closingTest.confidence }) });
+      await loadABTests(); await loadLearnings();
+      setClosingTest(null);
+    } finally { setClosingTestId(null); }
+  }
+  async function loadLearnings() {
+    setLearningsLoad(true);
+    try { const res=await fetch('/api/feed/learnings'); const d=await res.json(); setLearnings(d.learnings??[]); }
+    finally { setLearningsLoad(false); }
+  }
+  async function toggleLearning(id:string, is_active:boolean) {
+    await fetch('/api/feed/learnings', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id,is_active}) });
+    setLearnings(prev=>prev.map(l=>l.id===id?{...l,is_active}:l));
   }
 
   // ── Alerts ─────────────────────────────────────────────────────────────────────
@@ -1194,23 +1228,31 @@ export default function FeedSuitePage() {
         </div>
       )}
 
-      {/* ── Placeholder tabs ── */}
       {tab==='ab_testing' && (
         <div className="space-y-5">
+          {/* Sub-tabs */}
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-200">A/B Tests</h3>
-              <p className="text-xs text-gray-500 mt-0.5">{abTests.length} tests · {abTests.filter(t=>t.status==='active').length} actief</p>
+            <div className="flex gap-1">
+              {(['tests','learnings'] as const).map(t=>(
+                <button key={t} onClick={()=>setAbSubTab(t)} className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${abSubTab===t?'bg-gray-800 text-white':'text-gray-500 hover:text-gray-300'}`}>
+                  {t==='tests'?`🔬 Tests (${abTests.length})`:`💡 Learnings (${learnings.filter(l=>l.is_active).length})`}
+                </button>
+              ))}
             </div>
-            <button onClick={()=>setNewTestOpen(o=>!o)} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">{newTestOpen?'✕ Annuleer':'+ Nieuwe Test'}</button>
+            {abSubTab==='tests'&&<button onClick={()=>setNewTestOpen(o=>!o)} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">{newTestOpen?'✕ Annuleer':'+ Nieuwe Test'}</button>}
           </div>
 
           {newTestOpen && (
             <div className="bg-gray-900/70 border border-indigo-900/50 rounded-xl p-5">
               <h4 className="text-sm font-semibold text-gray-200 mb-4">Nieuwe A/B Test</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                 <div><label className="text-xs text-gray-400 mb-1 block">Testnaam *</label><input value={testName} onChange={e=>setTestName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="bv. Titels zomer 2025"/></div>
                 <div><label className="text-xs text-gray-400 mb-1 block">Veld</label><select value={testField} onChange={e=>setTestField(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="title">Titel</option><option value="description">Beschrijving</option><option value="image">Afbeelding</option></select></div>
+                <div><label className="text-xs text-gray-400 mb-1 block">Categorie</label><select value={typeof hypothesisEdit?.category==='string'?hypothesisEdit.category:''} onChange={e=>setHypothesisEdit(h=>h?{...h,category:e.target.value}:{id:'new',hypothesis:'',category:e.target.value,tags:''})} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="">— selecteer —</option>{['branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+              </div>
+              <div className="mb-4">
+                <label className="text-xs text-gray-400 mb-1 block">Hypothese * <span className="text-gray-600">(bv. "Merknaam vooraan verhoogt CTR met 10%")</span></label>
+                <input value={hypothesisEdit?.id==='new'?hypothesisEdit.hypothesis:''} onChange={e=>setHypothesisEdit(h=>h?{...h,hypothesis:e.target.value}:{id:'new',hypothesis:e.target.value,category:'',tags:''})} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="Wat verwacht je te meten?"/>
               </div>
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2"><label className="text-xs text-gray-400">Producten selecteren *</label><div className="flex gap-2"><button onClick={()=>setTestProductIds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-400">Alles</button><button onClick={()=>setTestProductIds(new Set())} className="text-xs text-gray-500">Geen</button></div></div>
@@ -1231,9 +1273,9 @@ export default function FeedSuitePage() {
             </div>
           )}
 
-          {abLoading ? (
+          {abSubTab==='tests' && abLoading ? (
             <div className="text-center py-8 text-gray-500">Laden...</div>
-          ) : abTests.length===0 ? (
+          ) : abSubTab==='tests' && abTests.length===0 ? (
             <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><div className="text-3xl mb-3">🔬</div><p className="text-sm text-gray-500">Nog geen A/B tests. Maak een test aan.</p></div>
           ) : (
             <div className="space-y-3">
@@ -1292,9 +1334,84 @@ export default function FeedSuitePage() {
                         )}
                       </div>
                     )}
+
+                    {/* Hypothesis display / edit */}
+                    {hypothesisEdit?.id===test.id ? (
+                      <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
+                        <input value={hypothesisEdit.hypothesis} onChange={e=>setHypothesisEdit(h=>h?{...h,hypothesis:e.target.value}:h)} placeholder="Hypothese..." className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                        <div className="flex gap-2">
+                          <select value={hypothesisEdit.category} onChange={e=>setHypothesisEdit(h=>h?{...h,category:e.target.value}:h)} className="px-2 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-200">{['','branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c||'— categorie —'}</option>)}</select>
+                          <input value={hypothesisEdit.tags} onChange={e=>setHypothesisEdit(h=>h?{...h,tags:e.target.value}:h)} placeholder="tags (komma-gescheiden)" className="flex-1 px-2 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                          <button onClick={saveHypothesis} className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg">Opslaan</button>
+                          <button onClick={()=>setHypothesisEdit(null)} className="text-xs px-2 py-1.5 bg-gray-700 text-gray-300 rounded-lg">✕</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-3 pt-3 border-t border-gray-800 flex items-start justify-between gap-2">
+                        {test.hypothesis
+                          ? <div><div className="flex items-center gap-1.5 mb-0.5"><span className="text-xs text-gray-500">Hypothese</span>{test.hypothesis_category&&<span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{test.hypothesis_category}</span>}</div><p className="text-xs text-gray-300 italic">"{test.hypothesis}"</p>{test.learning&&<p className="text-xs text-emerald-400 mt-1">Les: {test.learning}</p>}</div>
+                          : <p className="text-xs text-gray-600">Geen hypothese geformuleerd.</p>}
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={()=>setHypothesisEdit({id:test.id,hypothesis:test.hypothesis??'',category:test.hypothesis_category??'',tags:(test.hypothesis_tags??[]).join(', ')})} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-400 rounded">✎ Hypothese</button>
+                          {['active','ended'].includes(test.status) && !test.learning && <button onClick={()=>setClosingTest({id:test.id,conclusion:'',learning:'',impact:'',confidence:'medium'})} className="text-xs px-2 py-1 bg-purple-900/40 text-purple-400 hover:bg-purple-900/60 rounded border border-purple-900/50">+ Afsluiten</button>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Close-with-learning form */}
+                    {closingTest?.id===test.id && (
+                      <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
+                        <h5 className="text-xs font-semibold text-gray-300">Test afsluiten + Learning vastleggen</h5>
+                        <textarea value={closingTest.conclusion} onChange={e=>setClosingTest(c=>c?{...c,conclusion:e.target.value}:c)} placeholder="Conclusie (wat heb je geleerd?)" rows={2} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
+                        <input value={closingTest.learning} onChange={e=>setClosingTest(c=>c?{...c,learning:e.target.value}:c)} placeholder="Kernles in één zin (bv. Merknaam +14% CTR)" className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                        <div className="flex gap-2">
+                          <input type="number" value={closingTest.impact} onChange={e=>setClosingTest(c=>c?{...c,impact:e.target.value}:c)} placeholder="Impact % (bv. 14)" className="w-24 px-2 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                          <select value={closingTest.confidence} onChange={e=>setClosingTest(c=>c?{...c,confidence:e.target.value}:c)} className="px-2 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-200"><option value="high">Hoog vertrouwen</option><option value="medium">Medium</option><option value="low">Laag</option></select>
+                          <button onClick={closeWithLearning} disabled={closingTestId===test.id} className="flex-1 text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{closingTestId===test.id?'Opslaan...':'Opslaan & Afsluiten'}</button>
+                          <button onClick={()=>setClosingTest(null)} className="text-xs px-2 py-1.5 bg-gray-700 text-gray-300 rounded-lg">✕</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* ── Learnings sub-tab ── */}
+          {abSubTab==='learnings' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{learnings.filter(l=>l.is_active).length} actieve learnings · {learnings.length} totaal</p>
+                <select value={lcFilter} onChange={e=>setLcFilter(e.target.value)} className="text-xs px-2 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-300">
+                  <option value="all">Alle categorieën</option>
+                  {['branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              {learningsLoad ? <div className="text-center py-8 text-gray-500">Laden...</div>
+              : (()=>{
+                const vis = lcFilter==='all' ? learnings : learnings.filter(l=>l.category===lcFilter);
+                if (!vis.length) return <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><p className="text-sm text-gray-500">Nog geen learnings. Sluit een A/B test af met een kernles.</p></div>;
+                return (
+                  <div className="space-y-2">
+                    {vis.map(l=>(
+                      <div key={l.id} className={`flex items-start gap-3 px-4 py-3 rounded-xl border transition-opacity ${l.is_active?'border-gray-700/60 bg-gray-900/50':'border-gray-800/30 bg-gray-900/20 opacity-40'}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{l.category}</span>
+                            {l.impact_pct!=null&&<span className={`text-xs px-1.5 py-0.5 rounded font-medium ${l.impact_pct>0?'text-emerald-400 bg-emerald-950/40':'text-red-400 bg-red-950/40'}`}>{l.impact_pct>0?'+':''}{l.impact_pct}%</span>}
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${l.confidence==='high'?'text-emerald-400 bg-emerald-950/30':l.confidence==='medium'?'text-amber-400 bg-amber-950/30':'text-gray-400 bg-gray-800'}`}>{l.confidence}</span>
+                            {l.applies_to_channels?.length>0&&l.applies_to_channels.map(c=><span key={c} className="text-xs text-gray-600">{c}</span>)}
+                          </div>
+                          <p className="text-sm text-gray-200">{l.learning}</p>
+                          <p className="text-xs text-gray-600 mt-0.5">{timeAgo(l.created_at)} geleden</p>
+                        </div>
+                        <button onClick={()=>toggleLearning(l.id,!l.is_active)} className={`shrink-0 text-xs px-2 py-1 rounded ${l.is_active?'bg-gray-800 text-gray-400 hover:text-red-400':'bg-emerald-900/30 text-emerald-400'}`}>{l.is_active?'Deactiveer':'Activeer'}</button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

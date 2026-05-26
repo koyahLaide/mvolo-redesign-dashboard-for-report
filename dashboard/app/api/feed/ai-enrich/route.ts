@@ -60,8 +60,9 @@ function buildPrompt(opts: {
   season:       string | null;
   competitors:  string[];
   ctrFeedback:  string | null;
+  learnings:    string[];
 }): string {
-  const { product, content, language, channel, season, competitors, ctrFeedback } = opts;
+  const { product, content, language, channel, season, competitors, ctrFeedback, learnings } = opts;
 
   const langNames: Record<string, string> = { nl: 'Nederlands', de: 'Deutsch', fr: 'Français', en: 'English' };
   const langRules: Record<string, string> = {
@@ -73,6 +74,10 @@ function buildPrompt(opts: {
 
   const baseTitle = content?.title ?? product.name_nl ?? '';
   const baseDesc  = (content?.description ?? product.description_nl ?? '').substring(0, 600);
+
+  const learningsSection = learnings.length
+    ? `\nINZICHTEN UIT EERDERE A/B TESTS (pas deze toe):\n${learnings.map(l => `• ${l}`).join('\n')}\n`
+    : '';
 
   const competitorSection = competitors.length
     ? `\nCONCURRENTIE-TITELS (onderscheid je hiervan — maak iets beters):\n${competitors.map(t => `• ${t}`).join('\n')}\n`
@@ -89,7 +94,7 @@ function buildPrompt(opts: {
   const channelInstr = CHANNEL_INSTRUCTIONS[channel] ?? CHANNEL_INSTRUCTIONS.all;
 
   return `Je bent een senior SEO copywriter voor Mvolo, een Nederlandse webshop voor lichttherapie en wellness producten.
-
+${learningsSection}
 PRODUCT:
 • Naam (NL):    ${product.name_nl ?? ''}
 • Merk:         ${product.brand ?? 'Mvolo'}
@@ -269,14 +274,22 @@ export async function POST(request: Request) {
         .select('id,title,description,product_url,ctr_14d,selected_variant_id,ai_variants')
         .eq('product_id', productId).eq('language', language).single();
 
-      // Competitor titles + CTR feedback (parallel)
-      const [competitors, ctrFeedback] = await Promise.all([
+      // Competitor titles + CTR feedback + learnings (parallel)
+      const [competitors, ctrFeedback, learningsRes] = await Promise.all([
         fetchCompetitorTitles(product.category),
         buildCtrFeedback(productId, language, product.category),
+        supabase.from('feed_learnings')
+          .select('learning,category,impact_pct,confidence')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(10),
       ]);
+      const learnings = (learningsRes.data ?? []).map(l =>
+        `[${l.category}${l.impact_pct ? `, impact ${l.impact_pct > 0 ? '+' : ''}${l.impact_pct}%` : ''}${l.confidence === 'high' ? ', hoog vertrouwen' : ''}] ${l.learning}`
+      );
 
       // Build prompt & call Claude
-      const prompt = buildPrompt({ product, content, language, channel, season, competitors, ctrFeedback });
+      const prompt = buildPrompt({ product, content, language, channel, season, competitors, ctrFeedback, learnings });
       const msg = await anthropic.messages.create({
         model:      MODEL,
         max_tokens: 5120,

@@ -77,7 +77,7 @@ export async function GET(request: Request) {
   // List all
   const { data: tests, error } = await supabase
     .from('feed_ab_tests')
-    .select('id,name,field,language,channel,status,started_at,ended_at,winner,confidence,variant_a_label,variant_b_label,created_at')
+    .select('id,name,field,language,channel,status,started_at,ended_at,winner,confidence,variant_a_label,variant_b_label,hypothesis,hypothesis_category,hypothesis_tags,conclusion,confidence_level,learning,created_at')
     .order('created_at', { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
 
   // Create test
   const body = await request.json().catch(() => null);
-  const { name, field, channel, language, product_ids, market_id, variant_a_label, variant_b_label } = body ?? {};
+  const { name, field, channel, language, product_ids, market_id, variant_a_label, variant_b_label, hypothesis, hypothesis_category, hypothesis_tags } = body ?? {};
   if (!name || !field || !Array.isArray(product_ids) || !product_ids.length) {
     return NextResponse.json({ error: 'name, field en product_ids zijn verplicht' }, { status: 400 });
   }
@@ -141,6 +141,9 @@ export async function POST(request: Request) {
     status: 'draft',
     variant_a_label: variant_a_label ?? 'Variant A (huidig)',
     variant_b_label: variant_b_label ?? 'Variant B (nieuw)',
+    hypothesis: hypothesis ?? null,
+    hypothesis_category: hypothesis_category ?? null,
+    hypothesis_tags: hypothesis_tags ?? null,
   }).select('id,name').single();
   if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 });
 
@@ -248,6 +251,51 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ applied, total: assignments?.length ?? 0, errors: errors.length ? errors : undefined });
+  }
+
+  if (action === 'update_hypothesis') {
+    const { hypothesis, hypothesis_category, hypothesis_tags } = body;
+    const { data, error } = await supabase.from('feed_ab_tests')
+      .update({ hypothesis: hypothesis ?? null, hypothesis_category: hypothesis_category ?? null, hypothesis_tags: hypothesis_tags ?? null })
+      .eq('id', id).select('id,hypothesis,hypothesis_category,hypothesis_tags').single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ test: data });
+  }
+
+  if (action === 'close_with_learning') {
+    const { conclusion, learning, confidence_level, impact_pct, applies_to_channels, applies_to_markets, applies_to_categories } = body;
+
+    // Derive confidence_level from significance if not provided
+    const { data: testData } = await supabase.from('feed_ab_tests')
+      .select('hypothesis_category,winner,confidence,status').eq('id', id).single();
+
+    const confLevel = confidence_level ?? (Number(testData?.confidence ?? 0) > 0.95 ? 'high' : Number(testData?.confidence ?? 0) > 0.8 ? 'medium' : 'low');
+
+    // Update the test
+    const { error: tErr } = await supabase.from('feed_ab_tests').update({
+      status: 'completed',
+      ended_at: new Date().toISOString(),
+      conclusion: conclusion ?? null,
+      learning: learning ?? null,
+      confidence_level: confLevel,
+    }).eq('id', id);
+    if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 });
+
+    // Insert into feed_learnings if a learning was provided
+    if (learning && testData?.hypothesis_category) {
+      await supabase.from('feed_learnings').insert({
+        test_id: id,
+        category: testData.hypothesis_category,
+        learning,
+        impact_pct: impact_pct ?? null,
+        confidence: confLevel,
+        applies_to_channels: applies_to_channels ?? [],
+        applies_to_markets: applies_to_markets ?? [],
+        applies_to_categories: applies_to_categories ?? [],
+        is_active: true,
+      });
+    }
+    return NextResponse.json({ ok: true });
   }
 
   return NextResponse.json({ error: `Onbekende actie: ${action}` }, { status: 400 });
