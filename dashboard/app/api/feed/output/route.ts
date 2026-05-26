@@ -65,7 +65,8 @@ function csvCell(s: unknown): string {
 function buildGoogleXml(products: Record<string, any>[], market: Record<string, any>): string {
   const items = products.map(p => {
     const title = p._title ?? p.name_nl ?? '';
-    const desc  = (p._description ?? p.description_nl ?? '').substring(0, 5000);
+    // Google Shopping: prefer short description for snippet, fall back to long
+    const desc  = ((p._description_short || p._description || p.description_nl) ?? '').substring(0, 5000);
     const price = p.price_eur != null ? `${Number(p.price_eur).toFixed(2)} EUR` : '';
     const sale  = p.sale_price_eur != null && p.sale_price_eur > 0 ? `${Number(p.sale_price_eur).toFixed(2)} EUR` : '';
     const extra = (Array.isArray(p.additional_images) ? p.additional_images : []).slice(0, 9)
@@ -176,21 +177,25 @@ export async function GET(request: Request) {
     const lang = market.language_code ?? 'nl';
     const { data: content } = await supabase
       .from('feed_product_content')
-      .select('product_id,language,title,description,product_url')
+      .select('product_id,language,title,description,description_short,description_long,product_url')
       .eq('language', lang);
-    const contentMap: Record<string, { title?: string; description?: string; product_url?: string }> = {};
+    const contentMap: Record<string, { title?: string; description?: string; description_short?: string; description_long?: string; product_url?: string }> = {};
     for (const c of content ?? []) contentMap[c.product_id] = c;
 
     // 5. Enrich with localized fields + per-market URL
     const domain = market.storefront_domain;
-    const enriched = (products ?? []).map(p => ({
-      ...p,
-      _title:       contentMap[p.id]?.title       || p.name_nl,
-      _description: contentMap[p.id]?.description || p.description_nl,
-      _url:         domain && p.shopify_handle
-        ? `https://${domain}/products/${p.shopify_handle}`
-        : (contentMap[p.id]?.product_url ?? null),
-    }));
+    const enriched = (products ?? []).map(p => {
+      const c = contentMap[p.id];
+      return {
+        ...p,
+        _title:             c?.title             || p.name_nl,
+        _description:       c?.description_long  || c?.description || p.description_nl,
+        _description_short: c?.description_short || null,
+        _url: domain && p.shopify_handle
+          ? `https://${domain}/products/${p.shopify_handle}`
+          : (c?.product_url ?? null),
+      };
+    });
 
     // 6. Rules
     const { data: rules } = await supabase
