@@ -27,6 +27,9 @@ type Batch      = { id: string; language: string; field: string; channel: string
 type Version    = { id: string; channel: string; version_number: number; product_count: number; note: string|null; created_at: string; markets: { code: string; name: string } | null };
 type ChangelogEntry = { id: string; field: string; old_value: string|null; new_value: string|null; source: string; language: string|null; created_at: string; product_id: string|null; product_name: string|null };
 type TabKey     = 'overview'|'products'|'feeds'|'rules'|'ai'|'ab_testing'|'versions'|'alerts';
+type ABTest     = { id:string; name:string; field:'title'|'description'|'image'; status:'draft'|'active'|'completed'|'paused'; product_count:number; variant_a_label:string; variant_b_label:string; created_at:string; started_at:string|null; ended_at:string|null; metrics:{group:string;impressions:number;clicks:number;ctr:number}[]; significant:boolean; winner:string|null; p_value:number|null };
+type PanelTab   = 'status'|'content'|'rules'|'images'|'changelog';
+type PanelData  = { content:Record<string,any>; images:any[]; changelog:any[]; feed_status:any[]; ab_assignments:any[] };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const FLAGS: Record<string,string> = { NL:'🇳🇱', BE:'🇧🇪', DE:'🇩🇪', FR:'🇫🇷', AT:'🇦🇹', CH:'🇨🇭' };
@@ -128,6 +131,31 @@ export default function FeedSuitePage() {
   const [snapshotting,  setSnapshotting]   = useState(false);
   const [rollingBack,   setRollingBack]    = useState<string|null>(null);
   const [rollbackResult,setRollbackResult] = useState<string|null>(null);
+  // Product panel (slide-over)
+  const [panelProductId,setPanelProductId] = useState<string|null>(null);
+  const [panelTab,      setPanelTab]       = useState<PanelTab>('status');
+  const [panelData,     setPanelData]      = useState<PanelData|null>(null);
+  const [panelLoading,  setPanelLoading]   = useState(false);
+  const [panelLang,     setPanelLang]      = useState('nl');
+  const [panelEdit,     setPanelEdit]      = useState<Record<string,{title?:string;description_short?:string;description_long?:string}>>({});
+  const [panelSaving,   setPanelSaving]    = useState(false);
+  // A/B Testing
+  const [abTests,       setAbTests]        = useState<ABTest[]>([]);
+  const [abLoading,     setAbLoading]      = useState(false);
+  const [newTestOpen,   setNewTestOpen]    = useState(false);
+  const [testName,      setTestName]       = useState('');
+  const [testField,     setTestField]      = useState<'title'|'description'|'image'>('title');
+  const [testProductIds,setTestProductIds] = useState<Set<string>>(new Set());
+  const [creatingTest,  setCreatingTest]   = useState(false);
+  const [testError,     setTestError]      = useState<string|null>(null);
+  const [applyingWinner,setApplyingWinner] = useState<string|null>(null);
+  // Alerts
+  const [alertTypeFilter,setAlertTypeFilter]=useState('all');
+  const [acknowledging, setAcknowledging]  = useState<string|null>(null);
+  // AI inline edit
+  const [editingVariant,setEditingVariant] = useState<{itemId:string;variantId:string}|null>(null);
+  const [editVariantVal,setEditVariantVal] = useState('');
+  const [savingVariant, setSavingVariant]  = useState(false);
 
   // ── Load core data ───────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -310,6 +338,7 @@ export default function FeedSuitePage() {
   useEffect(() => {
     if (tab === 'ai') { loadReviewQueue(); loadBatches(); }
     if (tab === 'versions') { loadVersions(); }
+    if (tab === 'ab_testing') { loadABTests(); }
   }, [tab, aiLang]);
 
   async function approveVariant(item:ReviewItem, variantId:string) {
@@ -368,8 +397,94 @@ export default function FeedSuitePage() {
     finally { setRollingBack(null); }
   }
 
+  // ── Product panel ─────────────────────────────────────────────────────────────
+  async function openPanel(productId:string) {
+    setPanelProductId(productId); setPanelTab('status'); setPanelData(null); setPanelEdit({});
+    setPanelLoading(true);
+    try {
+      const res = await fetch(`/api/feed/product-panel?product_id=${productId}`);
+      const d = await res.json();
+      if (res.ok) setPanelData(d);
+    } finally { setPanelLoading(false); }
+  }
+  function closePanel() { setPanelProductId(null); setPanelData(null); }
+  async function savePanelContent(lang:string) {
+    if (!panelProductId) return;
+    setPanelSaving(true);
+    const edit = panelEdit[lang] ?? {};
+    try {
+      await fetch('/api/feed/product-panel', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ product_id:panelProductId, language:lang, ...edit }) });
+      const res = await fetch(`/api/feed/product-panel?product_id=${panelProductId}`);
+      const d = await res.json();
+      if (res.ok) { setPanelData(d); setPanelEdit(prev => { const n={...prev}; delete n[lang]; return n; }); }
+    } finally { setPanelSaving(false); }
+  }
+
+  // ── A/B Tests ─────────────────────────────────────────────────────────────────
+  async function loadABTests() {
+    setAbLoading(true);
+    try { const res=await fetch('/api/feed/ab-tests'); const d=await res.json(); setAbTests(d.tests??[]); }
+    finally { setAbLoading(false); }
+  }
+  async function createTest() {
+    if (!testName.trim()||!testProductIds.size) { setTestError('Naam en minimaal 1 product zijn verplicht'); return; }
+    setCreatingTest(true); setTestError(null);
+    try {
+      const res=await fetch('/api/feed/ab-tests', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name:testName.trim(), field:testField, product_ids:[...testProductIds] }) });
+      const d=await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setAbTests(prev=>[d.test,...prev]); setNewTestOpen(false); setTestName(''); setTestProductIds(new Set());
+    } catch(e:any) { setTestError(e.message); }
+    finally { setCreatingTest(false); }
+  }
+  async function patchTest(id:string, body:Record<string,any>) {
+    const res=await fetch('/api/feed/ab-tests', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id, ...body }) });
+    const d=await res.json();
+    if (res.ok && d.test) setAbTests(prev=>prev.map(t=>t.id===id?d.test:t));
+  }
+  async function doApplyWinner(testId:string) {
+    setApplyingWinner(testId);
+    try { await patchTest(testId,{action:'apply_winner'}); }
+    finally { setApplyingWinner(null); }
+  }
+
+  // ── Alerts ─────────────────────────────────────────────────────────────────────
+  async function acknowledgeAlert(id:string) {
+    setAcknowledging(id);
+    try {
+      await fetch('/api/feed/alerts', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id }) });
+      setAlerts(prev=>prev.filter(a=>a.id!==id));
+    } finally { setAcknowledging(null); }
+  }
+  async function acknowledgeAll() {
+    setAcknowledging('all');
+    try {
+      await fetch('/api/feed/alerts', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ acknowledge_all:true }) });
+      setAlerts([]);
+    } finally { setAcknowledging(null); }
+  }
+
+  // ── AI inline variant edit ────────────────────────────────────────────────────
+  async function saveVariantEdit(item:ReviewItem) {
+    if (!editingVariant) return;
+    setSavingVariant(true);
+    try {
+      const updatedVariants=(item.ai_variants??[]).map(v=>v.id===editingVariant.variantId?{...v,title:editVariantVal}:v);
+      await fetch('/api/feed/product-panel', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ product_id:item.product_id, language:item.language, ai_variants:updatedVariants }) });
+      setReviewItems(prev=>prev.map(i=>i.product_id===item.product_id?{...i,ai_variants:updatedVariants}:i));
+      setEditingVariant(null);
+    } finally { setSavingVariant(false); }
+  }
+  function addManualVariant(item:ReviewItem) {
+    const newId=`manual_${Date.now()}`;
+    const nv:Variant={id:newId,label:'Eigen variant',compliance:'orange',title:''};
+    setReviewItems(prev=>prev.map(i=>i.product_id===item.product_id?{...i,ai_variants:[...(i.ai_variants??[]),nv]}:i));
+    setEditingVariant({itemId:item.product_id,variantId:newId}); setEditVariantVal('');
+  }
+
   // ── Derived ───────────────────────────────────────────────────────────────────
   const categories = [...new Set(products.map(p => p.category).filter(Boolean))] as string[];
+  const panelProd  = panelProductId ? (products.find(p=>p.id===panelProductId)??null) : null;
   const filtered   = products.filter(p => {
     if (search) { const q=search.toLowerCase(); if (!p.name_nl.toLowerCase().includes(q)&&!(p.ean??'').includes(q)&&!(p.sku??'').includes(q)) return false; }
     if (filterStatus==='ready'  && !p.feed_ready) return false;
@@ -490,7 +605,7 @@ export default function FeedSuitePage() {
                 <thead><tr className="border-b border-gray-800">{['Product','EAN / SKU','Prijs','Foto\'s','Talen','Status'].map(h=><th key={h} className={'px-4 py-3 text-xs font-medium text-gray-500 uppercase text-left'}>{h}</th>)}</tr></thead>
                 <tbody className="divide-y divide-gray-800/50">
                   {filtered.map(p => (
-                    <tr key={p.id} onClick={()=>setExpandedProd(expandedProd===p.id?null:p.id)} className="hover:bg-gray-800/30 cursor-pointer transition-colors">
+                    <tr key={p.id} onClick={()=>openPanel(p.id)} className="hover:bg-gray-800/30 cursor-pointer transition-colors">
                       <td className="px-4 py-3"><div className="flex items-center gap-3">
                         {p.image_url?<img src={p.image_url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-800"/>:<div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-600 text-xs">?</div>}
                         <div><div className="text-sm font-medium text-gray-200">{p.name_nl}</div><div className="text-xs text-gray-500">{p.category||'—'}</div></div>
@@ -507,18 +622,6 @@ export default function FeedSuitePage() {
               </table>
             </div>
           </div>
-          {expandedProd&&(()=>{ const p=products.find(pr=>pr.id===expandedProd); if(!p)return null; return(
-            <div className="mt-4 bg-gray-900/50 border border-gray-800/50 rounded-xl p-5"><div className="flex items-start gap-4">
-              {p.image_url&&<img src={p.image_url} alt="" className="w-24 h-24 rounded-xl object-cover"/>}
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold">{p.name_nl}</h3>
-                <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm">
-                  {[['EAN',p.ean],['SKU',p.sku],['Categorie',p.category],['ID',p.shopify_id]].map(([l,v])=><span key={l as string} className="text-gray-400">{l}: <span className="text-gray-200 font-mono">{v||'—'}</span></span>)}
-                </div>
-                {p.feed_issues.length>0&&<div className="mt-3 flex flex-wrap gap-2">{p.feed_issues.map(i=><span key={i} className="px-2 py-1 text-xs bg-amber-950/40 text-amber-400 border border-amber-900/50 rounded">⚠ {i}</span>)}</div>}
-                {p.description_nl&&<p className="mt-3 text-xs text-gray-500 line-clamp-3">{p.description_nl.substring(0,300)}...</p>}
-              </div>
-            </div></div>); })()}
         </div>
       )}
 
@@ -857,12 +960,16 @@ export default function FeedSuitePage() {
                         <div className="text-xs text-gray-500 mt-0.5">{item.product?.category||'—'} · {item.language.toUpperCase()}{item.channel_optimized_for&&item.channel_optimized_for!=='all'?` · ${item.channel_optimized_for}`:''}{item.season?` · ${item.season}`:''}</div>
                         {item.title&&<div className="text-xs text-gray-600 mt-1 truncate">Huidig: "{item.title}"</div>}
                       </div>
-                      <button onClick={()=>rejectAll(item)} className="shrink-0 text-xs text-gray-600 hover:text-red-400 px-2 py-1 rounded hover:bg-red-950/20">✕ Alles afwijzen</button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={()=>addManualVariant(item)} className="text-xs text-gray-600 hover:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-950/20">+ Variant</button>
+                        <button onClick={()=>rejectAll(item)} className="text-xs text-gray-600 hover:text-red-400 px-2 py-1 rounded hover:bg-red-950/20">✕ Afwijzen</button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {variants.map(v => {
                         const key = `${item.product_id}_${v.id}`;
                         const isApp = approving===key;
+                        const isEditing = editingVariant?.itemId===item.product_id && editingVariant?.variantId===v.id;
                         return (
                           <div key={v.id} className={'border rounded-lg p-3 '+(v.compliance==='green'?'border-emerald-900/40 bg-emerald-950/10':'border-amber-900/40 bg-amber-950/10')}>
                             <div className="flex items-center justify-between mb-2">
@@ -871,12 +978,27 @@ export default function FeedSuitePage() {
                                 <span className={'text-xs px-1.5 py-0.5 rounded border '+COMPLIANCE_STYLE[v.compliance]}>{v.compliance==='green'?'✓ Veilig':'⚠ Grens'}</span>
                                 {v.season&&<span className="text-xs px-1.5 py-0.5 rounded bg-blue-950/40 text-blue-400 border border-blue-900/50">🍂 {v.season}</span>}
                               </div>
-                              <button onClick={()=>approveVariant(item, v.id)} disabled={isApp} className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium">{isApp?'...':'✓ Goedkeuren'}</button>
+                              <div className="flex items-center gap-1">
+                                <button onClick={()=>{if(isEditing){setEditingVariant(null);}else{setEditingVariant({itemId:item.product_id,variantId:v.id});setEditVariantVal(v.title);}}} className="text-xs w-6 h-6 flex items-center justify-center text-gray-600 hover:text-indigo-400 rounded hover:bg-indigo-950/20">✎</button>
+                                <button onClick={()=>approveVariant(item, v.id)} disabled={isApp} className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium">{isApp?'...':'✓'}</button>
+                              </div>
                             </div>
                             <div className="text-xs text-gray-400 mb-1 font-medium">{v.label}</div>
-                            <div className="text-sm text-gray-200 font-medium leading-snug mb-2">"{v.title}"</div>
-                            {v.description_short&&<div className="text-xs text-gray-500 mb-1.5 italic">Short: {v.description_short}</div>}
-                            {v.description_long&&<div className="text-xs text-gray-600 line-clamp-3">{v.description_long.substring(0,200)}...</div>}
+                            {isEditing ? (
+                              <div>
+                                <input value={editVariantVal} onChange={e=>setEditVariantVal(e.target.value)} className="w-full px-2 py-1.5 bg-gray-800 border border-indigo-600 rounded text-sm text-gray-200 focus:outline-none mb-2" autoFocus />
+                                <div className="flex gap-2">
+                                  <button onClick={()=>saveVariantEdit(item)} disabled={savingVariant} className="text-xs px-2 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded">{savingVariant?'...':'Opslaan'}</button>
+                                  <button onClick={()=>setEditingVariant(null)} className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded">Annuleer</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="text-sm text-gray-200 font-medium leading-snug mb-2">"{v.title}"</div>
+                                {v.description_short&&<div className="text-xs text-gray-500 mb-1.5 italic">Short: {v.description_short}</div>}
+                                {v.description_long&&<div className="text-xs text-gray-600 line-clamp-3">{v.description_long.substring(0,200)}...</div>}
+                              </>
+                            )}
                           </div>
                         );
                       })}
@@ -1005,11 +1127,323 @@ export default function FeedSuitePage() {
       )}
 
       {/* ── Placeholder tabs ── */}
-      {tab==='ab_testing' && <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><div className="text-3xl mb-3">🔬</div><h3 className="text-lg font-semibold text-gray-300 mb-2">A/B Testing</h3><p className="text-sm text-gray-500">Deel 4 — Koppel AI-varianten aan feed_ab_tests voor live A/B tests.</p></div>}
+      {tab==='ab_testing' && (
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-200">A/B Tests</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{abTests.length} tests · {abTests.filter(t=>t.status==='active').length} actief</p>
+            </div>
+            <button onClick={()=>setNewTestOpen(o=>!o)} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">{newTestOpen?'✕ Annuleer':'+ Nieuwe Test'}</button>
+          </div>
+
+          {newTestOpen && (
+            <div className="bg-gray-900/70 border border-indigo-900/50 rounded-xl p-5">
+              <h4 className="text-sm font-semibold text-gray-200 mb-4">Nieuwe A/B Test</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <div><label className="text-xs text-gray-400 mb-1 block">Testnaam *</label><input value={testName} onChange={e=>setTestName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="bv. Titels zomer 2025"/></div>
+                <div><label className="text-xs text-gray-400 mb-1 block">Veld</label><select value={testField} onChange={e=>setTestField(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="title">Titel</option><option value="description">Beschrijving</option><option value="image">Afbeelding</option></select></div>
+              </div>
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2"><label className="text-xs text-gray-400">Producten selecteren *</label><div className="flex gap-2"><button onClick={()=>setTestProductIds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-400">Alles</button><button onClick={()=>setTestProductIds(new Set())} className="text-xs text-gray-500">Geen</button></div></div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1">
+                  {products.map(p=>(
+                    <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer '+(testProductIds.has(p.id)?'bg-indigo-950/40 border border-indigo-900/50':'bg-gray-800/50 border border-transparent hover:bg-gray-800')}>
+                      <input type="checkbox" checked={testProductIds.has(p.id)} onChange={e=>{const s=new Set(testProductIds);e.target.checked?s.add(p.id):s.delete(p.id);setTestProductIds(s);}} className="accent-indigo-500"/>
+                      <span className="text-xs text-gray-300 truncate">{p.name_nl}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {testError&&<p className="text-xs text-red-400 mb-3">{testError}</p>}
+              <div className="flex gap-2">
+                <button onClick={createTest} disabled={creatingTest} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{creatingTest?'Aanmaken...':'Test aanmaken'}</button>
+                <button onClick={()=>setNewTestOpen(false)} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
+              </div>
+            </div>
+          )}
+
+          {abLoading ? (
+            <div className="text-center py-8 text-gray-500">Laden...</div>
+          ) : abTests.length===0 ? (
+            <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><div className="text-3xl mb-3">🔬</div><p className="text-sm text-gray-500">Nog geen A/B tests. Maak een test aan.</p></div>
+          ) : (
+            <div className="space-y-3">
+              {abTests.map(test => {
+                const grpA = test.metrics.find(m=>m.group==='A');
+                const grpB = test.metrics.find(m=>m.group==='B');
+                const statusColor: Record<string,string> = { draft:'text-gray-400 bg-gray-800', active:'text-emerald-400 bg-emerald-950/50 border border-emerald-900/50', completed:'text-blue-400 bg-blue-950/50 border border-blue-900/50', paused:'text-amber-400 bg-amber-950/50 border border-amber-900/50' };
+                return (
+                  <div key={test.id} className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-gray-200">{test.name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${statusColor[test.status]??statusColor.draft}`}>{test.status}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{test.field}</span>
+                          <span className="text-xs text-gray-600">{test.product_count}p</span>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-0.5">{timeAgo(test.created_at)} geleden aangemaakt{test.started_at&&` · gestart ${timeAgo(test.started_at)} geleden`}</div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {test.status==='draft' && <button onClick={()=>patchTest(test.id,{action:'start'})} className="text-xs px-3 py-1.5 bg-emerald-900/40 text-emerald-400 hover:bg-emerald-900/60 rounded-lg border border-emerald-900/50">▶ Start</button>}
+                        {test.status==='active' && <button onClick={()=>patchTest(test.id,{action:'stop'})} className="text-xs px-3 py-1.5 bg-amber-900/40 text-amber-400 hover:bg-amber-900/60 rounded-lg border border-amber-900/50">⏹ Stop</button>}
+                      </div>
+                    </div>
+
+                    {(grpA||grpB) && (
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        {[{grp:grpA,label:test.variant_a_label||'Variant A',col:'text-blue-400'},{grp:grpB,label:test.variant_b_label||'Variant B',col:'text-purple-400'}].map(({grp,label,col})=>(
+                          <div key={label} className="bg-gray-800/50 rounded-lg p-3">
+                            <div className={`text-xs font-semibold mb-2 ${col}`}>{label}</div>
+                            {grp ? (
+                              <div className="space-y-1 text-xs">
+                                <div className="flex justify-between"><span className="text-gray-500">Impressies</span><span className="text-gray-300 tabular-nums">{grp.impressions.toLocaleString()}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500">Kliks</span><span className="text-gray-300 tabular-nums">{grp.clicks.toLocaleString()}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500">CTR</span><span className="font-bold text-gray-200 tabular-nums">{(grp.ctr*100).toFixed(2)}%</span></div>
+                              </div>
+                            ) : <div className="text-xs text-gray-600">Geen data</div>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {test.significant && (
+                      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-950/30 border border-emerald-900/50 mb-3">
+                        <div><span className="text-xs font-semibold text-emerald-400">✓ Statistisch significant</span>{test.p_value!=null&&<span className="text-xs text-gray-500 ml-2">p={test.p_value.toFixed(3)}</span>}</div>
+                        {test.winner ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400">Winnaar: <span className="text-emerald-400 font-bold">{test.winner==='A'?(test.variant_a_label||'Variant A'):(test.variant_b_label||'Variant B')}</span></span>
+                            {test.status!=='completed' && <button onClick={()=>doApplyWinner(test.id)} disabled={applyingWinner===test.id} className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{applyingWinner===test.id?'...':'Toepassen'}</button>}
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button onClick={()=>patchTest(test.id,{action:'declare_winner',winner:'A'})} className="text-xs px-2 py-1 bg-blue-900/40 text-blue-400 hover:bg-blue-900/60 rounded border border-blue-900/50">A</button>
+                            <button onClick={()=>patchTest(test.id,{action:'declare_winner',winner:'B'})} className="text-xs px-2 py-1 bg-purple-900/40 text-purple-400 hover:bg-purple-900/60 rounded border border-purple-900/50">B</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
       {tab==='alerts' && (
-        alerts.length===0
-          ? <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><div className="text-3xl mb-3">✓</div><h3 className="text-lg font-semibold text-gray-300 mb-2">Geen openstaande alerts</h3></div>
-          : <div className="space-y-2">{alerts.map(a=><div key={a.id} className={'px-4 py-3 rounded-xl border '+(sevColor[a.severity]||sevColor.info)}><div className="flex items-center justify-between"><div><span className="text-sm font-medium">{a.message}</span><div className="text-xs opacity-60 mt-0.5">{a.channel&&a.channel+' · '}{timeAgo(a.created_at)}</div></div><span className="text-xs px-2 py-0.5 rounded bg-black/20">{a.severity}</span></div></div>)}</div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-200">Alerts</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{alerts.length} openstaand</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <select value={alertTypeFilter} onChange={e=>setAlertTypeFilter(e.target.value)} className="text-xs px-2 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-300">
+                <option value="all">Alle types</option>
+                <option value="missing_ean">Geen EAN</option>
+                <option value="missing_image">Geen afbeelding</option>
+                <option value="low_ctr">Lage CTR</option>
+                <option value="feed_error">Feed fout</option>
+              </select>
+              {alerts.length>0&&<button onClick={acknowledgeAll} disabled={acknowledging==='all'} className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 rounded-lg">{acknowledging==='all'?'...':'✓ Alles bevestigen'}</button>}
+            </div>
+          </div>
+          {(()=>{
+            const filtered=alertTypeFilter==='all'?alerts:alerts.filter(a=>a.type===alertTypeFilter);
+            if (filtered.length===0) return (
+              <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center">
+                <div className="text-3xl mb-3">✓</div>
+                <h3 className="text-lg font-semibold text-gray-300 mb-1">{alerts.length===0?'Geen openstaande alerts':'Geen alerts voor dit filter'}</h3>
+                <p className="text-sm text-gray-600">{alerts.length===0?'Feed Suite loopt zonder problemen.':'Wijzig het filter om andere alerts te zien.'}</p>
+              </div>
+            );
+            return (
+              <div className="space-y-2">
+                {filtered.map(a=>(
+                  <div key={a.id} className={'flex items-start justify-between gap-3 px-4 py-3 rounded-xl border '+(sevColor[a.severity]||sevColor.info)}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-black/20 font-medium uppercase">{a.severity}</span>
+                        {a.type&&<span className="text-xs text-current opacity-60">{a.type.replace(/_/g,' ')}</span>}
+                      </div>
+                      <div className="text-sm font-medium mt-1">{a.message}</div>
+                      <div className="text-xs opacity-50 mt-0.5">{a.channel&&a.channel+' · '}{timeAgo(a.created_at)} geleden</div>
+                    </div>
+                    <button onClick={()=>acknowledgeAlert(a.id)} disabled={acknowledging===a.id} className="shrink-0 text-xs px-3 py-1.5 bg-black/20 hover:bg-black/40 disabled:opacity-50 rounded-lg">
+                      {acknowledging===a.id?'...':'✓ OK'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* Slide-over product panel                                              */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {panelProductId && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={closePanel} />
+          <div className="fixed right-0 top-0 h-full w-[520px] bg-[#0f0f17] border-l border-gray-800 z-50 flex flex-col shadow-2xl">
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
+              {panelProd ? (
+                <div className="flex items-center gap-3 min-w-0">
+                  {panelProd.image_url&&<img src={panelProd.image_url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-800 shrink-0"/>}
+                  <div className="min-w-0">
+                    <div className="font-semibold text-gray-200 truncate">{panelProd.name_nl}</div>
+                    <div className="text-xs text-gray-500">{panelProd.category||'—'} · {fmtPrice(panelProd.price_eur)}</div>
+                  </div>
+                </div>
+              ) : <div className="text-sm text-gray-400">Laden...</div>}
+              <button onClick={closePanel} className="text-gray-500 hover:text-gray-300 ml-3 shrink-0 text-lg leading-none">✕</button>
+            </div>
+
+            {/* Panel sub-tabs */}
+            <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-800 overflow-x-auto shrink-0">
+              {(['status','content','rules','images','changelog'] as PanelTab[]).map(t=>(
+                <button key={t} onClick={()=>setPanelTab(t)} className={`px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-colors ${panelTab===t?'bg-gray-800 text-white':'text-gray-500 hover:text-gray-300'}`}>
+                  {t==='status'?'📊 Status':t==='content'?'✏️ Content':t==='rules'?'📋 Regels':t==='images'?'🖼 Foto\'s':'📝 Log'}
+                </button>
+              ))}
+            </div>
+
+            {/* Panel body */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {panelLoading ? (
+                <div className="text-center py-8 text-gray-500">Laden...</div>
+              ) : panelData ? (
+                <>
+                  {panelTab==='status' && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Feed Status per kanaal</h4>
+                      {panelData.feed_status.length===0 ? <p className="text-sm text-gray-600">Geen actieve feeds.</p>
+                      : panelData.feed_status.map((s:any)=>(
+                        <div key={s.config_id} className={`flex items-center justify-between px-3 py-2.5 rounded-lg border ${s.included?'border-emerald-900/50 bg-emerald-950/20':'border-red-900/50 bg-red-950/20'}`}>
+                          <div>
+                            <div className="text-sm text-gray-200">{s.feed_name}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{s.market_code} · {s.channel}</div>
+                            {!s.included&&<div className="text-xs text-red-400 mt-0.5">Uitgesloten door: {s.excluded_by}</div>}
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded font-medium shrink-0 ${s.included?'text-emerald-400':'text-red-400'}`}>{s.included?'✓ Opgenomen':'✕ Uitgesloten'}</span>
+                        </div>
+                      ))}
+                      {panelProd&&panelProd.feed_issues.length>0&&(
+                        <div className="mt-4">
+                          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Issues</h4>
+                          {panelProd.feed_issues.map(issue=><div key={issue} className="px-3 py-2 rounded-lg border border-amber-900/50 bg-amber-950/20 text-xs text-amber-400 mb-1">⚠ {issue}</div>)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {panelTab==='content' && (
+                    <div>
+                      <div className="flex gap-1 mb-4">
+                        {['nl','en','de','fr'].map(lang=>(
+                          <button key={lang} onClick={()=>setPanelLang(lang)} className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${panelLang===lang?'bg-gray-800 text-white':'text-gray-500 hover:text-gray-300'}`}>{lang.toUpperCase()}</button>
+                        ))}
+                      </div>
+                      {(()=>{
+                        const curr=panelData.content[panelLang]??{};
+                        const edit=panelEdit[panelLang]??{};
+                        return (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Titel</label>
+                              <input value={edit.title??curr.title??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],title:e.target.value}}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Korte beschrijving</label>
+                              <textarea value={edit.description_short??curr.description_short??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],description_short:e.target.value}}))} rows={2} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Lange beschrijving</label>
+                              <textarea value={edit.description_long??curr.description_long??curr.description??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],description_long:e.target.value}}))} rows={6} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
+                            </div>
+                            <button onClick={()=>savePanelContent(panelLang)} disabled={panelSaving} className="w-full px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium">{panelSaving?'Opslaan...':'💾 Opslaan'}</button>
+                            {curr.ai_variants&&curr.ai_variants.length>0&&(
+                              <div className="mt-4 pt-4 border-t border-gray-800">
+                                <h5 className="text-xs font-semibold text-gray-400 mb-2">AI Varianten</h5>
+                                {curr.ai_variants.map((v:any)=>(
+                                  <div key={v.id} className="px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700/50 mb-2">
+                                    <div className="text-xs text-gray-400 font-medium mb-0.5">{v.label} ({v.id})</div>
+                                    <div className="text-xs text-gray-200">"{v.title}"</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {panelTab==='rules' && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Toepasselijke Regels</h4>
+                      {(()=>{
+                        const matching=rules.filter(r=>r.active&&panelProd&&(r.conditions??[]).every(c=>evalCond(panelProd,c)));
+                        if (!matching.length) return <p className="text-sm text-gray-600">Geen actieve regels van toepassing op dit product.</p>;
+                        return matching.map(r=>(
+                          <div key={r.id} className={`px-3 py-2 rounded-lg border ${r.type==='filter'?'border-red-900/50 bg-red-950/10':'border-indigo-900/50 bg-indigo-950/10'}`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${r.type==='filter'?'bg-amber-950/50 text-amber-400':'bg-indigo-950/50 text-indigo-400'}`}>{r.type}</span>
+                              <span className="text-sm text-gray-200">{r.name}</span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">{(r.scope??'master')==='master'?'Master':'Partner '+r.channel}</div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  )}
+
+                  {panelTab==='images' && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Image Bank</h4>
+                      {panelData.images.length===0 ? <p className="text-sm text-gray-600">Geen afbeeldingen in image bank.</p>
+                      : <div className="grid grid-cols-3 gap-2">{panelData.images.map((img:any)=>(
+                        <div key={img.id} className="relative">
+                          <img src={img.storage_url} alt={img.filename} className="w-full aspect-square object-cover rounded-lg bg-gray-800"/>
+                          <div className="absolute bottom-1 left-1"><span className={`text-xs px-1.5 py-0.5 rounded ${img.is_active?'bg-emerald-900/80 text-emerald-300':'bg-gray-900/80 text-gray-400'}`}>{img.image_type||'main'}</span></div>
+                        </div>
+                      ))}</div>}
+                      {panelProd?.image_url&&(
+                        <div className="mt-4 pt-4 border-t border-gray-800">
+                          <div className="text-xs text-gray-500 mb-2">Shopify hoofdafbeelding</div>
+                          <img src={panelProd.image_url} alt="" className="w-24 h-24 rounded-lg object-cover"/>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {panelTab==='changelog' && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Recente Wijzigingen</h4>
+                      {panelData.changelog.length===0 ? <p className="text-sm text-gray-600">Geen wijzigingen.</p>
+                      : <div className="space-y-2">{panelData.changelog.map((e:any)=>(
+                        <div key={e.id} className="flex items-start gap-2 text-xs">
+                          <div className="shrink-0 text-gray-600 w-14">{timeAgo(e.created_at)}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{e.field}</span>
+                              {e.language&&<span className="text-gray-600">{e.language.toUpperCase()}</span>}
+                              <span className="px-1.5 py-0.5 rounded bg-gray-800/50 text-gray-500">{e.source}</span>
+                            </div>
+                            {e.new_value&&<div className="text-gray-300 mt-0.5 truncate">"{e.new_value.substring(0,80)}"</div>}
+                          </div>
+                        </div>
+                      ))}</div>}
+                    </div>
+                  )}
+                </>
+              ) : null}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
