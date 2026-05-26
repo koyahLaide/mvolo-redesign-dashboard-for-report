@@ -26,8 +26,9 @@ type ReviewItem = { id: string; product_id: string; language: string; title: str
 type Batch      = { id: string; language: string; field: string; channel: string; season: string|null; status: string; product_count: number; tokens_input: number; tokens_output: number; cost_usd: number; created_at: string; completed_at: string|null };
 type Version    = { id: string; channel: string; version_number: number; product_count: number; note: string|null; created_at: string; markets: { code: string; name: string } | null };
 type ChangelogEntry = { id: string; field: string; old_value: string|null; new_value: string|null; source: string; language: string|null; created_at: string; product_id: string|null; product_name: string|null };
-type TabKey     = 'overview'|'products'|'feeds'|'rules'|'ai'|'ab_testing'|'versions'|'alerts';
-type ABTest     = { id:string; name:string; field:'title'|'description'|'image'; status:'draft'|'active'|'completed'|'paused'; product_count:number; variant_a_label:string; variant_b_label:string; created_at:string; started_at:string|null; ended_at:string|null; metrics:{group:string;impressions:number;clicks:number;ctr:number}[]; significant:boolean; winner:string|null; p_value:number|null };
+type TabKey     = 'overview'|'products'|'feeds'|'rules'|'ai'|'ab_testing'|'versions'|'alerts'|'labels';
+type ABTest     = { id:string; name:string; field:'title'|'description'|'image'; status:'draft'|'active'|'completed'|'paused'; product_count:number; variant_a_label:string; variant_b_label:string; created_at:string; started_at:string|null; ended_at:string|null; winner:string|null; metrics:{ A:{impressions:number;clicks:number;conversions:number;revenue:number}; B:{impressions:number;clicks:number;conversions:number;revenue:number} }; significance:{ significant:boolean; p_value:number; ctrA:number; ctrB:number; needs_more_data:boolean } };
+type CustomLabel= { product_id:string; custom_label_0:string|null; custom_label_1:string|null; custom_label_2:string|null; custom_label_3:string|null; custom_label_4:string|null; label_0_override:boolean; label_1_override:boolean; label_2_override:boolean; label_3_override:boolean; label_4_override:boolean };
 type PanelTab   = 'status'|'content'|'rules'|'images'|'changelog';
 type PanelData  = { content:Record<string,any>; images:any[]; changelog:any[]; feed_status:any[]; ab_assignments:any[] };
 
@@ -51,6 +52,33 @@ const COMPLIANCE_STYLE: Record<string,string> = {
   orange: 'bg-amber-950/40 border-amber-900/50 text-amber-400',
 };
 const BLANK_COND: Condition = { field:'title', operator:'contains', value:'' };
+const LABEL_OPTIONS = [
+  ['Hero','Sidekick','Villain','Zombie'],
+  ['Budget','Mid','Premium','Ultra'],
+  ['Winterfavoriet','Zomerhit','Altijd groen'],
+  ['Hoge marge >60%','Normale marge','Lage marge <30%'],
+  ['Push','Maintain','Phase out'],
+];
+const LABEL_HEADS = ['Tier','Prijs','Seizoen','Marge','Strategie'];
+const LABEL_STYLES: Record<string,string> = {
+  Hero:'border-yellow-700/60 bg-yellow-950/30 text-yellow-400',
+  Sidekick:'border-blue-700/60 bg-blue-950/20 text-blue-400',
+  Villain:'border-red-700/60 bg-red-950/20 text-red-400',
+  Zombie:'border-gray-700/60 bg-gray-800/30 text-gray-500',
+  Budget:'border-gray-700/60 text-gray-400',
+  Mid:'border-indigo-700/60 text-indigo-400',
+  Premium:'border-purple-700/60 text-purple-400',
+  Ultra:'border-amber-700/60 text-amber-400',
+  Winterfavoriet:'border-blue-700/60 text-blue-400',
+  Zomerhit:'border-yellow-700/60 text-yellow-400',
+  'Altijd groen':'border-emerald-700/60 text-emerald-400',
+  'Hoge marge >60%':'border-emerald-700/60 text-emerald-400',
+  'Normale marge':'border-gray-700/60 text-gray-400',
+  'Lage marge <30%':'border-red-700/60 text-red-400',
+  Push:'border-emerald-700/60 text-emerald-400',
+  Maintain:'border-gray-700/60 text-gray-400',
+  'Phase out':'border-red-700/60 text-red-400',
+};
 
 function evalCond(p: Product, c: Condition): boolean {
   const val = p[FIELD_MAP[c.field] ?? c.field as keyof Product] as unknown;
@@ -156,6 +184,14 @@ export default function FeedSuitePage() {
   const [editingVariant,setEditingVariant] = useState<{itemId:string;variantId:string}|null>(null);
   const [editVariantVal,setEditVariantVal] = useState('');
   const [savingVariant, setSavingVariant]  = useState(false);
+  // Custom labels
+  const [customLabels,    setCustomLabels]    = useState<CustomLabel[]>([]);
+  const [labelsLoading,   setLabelsLoading]   = useState(false);
+  const [calculatingLbls, setCalculatingLbls] = useState(false);
+  const [calcResult,      setCalcResult]      = useState<string|null>(null);
+  const [editingLbl,      setEditingLbl]      = useState<{productId:string;key:string;idx:number}|null>(null);
+  const [editLblValue,    setEditLblValue]     = useState('');
+  const [savingLbl,       setSavingLbl]        = useState(false);
 
   // ── Load core data ───────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -339,6 +375,7 @@ export default function FeedSuitePage() {
     if (tab === 'ai') { loadReviewQueue(); loadBatches(); }
     if (tab === 'versions') { loadVersions(); }
     if (tab === 'ab_testing') { loadABTests(); }
+    if (tab === 'labels') { loadLabels(); }
   }, [tab, aiLang]);
 
   async function approveVariant(item:ReviewItem, variantId:string) {
@@ -464,6 +501,37 @@ export default function FeedSuitePage() {
     } finally { setAcknowledging(null); }
   }
 
+  // ── Custom labels ─────────────────────────────────────────────────────────────
+  async function loadLabels() {
+    setLabelsLoading(true);
+    try { const res=await fetch('/api/feed/labels'); const d=await res.json(); setCustomLabels(d.labels??[]); }
+    finally { setLabelsLoading(false); }
+  }
+  async function calculateLabels() {
+    setCalculatingLbls(true); setCalcResult(null);
+    try {
+      const res=await fetch('/api/feed/labels', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'calculate'}) });
+      const d=await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setCalcResult(`${d.calculated} labels berekend (Hero threshold: €${Number(d.hero_threshold).toFixed(0)})`);
+      await loadLabels();
+    } catch(e:any) { setCalcResult('Fout: '+e.message); }
+    finally { setCalculatingLbls(false); }
+  }
+  async function saveLabelEdit(productId:string, labelKey:string) {
+    setSavingLbl(true);
+    try {
+      await fetch('/api/feed/labels', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ product_id:productId, label_key:labelKey, value:editLblValue||null }) });
+      setCustomLabels(prev => {
+        const idx = prev.findIndex(l => l.product_id === productId);
+        const overrideKey = `label_${editingLbl!.idx}_override` as keyof CustomLabel;
+        const updated = { ...( idx>=0 ? prev[idx] : { product_id:productId } as any ), [labelKey]: editLblValue||null, [overrideKey]: !!editLblValue };
+        return idx>=0 ? prev.map((l,i) => i===idx ? updated : l) : [...prev, updated];
+      });
+      setEditingLbl(null);
+    } finally { setSavingLbl(false); }
+  }
+
   // ── AI inline variant edit ────────────────────────────────────────────────────
   async function saveVariantEdit(item:ReviewItem) {
     if (!editingVariant) return;
@@ -537,7 +605,7 @@ export default function FeedSuitePage() {
 
       {/* ── Tabs ── */}
       <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
-        {([['overview','📊 Overzicht'],['products','📦 Producten'],['feeds','🔗 Feeds'],['rules','📋 Regels'],['ai','🤖 AI Enrichments'],['ab_testing','🔬 A/B'],['versions','🔖 Versies'],['alerts','🔔 Alerts']] as [TabKey,string][]).map(([key,label]) => (
+        {([['overview','📊 Overzicht'],['products','📦 Producten'],['feeds','🔗 Feeds'],['rules','📋 Regels'],['ai','🤖 AI Enrichments'],['ab_testing','🔬 A/B'],['labels','🏷 Labels'],['versions','🔖 Versies'],['alerts','🔔 Alerts']] as [TabKey,string][]).map(([key,label]) => (
           <button key={key} onClick={() => setTab(key)} className={'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors '+(tab===key?'bg-gray-800 text-white':'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50')}>
             {label}
             {key==='alerts'&&alerts.length>0&&<span className="ml-1.5 px-1.5 py-0.5 text-xs bg-red-600 text-white rounded-full">{alerts.length}</span>}
@@ -1170,8 +1238,8 @@ export default function FeedSuitePage() {
           ) : (
             <div className="space-y-3">
               {abTests.map(test => {
-                const grpA = test.metrics.find(m=>m.group==='A');
-                const grpB = test.metrics.find(m=>m.group==='B');
+                const grpA = test.metrics?.A ?? null;
+                const grpB = test.metrics?.B ?? null;
                 const statusColor: Record<string,string> = { draft:'text-gray-400 bg-gray-800', active:'text-emerald-400 bg-emerald-950/50 border border-emerald-900/50', completed:'text-blue-400 bg-blue-950/50 border border-blue-900/50', paused:'text-amber-400 bg-amber-950/50 border border-amber-900/50' };
                 return (
                   <div key={test.id} className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
@@ -1200,7 +1268,7 @@ export default function FeedSuitePage() {
                               <div className="space-y-1 text-xs">
                                 <div className="flex justify-between"><span className="text-gray-500">Impressies</span><span className="text-gray-300 tabular-nums">{grp.impressions.toLocaleString()}</span></div>
                                 <div className="flex justify-between"><span className="text-gray-500">Kliks</span><span className="text-gray-300 tabular-nums">{grp.clicks.toLocaleString()}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500">CTR</span><span className="font-bold text-gray-200 tabular-nums">{(grp.ctr*100).toFixed(2)}%</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500">CTR</span><span className="font-bold text-gray-200 tabular-nums">{grp.impressions>0?((grp.clicks/grp.impressions)*100).toFixed(2):'0.00'}%</span></div>
                               </div>
                             ) : <div className="text-xs text-gray-600">Geen data</div>}
                           </div>
@@ -1208,9 +1276,9 @@ export default function FeedSuitePage() {
                       </div>
                     )}
 
-                    {test.significant && (
+                    {test.significance?.significant && (
                       <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-950/30 border border-emerald-900/50 mb-3">
-                        <div><span className="text-xs font-semibold text-emerald-400">✓ Statistisch significant</span>{test.p_value!=null&&<span className="text-xs text-gray-500 ml-2">p={test.p_value.toFixed(3)}</span>}</div>
+                        <div><span className="text-xs font-semibold text-emerald-400">✓ Statistisch significant</span>{test.significance.p_value!=null&&<span className="text-xs text-gray-500 ml-2">p={test.significance.p_value.toFixed(3)}</span>}</div>
                         {test.winner ? (
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-400">Winnaar: <span className="text-emerald-400 font-bold">{test.winner==='A'?(test.variant_a_label||'Variant A'):(test.variant_b_label||'Variant B')}</span></span>
@@ -1278,6 +1346,84 @@ export default function FeedSuitePage() {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* Custom Labels — Supplemental Feed                                     */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {tab==='labels' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-200">Custom Labels</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Google Shopping supplemental feed · gele ster = handmatig override</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <a href="/api/feed/output/supplemental?market=NL" target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-700">↗ CSV</a>
+              <button onClick={calculateLabels} disabled={calculatingLbls} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium">
+                {calculatingLbls?'⟳ Berekenen...':'⟳ Herbereken'}
+              </button>
+            </div>
+          </div>
+          {calcResult&&<div className={'px-4 py-2 rounded-lg text-sm '+(calcResult.startsWith('Fout')?'bg-red-950/40 text-red-400 border border-red-900/50':'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50')}>{calcResult}</div>}
+
+          {labelsLoading ? <div className="text-center py-8 text-gray-500">Laden...</div> : (
+            <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead><tr className="border-b border-gray-800">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                    {LABEL_HEADS.map(h=><th key={h} className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}
+                  </tr></thead>
+                  <tbody className="divide-y divide-gray-800/50">
+                    {products.map(p => {
+                      const lbl = customLabels.find(l=>l.product_id===p.id);
+                      const vals = [lbl?.custom_label_0, lbl?.custom_label_1, lbl?.custom_label_2, lbl?.custom_label_3, lbl?.custom_label_4];
+                      const overrides = [lbl?.label_0_override, lbl?.label_1_override, lbl?.label_2_override, lbl?.label_3_override, lbl?.label_4_override];
+                      const keys = ['custom_label_0','custom_label_1','custom_label_2','custom_label_3','custom_label_4'];
+                      return (
+                        <tr key={p.id} className="hover:bg-gray-800/20">
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-gray-200 truncate max-w-[180px]">{p.name_nl}</div>
+                            <div className="text-xs text-gray-600 font-mono">{p.sku||p.ean||'—'}</div>
+                          </td>
+                          {vals.map((val, idx) => {
+                            const key = keys[idx];
+                            const isEdit = editingLbl?.productId===p.id && editingLbl?.key===key;
+                            const isOverride = overrides[idx];
+                            return (
+                              <td key={key} className="px-3 py-3">
+                                {isEdit ? (
+                                  <div className="flex items-center gap-1">
+                                    <select value={editLblValue} onChange={e=>setEditLblValue(e.target.value)} className="px-1.5 py-1 text-xs bg-gray-800 border border-indigo-600 rounded text-gray-200 focus:outline-none">
+                                      <option value="">— leeg —</option>
+                                      {LABEL_OPTIONS[idx].map(o=><option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                    <button onClick={()=>saveLabelEdit(p.id,key)} disabled={savingLbl} className="text-xs px-1.5 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded">✓</button>
+                                    <button onClick={()=>setEditingLbl(null)} className="text-xs px-1 py-1 bg-gray-700 text-gray-400 rounded">✕</button>
+                                  </div>
+                                ) : (
+                                  <button onClick={()=>{setEditingLbl({productId:p.id,key,idx});setEditLblValue(val??'');}}
+                                    className={`text-xs px-2 py-0.5 rounded border transition-colors hover:opacity-80 ${val ? (LABEL_STYLES[val]??'border-gray-700 text-gray-400') : 'border-gray-800 text-gray-700'} ${isOverride?'ring-1 ring-amber-500/50':''}`}>
+                                    {isOverride&&<span className="mr-0.5 text-amber-500/70">★</span>}{val??'—'}
+                                  </button>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                    {products.length===0&&<tr><td colSpan={6} className="px-4 py-12 text-center text-gray-600">Geen producten. Klik "Shopify Sync".</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          <div className="text-xs text-gray-600 px-1">
+            Supplemental feed URL: <code className="bg-gray-800 px-1.5 py-0.5 rounded">/api/feed/output/supplemental?market=NL</code> — koppel dit als aparte data source in Google Merchant Center.
+          </div>
         </div>
       )}
 
