@@ -127,6 +127,9 @@ export default function FeedSuitePage() {
   const [newFeedProductIds, setNewFeedProductIds] = useState<Set<string>>(new Set());
   const [savingFeed,        setSavingFeed]        = useState(false);
   const [feedError,         setFeedError]         = useState<string|null>(null);
+  const [newFeedOverwrite,  setNewFeedOverwrite]  = useState(false);
+  const [confirmDeleteFeed, setConfirmDeleteFeed] = useState<string|null>(null);
+  const [deletingFeedId,    setDeletingFeedId]    = useState<string|null>(null);
   // Rules tab
   const [newRuleOpen,   setNewRuleOpen]    = useState(false);
   const [editingRule,   setEditingRule]    = useState<Rule|null>(null);
@@ -171,6 +174,7 @@ export default function FeedSuitePage() {
   const [rollingBack,   setRollingBack]    = useState<string|null>(null);
   const [rollbackResult,setRollbackResult] = useState<string|null>(null);
   // Product panel (slide-over)
+  const [panelTranslating,  setPanelTranslating]  = useState(false);
   const [panelProductId,setPanelProductId] = useState<string|null>(null);
   const [panelTab,      setPanelTab]       = useState<PanelTab>('status');
   const [panelData,     setPanelData]      = useState<PanelData|null>(null);
@@ -179,6 +183,8 @@ export default function FeedSuitePage() {
   const [panelEdit,     setPanelEdit]      = useState<Record<string,{title?:string;description_short?:string;description_long?:string}>>({});
   const [panelSaving,   setPanelSaving]    = useState(false);
   // A/B Testing
+  const [testImageBank,  setTestImageBank]  = useState<{id:string;storage_url:string;image_type:string|null}[]>([]);
+  const [testImgLoading, setTestImgLoading] = useState(false);
   const [abTests,          setAbTests]          = useState<ABTest[]>([]);
   const [abLoading,        setAbLoading]        = useState(false);
   const [newTestOpen,      setNewTestOpen]      = useState(false);
@@ -270,14 +276,29 @@ export default function FeedSuitePage() {
     const selectedIds = [...newFeedProductIds];
     const allSelected = selectedIds.length === products.length;
     const res  = await fetch('/api/feed/configs', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ market_id:newFeedMarket, channel:newFeedChannel, feed_name:newFeedName||newFeedChannel, is_active:newFeedActive, language:newFeedLang, product_ids: allSelected ? [] : selectedIds }),
+      method: 'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ market_id:newFeedMarket, channel:newFeedChannel, feed_name:newFeedName||newFeedChannel, is_active:newFeedActive, language:newFeedLang, product_ids: allSelected ? [] : selectedIds, overwrite: newFeedOverwrite }),
     });
     const json = await res.json();
+    if (res.status === 409 && json.duplicate) {
+      setFeedError('Deze feed bestaat al. Wil je de bestaande feed overschrijven?');
+      setNewFeedOverwrite(true);
+      setSavingFeed(false);
+      return;
+    }
     if (!res.ok) { setFeedError(json.error??'Fout bij aanmaken'); setSavingFeed(false); return; }
-    setFeedConfigs(prev => [...prev, json.config]);
-    setNewFeedOpen(false); setNewFeedMarket(''); setNewFeedChannel('google'); setNewFeedName(''); setNewFeedActive(true); setNewFeedLang('nl'); setNewFeedProductIds(new Set());
+    setFeedConfigs(prev => newFeedOverwrite
+      ? prev.map(f => f.market_id===newFeedMarket&&f.channel===newFeedChannel&&(f.feed_name===(newFeedName||newFeedChannel)) ? json.config : f)
+      : [...prev, json.config]);
+    setNewFeedOpen(false); setNewFeedMarket(''); setNewFeedChannel('google'); setNewFeedName(''); setNewFeedActive(true); setNewFeedLang('nl'); setNewFeedProductIds(new Set()); setNewFeedOverwrite(false);
     setSavingFeed(false);
+  }
+
+  async function deleteFeedConfig(id: string) {
+    setDeletingFeedId(id);
+    const res = await fetch(`/api/feed/configs?id=${id}`, { method: 'DELETE' });
+    if (res.ok) setFeedConfigs(prev => prev.filter(f => f.id !== id));
+    setDeletingFeedId(null); setConfirmDeleteFeed(null);
   }
 
   // ── Rule CRUD ─────────────────────────────────────────────────────────────────
@@ -498,6 +519,33 @@ export default function FeedSuitePage() {
     } finally { setPanelSaving(false); }
   }
 
+  async function translatePanelContent(productId: string, lang: string) {
+    setPanelTranslating(true);
+    try {
+      const res = await fetch('/api/feed/ai-enrich', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ product_ids: [productId], language: lang, field: 'both' }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? 'Vertaling mislukt');
+      // Reload panel to get AI variants
+      const res2 = await fetch(`/api/feed/product-panel?product_id=${productId}`);
+      const d2 = await res2.json();
+      if (res2.ok) {
+        setPanelData(d2);
+        // Auto-fill edit fields with best AI variant
+        const best = d2.content?.[lang]?.ai_variants?.[0];
+        if (best) {
+          setPanelEdit(prev => ({
+            ...prev,
+            [lang]: { title: best.title ?? '', description_short: best.description_short ?? '', description_long: best.description_long ?? '' }
+          }));
+        }
+      }
+    } catch (e: any) { console.error('Translate error:', e); }
+    finally { setPanelTranslating(false); }
+  }
+
   // ── A/B Tests ─────────────────────────────────────────────────────────────────
   async function loadABTests() {
     setAbLoading(true);
@@ -523,6 +571,15 @@ export default function FeedSuitePage() {
     } catch(e:any) { setTestError(e.message); }
     finally { setCreatingTest(false); }
   }
+  async function loadTestImages(productId: string) {
+    setTestImgLoading(true);
+    try {
+      const res = await fetch(`/api/feed/product-panel?product_id=${productId}`);
+      const d   = await res.json();
+      setTestImageBank(d.images ?? []);
+    } finally { setTestImgLoading(false); }
+  }
+
   async function patchTest(id:string, body:Record<string,any>) {
     const res=await fetch('/api/feed/ab-tests', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id, ...body }) });
     const d=await res.json();
@@ -846,10 +903,19 @@ export default function FeedSuitePage() {
                 </div>
               </div>
 
-              {feedError && <p className="text-xs text-red-400">{feedError}</p>}
+              {feedError && (
+                <div>
+                  <p className="text-xs text-red-400">{feedError}</p>
+                  {newFeedOverwrite && (
+                    <button onClick={createFeedConfig} disabled={savingFeed} className="mt-1.5 text-xs px-3 py-1.5 bg-amber-900/40 hover:bg-amber-900/60 text-amber-400 rounded-lg border border-amber-900/50 disabled:opacity-50">
+                      {savingFeed ? '...' : 'Ja, overschrijven'}
+                    </button>
+                  )}
+                </div>
+              )}
               <div className="flex gap-2">
                 <button onClick={createFeedConfig} disabled={savingFeed} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{savingFeed?'Aanmaken...':'Feed aanmaken'}</button>
-                <button onClick={()=>setNewFeedOpen(false)} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
+                <button onClick={()=>{setNewFeedOpen(false);setNewFeedOverwrite(false);setFeedError(null);}} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
               </div>
             </div>
           )}
@@ -882,7 +948,18 @@ export default function FeedSuitePage() {
                             </div>
                             {cfg.last_fetched_at&&<div className="text-xs text-gray-600 mt-1">Opgehaald: {timeAgo(cfg.last_fetched_at)} geleden</div>}
                           </div>
-                          <button onClick={()=>loadFeedPreview(mkt.code,cfg.channel)} disabled={isLoad} className="shrink-0 text-xs px-3 py-1.5 bg-indigo-900/40 text-indigo-400 hover:bg-indigo-900/60 disabled:opacity-50 rounded-lg">{isLoad?'...':'Preview'}</button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button onClick={()=>loadFeedPreview(mkt.code,cfg.channel)} disabled={isLoad} className="text-xs px-3 py-1.5 bg-indigo-900/40 text-indigo-400 hover:bg-indigo-900/60 disabled:opacity-50 rounded-lg">{isLoad?'...':'Preview'}</button>
+                            {confirmDeleteFeed===cfg.id ? (
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-red-400">Zeker?</span>
+                                <button onClick={()=>deleteFeedConfig(cfg.id)} disabled={deletingFeedId===cfg.id} className="text-xs px-2 py-1 bg-red-900/60 hover:bg-red-900/80 text-red-300 rounded border border-red-900/50 disabled:opacity-50">{deletingFeedId===cfg.id?'...':'Ja'}</button>
+                                <button onClick={()=>setConfirmDeleteFeed(null)} className="text-xs px-2 py-1 bg-gray-800 text-gray-400 rounded">Nee</button>
+                              </div>
+                            ) : (
+                              <button onClick={()=>setConfirmDeleteFeed(cfg.id)} className="text-xs px-2 py-1.5 bg-red-950/30 hover:bg-red-950/50 text-red-500 rounded-lg border border-red-900/30">Verwijder</button>
+                            )}
+                          </div>
                         </div>
                         {preview && (
                           <div className="mt-4 pt-4 border-t border-gray-800">
@@ -909,6 +986,32 @@ export default function FeedSuitePage() {
               </div>
             );
           })}
+
+          {/* Supplemental Feeds */}
+          <div className="mt-6 pt-6 border-t border-gray-800/50">
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">Supplemental Feeds (Custom Labels)</h3>
+            <div className="space-y-2">
+              {markets.map(mkt => {
+                const suppUrl = `/api/feed/output/supplemental?market=${mkt.code}`;
+                const suppKey = `supp_${mkt.code}`;
+                return (
+                  <div key={mkt.id} className="flex items-center justify-between px-4 py-3 border border-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-base">{FLAGS[mkt.code]??'🌐'}</span>
+                      <div>
+                        <div className="text-sm text-gray-200">{mkt.name} — Supplemental</div>
+                        <code className="text-xs text-gray-500 font-mono">{suppUrl}</code>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={()=>copyUrl(suppUrl,suppKey)} className={'text-xs px-2 py-1 rounded transition-colors '+(copied===suppKey?'bg-emerald-900/40 text-emerald-400':'bg-gray-800 text-gray-400 hover:text-gray-200')}>{copied===suppKey?'✓':'Kopieer'}</button>
+                      <a href={suppUrl} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 hover:text-gray-200">Open ↗</a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1383,13 +1486,58 @@ export default function FeedSuitePage() {
                 <div className="bg-blue-950/20 border border-blue-900/30 rounded-lg p-3 space-y-2">
                   <div className="text-xs font-semibold text-blue-400">Variant A (huidig)</div>
                   <input value={testVariantALabel} onChange={e=>setTestVariantALabel(e.target.value)} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-blue-500" placeholder="Label variant A"/>
-                  <p className="text-xs text-gray-600">Huidige content wordt automatisch ingeladen vanuit feed_product_content</p>
+                  {testField==='image' ? (
+                    (()=>{
+                      const imgProds = [...testProductIds].slice(0,4).map(pid=>products.find(p=>p.id===pid)).filter((p): p is Product => !!p?.image_url);
+                      return imgProds.length > 0 ? (
+                        <div className={`grid gap-1.5 ${imgProds.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                          {imgProds.map(prod=>(
+                            <div key={prod.id} className="relative rounded-lg overflow-hidden border border-gray-700">
+                              <img src={prod.image_url!} alt="" className="w-full aspect-square object-cover"/>
+                              <span className="absolute bottom-0 left-0 right-0 text-center text-xs bg-black/60 text-gray-300 py-0.5 truncate px-1">{prod.name_nl}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-xs text-gray-600">Selecteer producten om afbeeldingen te zien</p>;
+                    })()
+                  ) : (
+                    <p className="text-xs text-gray-600">Huidige content wordt automatisch ingeladen vanuit feed_product_content</p>
+                  )}
                 </div>
                 <div className="bg-purple-950/20 border border-purple-900/30 rounded-lg p-3 space-y-2">
                   <div className="text-xs font-semibold text-purple-400">Variant B (nieuw)</div>
                   <input value={testVariantBLabel} onChange={e=>setTestVariantBLabel(e.target.value)} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-purple-500" placeholder="Label variant B"/>
                   {testField!=='image'&&<textarea value={testVariantBVal} onChange={e=>setTestVariantBVal(e.target.value)} rows={2} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-purple-500 resize-none" placeholder={testField==='title'?'Alternatieve titel (leeg = AI-variant)':'Alternatieve beschrijving (leeg = AI-variant)'}/>}
-                  {testField==='image'&&<p className="text-xs text-gray-600">Beste afbeelding uit image_bank wordt gebruikt</p>}
+                  {testField==='image' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-500 flex-1">Klik op afbeelding om te selecteren als Variant B</p>
+                        {[...testProductIds][0] && (
+                          <button onClick={()=>loadTestImages([...testProductIds][0])} disabled={testImgLoading} className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded disabled:opacity-50">
+                            {testImgLoading ? '...' : 'Laad images'}
+                          </button>
+                        )}
+                      </div>
+                      {testImageBank.length > 0 && (
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {testImageBank.map(img => (
+                            <button key={img.id} onClick={()=>setTestVariantBVal(img.storage_url)}
+                              className={`relative rounded-lg overflow-hidden border-2 transition-colors ${testVariantBVal===img.storage_url ? 'border-purple-500' : 'border-transparent hover:border-gray-600'}`}>
+                              <img src={img.storage_url} alt="" className="w-full aspect-square object-cover"/>
+                              {img.image_type && <span className="absolute bottom-0 left-0 right-0 text-center text-xs bg-black/60 text-gray-300 py-0.5">{img.image_type}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {testVariantBVal && (
+                        <div className="flex items-center gap-2">
+                          <img src={testVariantBVal} alt="Variant B" className="w-12 h-12 object-cover rounded"/>
+                          <span className="text-xs text-gray-400 truncate flex-1">{testVariantBVal}</span>
+                          <button onClick={()=>setTestVariantBVal('')} className="text-xs text-red-400 hover:text-red-300">✕</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1772,6 +1920,30 @@ export default function FeedSuitePage() {
                         const curr=panelData.content[panelLang]??{};
                         const edit=panelEdit[panelLang]??{};
                         return (
+                          <>
+                            {panelLang !== 'nl' && !curr.title && !edit.title && (
+                              <div className="mb-4 p-3 border border-indigo-900/40 rounded-lg bg-indigo-950/20">
+                                <p className="text-xs text-gray-400 mb-2">Geen {panelLang.toUpperCase()} content gevonden.</p>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={()=>translatePanelContent(panelProductId!, panelLang)}
+                                    disabled={panelTranslating}
+                                    className="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg"
+                                  >{panelTranslating ? '⟳ Vertalen...' : `🤖 Vertaal vanuit NL naar ${panelLang.toUpperCase()}`}</button>
+                                  {(['en','de','fr'] as const).filter(l=>l!==panelLang&&!panelData.content[l]?.title).length > 0 && (
+                                    <button
+                                      onClick={async ()=>{
+                                        for (const l of (['en','de','fr'] as const).filter(l=>l!==panelLang&&!panelData.content[l]?.title)) {
+                                          await translatePanelContent(panelProductId!, l);
+                                        }
+                                      }}
+                                      disabled={panelTranslating}
+                                      className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 rounded-lg"
+                                    >Vertaal alle lege talen</button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           <div className="space-y-3">
                             <div>
                               <label className="text-xs text-gray-400 mb-1 block">Titel</label>
@@ -1798,6 +1970,7 @@ export default function FeedSuitePage() {
                               </div>
                             )}
                           </div>
+                          </>
                         );
                       })()}
                     </div>

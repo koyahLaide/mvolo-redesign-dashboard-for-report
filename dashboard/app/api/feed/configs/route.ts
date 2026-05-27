@@ -19,18 +19,61 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const { market_id, channel, feed_name, is_active, language, product_ids } = body ?? {};
+  const { market_id, channel, feed_name, is_active, language, product_ids, overwrite } = body ?? {};
   if (!market_id || !channel) {
     return NextResponse.json({ error: 'market_id en channel zijn verplicht' }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const effectiveFeedName = feed_name || channel;
+
+  // Check for duplicate (market_id + channel + feed_name)
+  const { data: existing } = await supabase
     .from('feed_market_configs')
-    .insert({ market_id, channel, feed_name: feed_name || channel, is_active: is_active ?? true })
+    .select(SELECT)
+    .eq('market_id', market_id)
+    .eq('channel', channel)
+    .eq('feed_name', effectiveFeedName)
+    .maybeSingle();
+
+  if (existing && !overwrite) {
+    return NextResponse.json({ error: 'Deze feed bestaat al', duplicate: true }, { status: 409 });
+  }
+
+  let data: any;
+
+  if (existing && overwrite) {
+    // Update the existing record
+    const { data: updated, error: upErr } = await supabase
+      .from('feed_market_configs')
+      .update({ is_active: is_active ?? existing.is_active })
+      .eq('id', existing.id)
+      .select(SELECT)
+      .single();
+    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    data = updated;
+
+    // Replace product selection
+    if (Array.isArray(product_ids)) {
+      await supabase.from('feed_config_products').delete().eq('feed_config_id', existing.id);
+      if (product_ids.length > 0) {
+        const rows = product_ids.map((pid: string) => ({ feed_config_id: existing.id, product_id: pid }));
+        const { error: pErr } = await supabase.from('feed_config_products').insert(rows);
+        if (pErr) console.error('[Feed Configs] product insert error:', pErr.message);
+      }
+    }
+
+    return NextResponse.json({ config: { ...data, product_count: product_ids?.length ?? 0 } }, { status: 200 });
+  }
+
+  // Fresh insert
+  const { data: inserted, error } = await supabase
+    .from('feed_market_configs')
+    .insert({ market_id, channel, feed_name: effectiveFeedName, is_active: is_active ?? true })
     .select(SELECT)
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  data = inserted;
 
   // Insert product selection (if provided and not "all products")
   let product_count = 0;
