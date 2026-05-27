@@ -117,6 +117,14 @@ export default function FeedSuitePage() {
   const [feedPreviews,  setFeedPreviews]   = useState<Record<string,FeedPreview>>({});
   const [prevLoading,   setPrevLoading]    = useState<string|null>(null);
   const [copied,        setCopied]         = useState<string|null>(null);
+  // Nieuwe feed form
+  const [newFeedOpen,   setNewFeedOpen]    = useState(false);
+  const [newFeedMarket, setNewFeedMarket]  = useState('');
+  const [newFeedChannel,setNewFeedChannel] = useState('google');
+  const [newFeedName,   setNewFeedName]    = useState('');
+  const [newFeedActive, setNewFeedActive]  = useState(true);
+  const [savingFeed,    setSavingFeed]     = useState(false);
+  const [feedError,     setFeedError]      = useState<string|null>(null);
   // Rules tab
   const [newRuleOpen,   setNewRuleOpen]    = useState(false);
   const [editingRule,   setEditingRule]    = useState<Rule|null>(null);
@@ -247,6 +255,18 @@ export default function FeedSuitePage() {
     navigator.clipboard.writeText(`${window.location.origin}${url}`).then(() => {
       setCopied(key); setTimeout(() => setCopied(c => c===key?null:c), 2000);
     });
+  }
+
+  // ── Feed config CRUD ──────────────────────────────────────────────────────────
+  async function createFeedConfig() {
+    if (!newFeedMarket) { setFeedError('Kies een markt'); return; }
+    setSavingFeed(true); setFeedError(null);
+    const res  = await fetch('/api/feed/configs', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ market_id:newFeedMarket, channel:newFeedChannel, feed_name:newFeedName||newFeedChannel, is_active:newFeedActive }) });
+    const json = await res.json();
+    if (!res.ok) { setFeedError(json.error??'Fout bij aanmaken'); setSavingFeed(false); return; }
+    setFeedConfigs(prev => [...prev, json.config]);
+    setNewFeedOpen(false); setNewFeedMarket(''); setNewFeedChannel('google'); setNewFeedName(''); setNewFeedActive(true);
+    setSavingFeed(false);
   }
 
   // ── Rule CRUD ─────────────────────────────────────────────────────────────────
@@ -732,6 +752,53 @@ export default function FeedSuitePage() {
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {tab==='feeds' && (
         <div className="space-y-5">
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-300">Feed configuraties</h2>
+            <button onClick={()=>{setNewFeedOpen(o=>!o);setFeedError(null);}} className="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">+ Nieuwe Feed</button>
+          </div>
+
+          {/* New feed form */}
+          {newFeedOpen && (
+            <div className="bg-gray-900/70 border border-indigo-800/50 rounded-xl p-5 space-y-4">
+              <h3 className="text-sm font-semibold text-gray-200">Nieuwe feed aanmaken</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Markt</label>
+                  <select value={newFeedMarket} onChange={e=>setNewFeedMarket(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                    <option value="">— kies markt —</option>
+                    {markets.map(m=><option key={m.id} value={m.id}>{FLAGS[m.code]??'🌐'} {m.name} ({m.code})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Kanaal</label>
+                  <select value={newFeedChannel} onChange={e=>setNewFeedChannel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                    <option value="google">Google Shopping</option>
+                    <option value="meta">Meta Catalog</option>
+                    <option value="awin">Awin Affiliate</option>
+                    <option value="bol">Bol.com</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Feed naam</label>
+                  <input value={newFeedName} onChange={e=>setNewFeedName(e.target.value)} placeholder={newFeedChannel} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div className="flex items-center gap-3 pt-5">
+                  <button onClick={()=>setNewFeedActive(a=>!a)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${newFeedActive?'bg-indigo-600':'bg-gray-700'}`}>
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${newFeedActive?'translate-x-6':'translate-x-1'}`}/>
+                  </button>
+                  <span className="text-sm text-gray-400">{newFeedActive?'Actief':'Inactief'}</span>
+                </div>
+              </div>
+              {feedError && <p className="text-xs text-red-400">{feedError}</p>}
+              <div className="flex gap-2">
+                <button onClick={createFeedConfig} disabled={savingFeed} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{savingFeed?'Aanmaken...':'Feed aanmaken'}</button>
+                <button onClick={()=>setNewFeedOpen(false)} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
+              </div>
+            </div>
+          )}
+
           {markets.map(mkt => {
             const cfgs = feedConfigs.filter(fc=>fc.market_id===mkt.id);
             if (!cfgs.length) return null;
@@ -1279,9 +1346,9 @@ export default function FeedSuitePage() {
             <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><div className="text-3xl mb-3">🔬</div><p className="text-sm text-gray-500">Nog geen A/B tests. Maak een test aan.</p></div>
           ) : (
             <div className="space-y-3">
-              {abTests.map(test => {
-                const grpA = test.metrics?.A ?? null;
-                const grpB = test.metrics?.B ?? null;
+              {(Array.isArray(abTests) ? abTests : []).filter(Boolean).map(test => {
+                const grpA = test?.metrics?.A ?? null;
+                const grpB = test?.metrics?.B ?? null;
                 const statusColor: Record<string,string> = { draft:'text-gray-400 bg-gray-800', active:'text-emerald-400 bg-emerald-950/50 border border-emerald-900/50', completed:'text-blue-400 bg-blue-950/50 border border-blue-900/50', paused:'text-amber-400 bg-amber-950/50 border border-amber-900/50' };
                 return (
                   <div key={test.id} className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">

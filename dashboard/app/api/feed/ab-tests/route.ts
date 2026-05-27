@@ -87,18 +87,24 @@ export async function GET(request: Request) {
     : { data: [] };
 
   const { data: counts } = ids.length
-    ? await supabase.from('feed_ab_assignments').select('test_id').in('test_id', ids)
+    ? await supabase.from('feed_ab_assignments').select('test_id,value_a,value_b').in('test_id', ids)
     : { data: [] };
   const countMap: Record<string, number> = {};
-  for (const c of counts ?? []) countMap[c.test_id] = (countMap[c.test_id] ?? 0) + 1;
+  const sampleMap: Record<string, { value_a: string | null; value_b: string | null }> = {};
+  for (const c of counts ?? []) {
+    countMap[c.test_id] = (countMap[c.test_id] ?? 0) + 1;
+    if (!sampleMap[c.test_id] && (c.value_a || c.value_b)) {
+      sampleMap[c.test_id] = { value_a: c.value_a, value_b: c.value_b };
+    }
+  }
 
   const enriched = (tests ?? []).map(t => {
     const m = aggregateMetrics(allMetrics ?? [], t.id);
     const sig = zTest(m.A.impressions, m.A.clicks, m.B.impressions, m.B.clicks);
-    // Alert: test running > 14 days with no significance
     const daysRunning = t.started_at ? Math.floor((Date.now() - new Date(t.started_at).getTime()) / 86400000) : 0;
     const stale = t.status === 'active' && daysRunning > 14 && !sig.significant;
-    return { ...t, metrics: m, significance: sig, product_count: countMap[t.id] ?? 0, days_running: daysRunning, stale };
+    const sample = sampleMap[t.id] ?? { value_a: null, value_b: null };
+    return { ...t, metrics: m, significance: sig, product_count: countMap[t.id] ?? 0, days_running: daysRunning, stale, sample_value_a: sample.value_a, sample_value_b: sample.value_b };
   });
 
   return NextResponse.json({ tests: enriched });
@@ -128,7 +134,7 @@ export async function POST(request: Request) {
 
   // Create test
   const body = await request.json().catch(() => null);
-  const { name, field, channel, language, product_ids, market_id, variant_a_label, variant_b_label, hypothesis, hypothesis_category, hypothesis_tags } = body ?? {};
+  const { name, field, channel, language, product_ids, market_id, variant_a_label, variant_b_label, hypothesis, hypothesis_category, hypothesis_tags, variant_b_value } = body ?? {};
   if (!name || !field || !Array.isArray(product_ids) || !product_ids.length) {
     return NextResponse.json({ error: 'name, field en product_ids zijn verplicht' }, { status: 400 });
   }
@@ -174,12 +180,20 @@ export async function POST(request: Request) {
 
     if (field === 'title') {
       value_a = c?.title ?? p?.name_nl ?? null;
-      const ai = (c?.ai_variants as any[] ?? []);
-      value_b = ai.find((v: any) => v.compliance === 'green')?.title ?? ai[0]?.title ?? value_a;
+      if (variant_b_value) {
+        value_b = variant_b_value;
+      } else {
+        const ai = (c?.ai_variants as any[] ?? []);
+        value_b = ai.find((v: any) => v.compliance === 'green')?.title ?? ai[0]?.title ?? value_a;
+      }
     } else if (field === 'description') {
       value_a = c?.description ?? null;
-      const ai = (c?.ai_variants as any[] ?? []);
-      value_b = ai.find((v: any) => v.compliance === 'green')?.description_long ?? ai[0]?.description_long ?? value_a;
+      if (variant_b_value) {
+        value_b = variant_b_value;
+      } else {
+        const ai = (c?.ai_variants as any[] ?? []);
+        value_b = ai.find((v: any) => v.compliance === 'green')?.description_long ?? ai[0]?.description_long ?? value_a;
+      }
     } else if (field === 'image') {
       value_a = p?.image_url ?? null;
       value_b = imageMap[pid] ?? value_a;
