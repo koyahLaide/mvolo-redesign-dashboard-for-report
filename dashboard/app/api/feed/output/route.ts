@@ -204,21 +204,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: `Markt '${marketCode}' niet gevonden` }, { status: 404 });
     }
 
-    // 2. Feed config
-    const { data: config, error: cfgErr } = await supabase
+    // 2. Feed config — optional, generate feed anyway with defaults if missing/inactive
+    const { data: config } = await supabase
       .from('feed_market_configs')
       .select('id,channel,feed_name,is_active')
-      .eq('market_id', market.id).eq('channel', channel).single();
-    if (cfgErr || !config) {
-      console.error('[Feed Output] config error:', cfgErr?.message);
-      return NextResponse.json({ error: `Geen feed config voor ${marketCode}/${channel}` }, { status: 404 });
-    }
+      .eq('market_id', market.id).eq('channel', channel)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const configMissing   = !config;
+    const configInactive  = config && !config.is_active;
+    const warnings: string[] = [];
+    if (configMissing)  warnings.push(`Geen feed config gevonden voor ${marketCode}/${channel} — standaard instellingen gebruikt`);
+    if (configInactive) warnings.push(`Feed config voor ${marketCode}/${channel} is inactief — feed wordt toch gegenereerd`);
 
     // 3. Products — check feed_config_products for selective inclusion
-    const { data: configProducts } = await supabase
-      .from('feed_config_products')
-      .select('product_id')
-      .eq('feed_config_id', config.id);
+    const { data: configProducts } = config
+      ? await supabase.from('feed_config_products').select('product_id').eq('feed_config_id', config.id)
+      : { data: [] };
 
     let productQuery = supabase
       .from('products')
@@ -290,17 +294,20 @@ export async function GET(request: Request) {
     // 8. Apply rules (master first, then partner rules for this channel)
     const filtered = applyRules(enrichedWithAb, (rules ?? []) as Rule[], channel);
 
-    // 9. Mark fetch time (not for previews)
-    if (!isPreview) {
+    // 9. Mark fetch time (not for previews, only if config exists)
+    if (!isPreview && config) {
       await supabase.from('feed_market_configs')
         .update({ last_fetched_at: new Date().toISOString() })
         .eq('id', config.id);
     }
 
+    const warningHeader = warnings.length ? { 'X-Feed-Warning': warnings.join('; ') } : {};
+
     // 10. Preview response
     if (isPreview) {
       return NextResponse.json({
         market: marketCode, channel,
+        warnings: warnings.length ? warnings : undefined,
         total_before_rules: enriched.length,
         total_after_rules: filtered.length,
         excluded: enriched.length - filtered.length,
@@ -322,6 +329,7 @@ export async function GET(request: Request) {
           'Content-Type': 'application/xml; charset=utf-8',
           'Content-Disposition': `inline; filename="${marketCode}_google_shopping.xml"`,
           'Cache-Control': 'public, max-age=3600',
+          ...warningHeader,
         },
       });
     }
@@ -331,6 +339,7 @@ export async function GET(request: Request) {
           'Content-Type': 'text/csv; charset=utf-8',
           'Content-Disposition': `attachment; filename="${marketCode}_meta_catalog.csv"`,
           'Cache-Control': 'public, max-age=3600',
+          ...warningHeader,
         },
       });
     }
@@ -340,6 +349,7 @@ export async function GET(request: Request) {
           'Content-Type': 'text/csv; charset=utf-8',
           'Content-Disposition': `attachment; filename="${marketCode}_awin.csv"`,
           'Cache-Control': 'public, max-age=3600',
+          ...warningHeader,
         },
       });
     }
