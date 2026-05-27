@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const { market_id, channel, feed_name, is_active } = body ?? {};
+  const { market_id, channel, feed_name, is_active, language, product_ids } = body ?? {};
   if (!market_id || !channel) {
     return NextResponse.json({ error: 'market_id en channel zijn verplicht' }, { status: 400 });
   }
@@ -31,7 +31,17 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ config: data }, { status: 201 });
+
+  // Insert product selection (if provided and not "all products")
+  let product_count = 0;
+  if (Array.isArray(product_ids) && product_ids.length > 0) {
+    const rows = product_ids.map((pid: string) => ({ feed_config_id: data.id, product_id: pid }));
+    const { error: pErr } = await supabase.from('feed_config_products').insert(rows);
+    if (pErr) console.error('[Feed Configs] product insert error:', pErr.message);
+    product_count = product_ids.length;
+  }
+
+  return NextResponse.json({ config: { ...data, product_count } }, { status: 201 });
 }
 
 export async function PATCH(request: Request) {

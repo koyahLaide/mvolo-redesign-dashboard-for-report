@@ -27,7 +27,7 @@ type Batch      = { id: string; language: string; field: string; channel: string
 type Version    = { id: string; channel: string; version_number: number; product_count: number; note: string|null; created_at: string; markets: { code: string; name: string } | null };
 type ChangelogEntry = { id: string; field: string; old_value: string|null; new_value: string|null; source: string; language: string|null; created_at: string; product_id: string|null; product_name: string|null };
 type TabKey     = 'overview'|'products'|'feeds'|'rules'|'ai'|'ab_testing'|'versions'|'alerts'|'labels';
-type ABTest     = { id:string; name:string; field:'title'|'description'|'image'; status:'draft'|'active'|'completed'|'paused'; product_count:number; variant_a_label:string; variant_b_label:string; created_at:string; started_at:string|null; ended_at:string|null; winner:string|null; hypothesis:string|null; hypothesis_category:string|null; hypothesis_tags:string[]|null; conclusion:string|null; confidence_level:string|null; learning:string|null; metrics:{ A:{impressions:number;clicks:number;conversions:number;revenue:number}; B:{impressions:number;clicks:number;conversions:number;revenue:number} }; significance:{ significant:boolean; p_value:number; ctrA:number; ctrB:number; needs_more_data:boolean } };
+type ABTest     = { id:string; name:string; field:'title'|'description'|'image'; channel:string|null; status:'draft'|'active'|'completed'|'paused'; product_count:number; variant_a_label:string; variant_b_label:string; sample_value_a:string|null; sample_value_b:string|null; created_at:string; started_at:string|null; ended_at:string|null; winner:string|null; hypothesis:string|null; hypothesis_category:string|null; hypothesis_tags:string[]|null; conclusion:string|null; confidence_level:string|null; learning:string|null; metrics:{ A:{impressions:number;clicks:number;conversions:number;revenue:number}; B:{impressions:number;clicks:number;conversions:number;revenue:number} }; significance:{ significant:boolean; p_value:number; ctrA:number; ctrB:number; needs_more_data:boolean } };
 type Learning   = { id:string; test_id:string|null; category:string; learning:string; impact_pct:number|null; confidence:string; applies_to_channels:string[]; applies_to_markets:string[]; applies_to_categories:string[]; is_active:boolean; created_at:string };
 type CustomLabel= { product_id:string; custom_label_0:string|null; custom_label_1:string|null; custom_label_2:string|null; custom_label_3:string|null; custom_label_4:string|null; label_0_override:boolean; label_1_override:boolean; label_2_override:boolean; label_3_override:boolean; label_4_override:boolean };
 type PanelTab   = 'status'|'content'|'rules'|'images'|'changelog';
@@ -118,13 +118,15 @@ export default function FeedSuitePage() {
   const [prevLoading,   setPrevLoading]    = useState<string|null>(null);
   const [copied,        setCopied]         = useState<string|null>(null);
   // Nieuwe feed form
-  const [newFeedOpen,   setNewFeedOpen]    = useState(false);
-  const [newFeedMarket, setNewFeedMarket]  = useState('');
-  const [newFeedChannel,setNewFeedChannel] = useState('google');
-  const [newFeedName,   setNewFeedName]    = useState('');
-  const [newFeedActive, setNewFeedActive]  = useState(true);
-  const [savingFeed,    setSavingFeed]     = useState(false);
-  const [feedError,     setFeedError]      = useState<string|null>(null);
+  const [newFeedOpen,       setNewFeedOpen]       = useState(false);
+  const [newFeedMarket,     setNewFeedMarket]     = useState('');
+  const [newFeedChannel,    setNewFeedChannel]    = useState('google');
+  const [newFeedName,       setNewFeedName]       = useState('');
+  const [newFeedActive,     setNewFeedActive]     = useState(true);
+  const [newFeedLang,       setNewFeedLang]       = useState('nl');
+  const [newFeedProductIds, setNewFeedProductIds] = useState<Set<string>>(new Set());
+  const [savingFeed,        setSavingFeed]        = useState(false);
+  const [feedError,         setFeedError]         = useState<string|null>(null);
   // Rules tab
   const [newRuleOpen,   setNewRuleOpen]    = useState(false);
   const [editingRule,   setEditingRule]    = useState<Rule|null>(null);
@@ -177,14 +179,18 @@ export default function FeedSuitePage() {
   const [panelEdit,     setPanelEdit]      = useState<Record<string,{title?:string;description_short?:string;description_long?:string}>>({});
   const [panelSaving,   setPanelSaving]    = useState(false);
   // A/B Testing
-  const [abTests,       setAbTests]        = useState<ABTest[]>([]);
-  const [abLoading,     setAbLoading]      = useState(false);
-  const [newTestOpen,   setNewTestOpen]    = useState(false);
-  const [testName,      setTestName]       = useState('');
-  const [testField,     setTestField]      = useState<'title'|'description'|'image'>('title');
-  const [testProductIds,setTestProductIds] = useState<Set<string>>(new Set());
-  const [creatingTest,  setCreatingTest]   = useState(false);
-  const [testError,     setTestError]      = useState<string|null>(null);
+  const [abTests,          setAbTests]          = useState<ABTest[]>([]);
+  const [abLoading,        setAbLoading]        = useState(false);
+  const [newTestOpen,      setNewTestOpen]      = useState(false);
+  const [testName,         setTestName]         = useState('');
+  const [testField,        setTestField]        = useState<'title'|'description'|'image'>('title');
+  const [testChannel,      setTestChannel]      = useState('google');
+  const [testVariantALabel,setTestVariantALabel]= useState('Variant A (huidig)');
+  const [testVariantBLabel,setTestVariantBLabel]= useState('Variant B (nieuw)');
+  const [testVariantBVal,  setTestVariantBVal]  = useState('');
+  const [testProductIds,   setTestProductIds]   = useState<Set<string>>(new Set());
+  const [creatingTest,     setCreatingTest]     = useState(false);
+  const [testError,        setTestError]        = useState<string|null>(null);
   const [applyingWinner,setApplyingWinner] = useState<string|null>(null);
   const [abSubTab,      setAbSubTab]       = useState<'tests'|'learnings'>('tests');
   const [learnings,     setLearnings]      = useState<Learning[]>([]);
@@ -261,11 +267,16 @@ export default function FeedSuitePage() {
   async function createFeedConfig() {
     if (!newFeedMarket) { setFeedError('Kies een markt'); return; }
     setSavingFeed(true); setFeedError(null);
-    const res  = await fetch('/api/feed/configs', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ market_id:newFeedMarket, channel:newFeedChannel, feed_name:newFeedName||newFeedChannel, is_active:newFeedActive }) });
+    const selectedIds = [...newFeedProductIds];
+    const allSelected = selectedIds.length === products.length;
+    const res  = await fetch('/api/feed/configs', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ market_id:newFeedMarket, channel:newFeedChannel, feed_name:newFeedName||newFeedChannel, is_active:newFeedActive, language:newFeedLang, product_ids: allSelected ? [] : selectedIds }),
+    });
     const json = await res.json();
     if (!res.ok) { setFeedError(json.error??'Fout bij aanmaken'); setSavingFeed(false); return; }
     setFeedConfigs(prev => [...prev, json.config]);
-    setNewFeedOpen(false); setNewFeedMarket(''); setNewFeedChannel('google'); setNewFeedName(''); setNewFeedActive(true);
+    setNewFeedOpen(false); setNewFeedMarket(''); setNewFeedChannel('google'); setNewFeedName(''); setNewFeedActive(true); setNewFeedLang('nl'); setNewFeedProductIds(new Set());
     setSavingFeed(false);
   }
 
@@ -497,10 +508,18 @@ export default function FeedSuitePage() {
     if (!testName.trim()||!testProductIds.size) { setTestError('Naam en minimaal 1 product zijn verplicht'); return; }
     setCreatingTest(true); setTestError(null);
     try {
-      const res=await fetch('/api/feed/ab-tests', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name:testName.trim(), field:testField, product_ids:[...testProductIds] }) });
+      const res=await fetch('/api/feed/ab-tests', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+        name: testName.trim(), field: testField, channel: testChannel || null,
+        variant_a_label: testVariantALabel || 'Variant A (huidig)',
+        variant_b_label: testVariantBLabel || 'Variant B (nieuw)',
+        variant_b_value: testVariantBVal || undefined,
+        product_ids: [...testProductIds],
+      }) });
       const d=await res.json();
       if (!res.ok) throw new Error(d.error);
-      setAbTests(prev=>[d.test,...prev]); setNewTestOpen(false); setTestName(''); setTestProductIds(new Set());
+      await loadABTests();
+      setNewTestOpen(false); setTestName(''); setTestProductIds(new Set());
+      setTestChannel('google'); setTestVariantALabel('Variant A (huidig)'); setTestVariantBLabel('Variant B (nieuw)'); setTestVariantBVal('');
     } catch(e:any) { setTestError(e.message); }
     finally { setCreatingTest(false); }
   }
@@ -755,7 +774,7 @@ export default function FeedSuitePage() {
           {/* Header row */}
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-300">Feed configuraties</h2>
-            <button onClick={()=>{setNewFeedOpen(o=>!o);setFeedError(null);}} className="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">+ Nieuwe Feed</button>
+            <button onClick={()=>{setNewFeedOpen(o=>{if(!o){setNewFeedProductIds(new Set(products.map(p=>p.id)));}return !o;});setFeedError(null);}} className="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">+ Nieuwe Feed</button>
           </div>
 
           {/* New feed form */}
@@ -765,7 +784,11 @@ export default function FeedSuitePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Markt</label>
-                  <select value={newFeedMarket} onChange={e=>setNewFeedMarket(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                  <select value={newFeedMarket} onChange={e=>{
+                    setNewFeedMarket(e.target.value);
+                    const mkt=markets.find(m=>m.id===e.target.value);
+                    if (mkt?.language_code) setNewFeedLang(mkt.language_code);
+                  }} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
                     <option value="">— kies markt —</option>
                     {markets.map(m=><option key={m.id} value={m.id}>{FLAGS[m.code]??'🌐'} {m.name} ({m.code})</option>)}
                   </select>
@@ -784,6 +807,17 @@ export default function FeedSuitePage() {
                   <label className="text-xs text-gray-500 mb-1 block">Feed naam</label>
                   <input value={newFeedName} onChange={e=>setNewFeedName(e.target.value)} placeholder={newFeedChannel} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500" />
                 </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Taal <span className="text-gray-600">(auto van markt)</span></label>
+                  <select value={newFeedLang} onChange={e=>setNewFeedLang(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                    <option value="nl">Nederlands (nl)</option>
+                    <option value="de">Duits (de)</option>
+                    <option value="fr">Frans (fr)</option>
+                    <option value="en">Engels (en)</option>
+                    <option value="es">Spaans (es)</option>
+                    <option value="it">Italiaans (it)</option>
+                  </select>
+                </div>
                 <div className="flex items-center gap-3 pt-5">
                   <button onClick={()=>setNewFeedActive(a=>!a)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${newFeedActive?'bg-indigo-600':'bg-gray-700'}`}>
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${newFeedActive?'translate-x-6':'translate-x-1'}`}/>
@@ -791,6 +825,27 @@ export default function FeedSuitePage() {
                   <span className="text-sm text-gray-400">{newFeedActive?'Actief':'Inactief'}</span>
                 </div>
               </div>
+
+              {/* Product selection */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs text-gray-500">Producten in feed <span className="text-gray-600">({newFeedProductIds.size} van {products.length} geselecteerd)</span></label>
+                  <div className="flex gap-2">
+                    <button onClick={()=>setNewFeedProductIds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-400 hover:text-indigo-300">Alles</button>
+                    <button onClick={()=>setNewFeedProductIds(new Set())} className="text-xs text-gray-500 hover:text-gray-400">Geen</button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1 border border-gray-800 rounded-lg p-2">
+                  {products.map(p=>(
+                    <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer '+(newFeedProductIds.has(p.id)?'bg-indigo-950/40 border border-indigo-900/50':'bg-gray-800/40 border border-transparent hover:bg-gray-800')}>
+                      <input type="checkbox" checked={newFeedProductIds.has(p.id)} onChange={e=>{const s=new Set(newFeedProductIds);e.target.checked?s.add(p.id):s.delete(p.id);setNewFeedProductIds(s);}} className="accent-indigo-500 shrink-0"/>
+                      <span className="text-xs text-gray-300 truncate">{p.name_nl}</span>
+                    </label>
+                  ))}
+                  {products.length===0&&<p className="text-xs text-gray-600 col-span-4 py-4 text-center">Eerst Shopify Sync uitvoeren</p>}
+                </div>
+              </div>
+
               {feedError && <p className="text-xs text-red-400">{feedError}</p>}
               <div className="flex gap-2">
                 <button onClick={createFeedConfig} disabled={savingFeed} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{savingFeed?'Aanmaken...':'Feed aanmaken'}</button>
@@ -1312,18 +1367,35 @@ export default function FeedSuitePage() {
           {newTestOpen && (
             <div className="bg-gray-900/70 border border-indigo-900/50 rounded-xl p-5">
               <h4 className="text-sm font-semibold text-gray-200 mb-4">Nieuwe A/B Test</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                 <div><label className="text-xs text-gray-400 mb-1 block">Testnaam *</label><input value={testName} onChange={e=>setTestName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="bv. Titels zomer 2025"/></div>
                 <div><label className="text-xs text-gray-400 mb-1 block">Veld</label><select value={testField} onChange={e=>setTestField(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="title">Titel</option><option value="description">Beschrijving</option><option value="image">Afbeelding</option></select></div>
+                <div><label className="text-xs text-gray-400 mb-1 block">Platform / kanaal</label><select value={testChannel} onChange={e=>setTestChannel(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="google">Google Shopping</option><option value="meta">Meta Catalog</option><option value="awin">Awin Affiliate</option><option value="bol">Bol.com</option><option value="shopify">Shopify</option></select></div>
                 <div><label className="text-xs text-gray-400 mb-1 block">Categorie</label><select value={typeof hypothesisEdit?.category==='string'?hypothesisEdit.category:''} onChange={e=>setHypothesisEdit(h=>h?{...h,category:e.target.value}:{id:'new',hypothesis:'',category:e.target.value,tags:''})} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="">— selecteer —</option>{['branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c}</option>)}</select></div>
               </div>
-              <div className="mb-4">
-                <label className="text-xs text-gray-400 mb-1 block">Hypothese * <span className="text-gray-600">(bv. "Merknaam vooraan verhoogt CTR met 10%")</span></label>
+              <div className="mb-3">
+                <label className="text-xs text-gray-400 mb-1 block">Hypothese <span className="text-gray-600">(bv. "Merknaam vooraan verhoogt CTR met 10%")</span></label>
                 <input value={hypothesisEdit?.id==='new'?hypothesisEdit.hypothesis:''} onChange={e=>setHypothesisEdit(h=>h?{...h,hypothesis:e.target.value}:{id:'new',hypothesis:e.target.value,category:'',tags:''})} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="Wat verwacht je te meten?"/>
               </div>
+
+              {/* Variant labels + content */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-blue-950/20 border border-blue-900/30 rounded-lg p-3 space-y-2">
+                  <div className="text-xs font-semibold text-blue-400">Variant A (huidig)</div>
+                  <input value={testVariantALabel} onChange={e=>setTestVariantALabel(e.target.value)} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-blue-500" placeholder="Label variant A"/>
+                  <p className="text-xs text-gray-600">Huidige content wordt automatisch ingeladen vanuit feed_product_content</p>
+                </div>
+                <div className="bg-purple-950/20 border border-purple-900/30 rounded-lg p-3 space-y-2">
+                  <div className="text-xs font-semibold text-purple-400">Variant B (nieuw)</div>
+                  <input value={testVariantBLabel} onChange={e=>setTestVariantBLabel(e.target.value)} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-purple-500" placeholder="Label variant B"/>
+                  {testField!=='image'&&<textarea value={testVariantBVal} onChange={e=>setTestVariantBVal(e.target.value)} rows={2} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-purple-500 resize-none" placeholder={testField==='title'?'Alternatieve titel (leeg = AI-variant)':'Alternatieve beschrijving (leeg = AI-variant)'}/>}
+                  {testField==='image'&&<p className="text-xs text-gray-600">Beste afbeelding uit image_bank wordt gebruikt</p>}
+                </div>
+              </div>
+
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2"><label className="text-xs text-gray-400">Producten selecteren *</label><div className="flex gap-2"><button onClick={()=>setTestProductIds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-400">Alles</button><button onClick={()=>setTestProductIds(new Set())} className="text-xs text-gray-500">Geen</button></div></div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1 border border-gray-800 rounded-lg p-2">
                   {products.map(p=>(
                     <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer '+(testProductIds.has(p.id)?'bg-indigo-950/40 border border-indigo-900/50':'bg-gray-800/50 border border-transparent hover:bg-gray-800')}>
                       <input type="checkbox" checked={testProductIds.has(p.id)} onChange={e=>{const s=new Set(testProductIds);e.target.checked?s.add(p.id):s.delete(p.id);setTestProductIds(s);}} className="accent-indigo-500"/>
@@ -1358,6 +1430,7 @@ export default function FeedSuitePage() {
                           <span className="font-medium text-gray-200">{test.name}</span>
                           <span className={`text-xs px-2 py-0.5 rounded ${statusColor[test.status]??statusColor.draft}`}>{test.status}</span>
                           <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{test.field}</span>
+                          {test.channel&&<span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-500">{test.channel}</span>}
                           <span className="text-xs text-gray-600">{test.product_count}p</span>
                         </div>
                         <div className="text-xs text-gray-600 mt-0.5">{timeAgo(test.created_at)} geleden aangemaakt{test.started_at&&` · gestart ${timeAgo(test.started_at)} geleden`}</div>
@@ -1367,6 +1440,24 @@ export default function FeedSuitePage() {
                         {test.status==='active' && <button onClick={()=>patchTest(test.id,{action:'stop'})} className="text-xs px-3 py-1.5 bg-amber-900/40 text-amber-400 hover:bg-amber-900/60 rounded-lg border border-amber-900/50">⏹ Stop</button>}
                       </div>
                     </div>
+
+                    {/* Variant content preview */}
+                    {(test.sample_value_a || test.sample_value_b) && (
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="bg-blue-950/15 border border-blue-900/30 rounded-lg p-3">
+                          <div className="text-xs font-semibold text-blue-400 mb-1">{test.variant_a_label||'Variant A'}</div>
+                          {test.field==='image'
+                            ? test.sample_value_a ? <img src={test.sample_value_a} alt="A" className="w-full h-20 object-contain rounded"/> : <span className="text-xs text-gray-600">—</span>
+                            : <p className="text-xs text-gray-300 line-clamp-3 leading-relaxed">{test.sample_value_a||'—'}</p>}
+                        </div>
+                        <div className="bg-purple-950/15 border border-purple-900/30 rounded-lg p-3">
+                          <div className="text-xs font-semibold text-purple-400 mb-1">{test.variant_b_label||'Variant B'}</div>
+                          {test.field==='image'
+                            ? test.sample_value_b ? <img src={test.sample_value_b} alt="B" className="w-full h-20 object-contain rounded"/> : <span className="text-xs text-gray-600">—</span>
+                            : <p className="text-xs text-gray-300 line-clamp-3 leading-relaxed">{test.sample_value_b||'—'}</p>}
+                        </div>
+                      </div>
+                    )}
 
                     {(grpA||grpB) && (
                       <div className="grid grid-cols-2 gap-3 mb-3">

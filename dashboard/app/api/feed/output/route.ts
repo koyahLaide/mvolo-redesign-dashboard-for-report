@@ -214,11 +214,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: `Geen feed config voor ${marketCode}/${channel}` }, { status: 404 });
     }
 
-    // 3. Products
-    const { data: products, error: pErr } = await supabase
+    // 3. Products — check feed_config_products for selective inclusion
+    const { data: configProducts } = await supabase
+      .from('feed_config_products')
+      .select('product_id')
+      .eq('feed_config_id', config.id);
+
+    let productQuery = supabase
       .from('products')
       .select('id,shopify_id,shopify_handle,ean,sku,name_nl,description_nl,category,brand,price_eur,sale_price_eur,image_url,additional_images,active')
       .eq('active', true).order('name_nl');
+
+    if (configProducts && configProducts.length > 0) {
+      const allowedIds = configProducts.map(r => r.product_id);
+      productQuery = productQuery.in('id', allowedIds);
+    }
+
+    const { data: products, error: pErr } = await productQuery;
     if (pErr) throw pErr;
 
     // 4. Localized content
