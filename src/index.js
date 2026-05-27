@@ -27,7 +27,7 @@ async function main() {
   if (arg === 'sync') {
     console.log(chalk.bold.white('\n  Mvolo Attribution Dashboard — CI sync\n'));
     await initSupabase();
-    await runSync();
+    await runSync(pool);
     process.exit(0);
   }
 
@@ -44,7 +44,7 @@ async function main() {
   await initSupabase();
 
   // Run once immediately on startup
-  await runSync();
+  await runSync(pool);
 
   // Schedule subsequent order syncs every 6 hours
   cron.schedule(CRON_SCHEDULE, async () => {
@@ -52,7 +52,7 @@ async function main() {
       chalk.cyan(`\n  [cron] Scheduled sync triggered at ${new Date().toLocaleString()}`),
     );
     try {
-      await runSync();
+      await runSync(pool);
     } catch (err) {
       console.error(chalk.red(`  [cron] Sync error: ${err.message}`));
     }
@@ -63,7 +63,6 @@ async function main() {
   cron.schedule(SPEND_CRON_SCHEDULE, async () => {
     console.log(chalk.cyan(`\n  [cron] Spend sync triggered at ${new Date().toLocaleString()}`));
     try {
-      await initSupabase();
       await runSpendSync(pool);
     } catch (err) {
       console.error(chalk.red(`  [cron] Spend sync error: ${err.message}`));

@@ -1,7 +1,6 @@
 'use strict';
 
 const chalk = require('chalk');
-const pool = require('../db/db').pool;
 const { logSync } = require('../db/queriesv2');
 const { summarizeAttribution } = require('./attribution');
 
@@ -12,7 +11,7 @@ const { syncKlaviyo } = require('./sync/klaviyo');
 const { syncGa4 } = require('./sync/ga4');
 const { syncShopify } = require('./sync/shopify');
 
-async function runSync() {
+async function runSync(pool) {
   const syncedAt = new Date().toISOString();
 
   console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
