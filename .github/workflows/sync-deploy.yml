@@ -146,6 +146,15 @@ jobs:
           sed -i '/Maandelijkse omzet.*brutomarge/d' dashboard/app/page.tsx || true
 
       # ── 9b. Force patch page.tsx op runner ─────────────────────────────────────
+      # ── 9. Upload DB snapshot (manual runs only) ───────────────────────────
+      - name: Upload mvolo.db artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvolo-db-snapshot
+          path: data/mvolo.db
+          retention-days: 7
+
       # ── 10. Install dashboard deps ──────────────────────────────────────────
       - name: Install dashboard dependencies
         working-directory: dashboard
