@@ -4,51 +4,37 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import initSqlJs from 'sql.js';
-import { DB_PATH } from '../../../lib/db-path';
-
-function rowsToObjects(result: any) {
-  if (!result || !result.columns) return [];
-  return result.values.map((row: any[]) =>
-    Object.fromEntries(result.columns.map((col: string, i: number) => [col, row[i]]))
-  );
-}
+import pool from '../../../lib/db';
 
 export async function GET() {
   try {
-    const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
-    const SQL = await initSqlJs({ locateFile: () => wasmPath });
-    const db = new SQL.Database(fs.readFileSync(DB_PATH));
-
-    // ── Week-over-week ────────────────────────────────────────────────────────
-    const wowResult = db.exec(`
+    // Week-over-week
+    const wowResult = await pool.query(`
       SELECT
-        ROUND(SUM(CASE WHEN created_at >= date('now','-7 days')  THEN total_price ELSE 0 END), 2) as this_week_rev,
-        ROUND(SUM(CASE WHEN created_at >= date('now','-14 days') AND created_at < date('now','-7 days') THEN total_price ELSE 0 END), 2) as last_week_rev,
-        SUM(CASE WHEN created_at >= date('now','-7 days')  THEN 1 ELSE 0 END) as this_week_orders,
-        SUM(CASE WHEN created_at >= date('now','-14 days') AND created_at < date('now','-7 days') THEN 1 ELSE 0 END) as last_week_orders
+        ROUND(SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '7 days'  THEN total_price ELSE 0 END)::numeric, 2) as this_week_rev,
+        ROUND(SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '14 days' AND created_at < CURRENT_DATE - INTERVAL '7 days' THEN total_price ELSE 0 END)::numeric, 2) as last_week_rev,
+        SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '7 days'  THEN 1 ELSE 0 END) as this_week_orders,
+        SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '14 days' AND created_at < CURRENT_DATE - INTERVAL '7 days' THEN 1 ELSE 0 END) as last_week_orders
       FROM orders
     `);
-    const wow = wowResult.length ? rowsToObjects(wowResult[0])[0] : null;
+    const wow = wowResult.rows[0];
     const revChange = wow && wow.last_week_rev > 0
-      ? Math.round(((wow.this_week_rev - wow.last_week_rev) / wow.last_week_rev) * 100)
-      : null;
+      ? Math.round(((wow.this_week_rev - wow.last_week_rev) / wow.last_week_rev) * 100) : null;
     const orderChange = wow && wow.last_week_orders > 0
-      ? Math.round(((wow.this_week_orders - wow.last_week_orders) / wow.last_week_orders) * 100)
-      : null;
+      ? Math.round(((wow.this_week_orders - wow.last_week_orders) / wow.last_week_orders) * 100) : null;
 
-    // ── Vandaag vs gisteren ───────────────────────────────────────────────────
-    const todayResult = db.exec(`
+    // Vandaag vs gisteren
+    const todayResult = await pool.query(`
       SELECT
-        ROUND(SUM(CASE WHEN DATE(created_at) = DATE('now') THEN total_price ELSE 0 END), 2) as today_rev,
-        SUM(CASE WHEN DATE(created_at) = DATE('now') THEN 1 ELSE 0 END) as today_orders,
-        ROUND(SUM(CASE WHEN DATE(created_at) = DATE('now','-1 day') THEN total_price ELSE 0 END), 2) as yesterday_rev,
-        SUM(CASE WHEN DATE(created_at) = DATE('now','-1 day') THEN 1 ELSE 0 END) as yesterday_orders
+        ROUND(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN total_price ELSE 0 END)::numeric, 2) as today_rev,
+        SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 ELSE 0 END) as today_orders,
+        ROUND(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE - INTERVAL '1 day' THEN total_price ELSE 0 END)::numeric, 2) as yesterday_rev,
+        SUM(CASE WHEN DATE(created_at) = CURRENT_DATE - INTERVAL '1 day' THEN 1 ELSE 0 END) as yesterday_orders
       FROM orders
     `);
-    const today = todayResult.length ? rowsToObjects(todayResult[0])[0] : null;
+    const today = todayResult.rows[0];
 
-    // ── Kritieke voorraad ─────────────────────────────────────────────────────
+    // Kritieke voorraad
     const cogsPath = path.join(process.cwd(), 'data', 'products-cogs.json');
     const cogsData = JSON.parse(fs.readFileSync(cogsPath, 'utf-8'));
 
@@ -64,17 +50,16 @@ export async function GET() {
       }
     }
 
-    const velocityResult = db.exec(`
+    const velocityResult = await pool.query(`
       SELECT sku, SUM(quantity) * 1.0 / 30 as daily
-      FROM order_items WHERE order_date >= date('now','-30 days') AND sku != ''
+      FROM order_items WHERE order_date >= CURRENT_DATE - INTERVAL '30 days' AND sku != ''
       GROUP BY sku
     `);
     const velocity: Record<string, number> = {};
-    if (velocityResult.length) rowsToObjects(velocityResult[0]).forEach((r: any) => { velocity[r.sku] = r.daily; });
+    velocityResult.rows.forEach((r: any) => { velocity[r.sku] = parseFloat(r.daily); });
 
     const { lead_times, safety_stock_days } = cogsData;
     const sea_lead = lead_times.production_days + lead_times.sea_days + safety_stock_days;
-
     const criticalProducts: any[] = [];
     for (const p of cogsData.products) {
       const inv = inventory[p.sku];
@@ -84,9 +69,7 @@ export async function GET() {
       const days_left = vel > 0 ? Math.round(stock / vel) : (stock > 0 ? 999 : 0);
       if (stock <= 0 || (vel > 0 && days_left < sea_lead)) {
         criticalProducts.push({
-          name: p.name,
-          sku: p.sku,
-          stock,
+          name: p.name, sku: p.sku, stock,
           days_left: days_left > 900 ? null : days_left,
           urgency: stock <= 0 ? 'KRITIEK' : days_left < 30 ? 'URGENT' : 'BESTEL',
         });
@@ -94,112 +77,106 @@ export async function GET() {
     }
     criticalProducts.sort((a, b) => (a.stock < b.stock ? -1 : 1));
 
-    // ── Kanaal anomalie (deze week vs vorige week per kanaal) ─────────────────
-    const channelWowResult = db.exec(`
+    // Kanaal anomalie
+    const channelWowResult = await pool.query(`
       SELECT channel,
-        SUM(CASE WHEN created_at >= date('now','-7 days') THEN 1 ELSE 0 END) as this_week,
-        SUM(CASE WHEN created_at >= date('now','-14 days') AND created_at < date('now','-7 days') THEN 1 ELSE 0 END) as last_week
+        SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '7 days' THEN 1 ELSE 0 END) as this_week,
+        SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '14 days' AND created_at < CURRENT_DATE - INTERVAL '7 days' THEN 1 ELSE 0 END) as last_week
       FROM orders
       GROUP BY channel
-      HAVING last_week > 0 OR this_week > 0
+      HAVING SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '14 days' AND created_at < CURRENT_DATE - INTERVAL '7 days' THEN 1 ELSE 0 END) > 0
+          OR SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '7 days' THEN 1 ELSE 0 END) > 0
       ORDER BY last_week DESC
     `);
-    const channelWow = channelWowResult.length ? rowsToObjects(channelWowResult[0]).map((r: any) => ({
+    const channelWow = channelWowResult.rows.map((r: any) => ({
       channel: r.channel,
-      this_week: r.this_week,
-      last_week: r.last_week,
+      this_week: parseInt(r.this_week),
+      last_week: parseInt(r.last_week),
       change_pct: r.last_week > 0 ? Math.round(((r.this_week - r.last_week) / r.last_week) * 100) : null,
-    })) : [];
+    }));
 
-    // ── Email timing aanbeveling ──────────────────────────────────────────────
+    // Email timing aanbeveling
     let emailAdvice: any = null;
     try {
       const reportPath = path.join(process.cwd(), 'data', 'email-timing-report.json');
       const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
       const best = report.dow_stats?.[0];
       emailAdvice = best ? {
-        best_day:         best.dag,
-        best_times:       report.recommendations?.best_times ?? ['16:00–18:00'],
-        rev_per_email:    best.rev_per_email,
-        best_campaign_type: report.recommendations?.best_campaign_type,
+        best_day: best.dag, best_times: report.recommendations?.best_times ?? ['16:00–18:00'],
+        rev_per_email: best.rev_per_email, best_campaign_type: report.recommendations?.best_campaign_type,
       } : null;
     } catch { emailAdvice = null; }
 
-    // ── Meest verkochte SKU vandaag ───────────────────────────────────────────
-    const todaySkuResult = db.exec(`
+    // Meest verkochte SKU vandaag
+    const todaySkuResult = await pool.query(`
       SELECT oi.sku, oi.title, SUM(oi.quantity) as qty
       FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
-      WHERE DATE(o.created_at) = DATE('now') AND oi.sku != ''
-      GROUP BY oi.sku ORDER BY qty DESC LIMIT 3
+      WHERE DATE(o.created_at) = CURRENT_DATE AND oi.sku != ''
+      GROUP BY oi.sku, oi.title ORDER BY qty DESC LIMIT 3
     `);
-    const todaySkus = todaySkuResult.length ? rowsToObjects(todaySkuResult[0]) : [];
+    const todaySkus = todaySkuResult.rows;
 
-
-    // ── Netto winst deze maand ────────────────────────────────────────────────
-    const revenueMonthResult = db.exec(`
+    // Netto winst deze maand
+    const revenueMonthResult = await pool.query(`
       SELECT
-        ROUND(SUM(total_price), 2) as revenue,
-        ROUND(SUM(total_price) / 1.21, 2) as revenue_excl
+        ROUND(SUM(total_price)::numeric, 2) as revenue,
+        ROUND((SUM(total_price) / 1.21)::numeric, 2) as revenue_excl
       FROM orders
-      WHERE created_at >= date('now', 'start of month')
+      WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
         AND financial_status NOT IN ('refunded', 'voided')
     `);
-    const revMonth = revenueMonthResult.length ? rowsToObjects(revenueMonthResult[0])[0] : null;
+    const revMonth = revenueMonthResult.rows[0];
 
-    const cogMonthResult = db.exec(`
-      SELECT ROUND(SUM(oi.quantity * oi.price), 2) as total_items_revenue
+    const cogMonthResult = await pool.query(`
+      SELECT ROUND(SUM(oi.quantity * oi.price)::numeric, 2) as total_items_revenue
       FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
-      WHERE o.created_at >= date('now', 'start of month')
+      WHERE o.created_at >= DATE_TRUNC('month', CURRENT_DATE)
     `);
-    const cogMonth = cogMonthResult.length ? rowsToObjects(cogMonthResult[0])[0] : null;
+    const cogMonth = cogMonthResult.rows[0];
 
-    const spendMonthResult = db.exec(`
-      SELECT ROUND(SUM(spend), 2) as total_spend
+    const spendMonthResult = await pool.query(`
+      SELECT ROUND(SUM(spend)::numeric, 2) as total_spend
       FROM ad_spend
-      WHERE date >= date('now', 'start of month')
+      WHERE date >= DATE_TRUNC('month', CURRENT_DATE)
     `);
-    const spendMonth = spendMonthResult.length ? rowsToObjects(spendMonthResult[0])[0] : null;
+    const spendMonth = spendMonthResult.rows[0];
 
-    const opexResult = db.exec(`SELECT ROUND(SUM(monthly_amount), 2) as total FROM opex`);
-    const opexTotal = opexResult.length ? rowsToObjects(opexResult[0])[0]?.total ?? 0 : 0;
+    const opexResult = await pool.query(`SELECT ROUND(SUM(monthly_amount)::numeric, 2) as total FROM opex`);
+    const opexTotal = parseFloat(opexResult.rows[0]?.total ?? '0');
 
-    // Schat COG als % van omzet als order_items leeg is
-    const revenueExcl = revMonth?.revenue_excl ?? 0;
-    const cogEstimate = cogMonth?.total_items_revenue > 0
-      ? Math.round(cogMonth.total_items_revenue * 0.28) // 28% COGS ratio
+    const revenueExcl = parseFloat(revMonth?.revenue_excl ?? '0');
+    const cogEstimate = parseFloat(cogMonth?.total_items_revenue ?? '0') > 0
+      ? Math.round(parseFloat(cogMonth.total_items_revenue) * 0.28)
       : Math.round(revenueExcl * 0.28);
-    const adSpend = spendMonth?.total_spend ?? 0;
+    const adSpend = parseFloat(spendMonth?.total_spend ?? '0');
     const grossProfit = Math.round(revenueExcl - cogEstimate);
     const netProfit = Math.round(grossProfit - opexTotal - adSpend);
     const netMarginPct = revenueExcl > 0 ? Math.round((netProfit / revenueExcl) * 100) : 0;
 
-    // ── Return rate (30d) ─────────────────────────────────────────────────────
-    const returnResult = db.exec(`
+    // Return rate (30d)
+    const returnResult = await pool.query(`
       SELECT
         COUNT(*) as total_orders,
         SUM(CASE WHEN financial_status IN ('refunded','partially_refunded') THEN 1 ELSE 0 END) as returns,
         ROUND(100.0 * SUM(CASE WHEN financial_status IN ('refunded','partially_refunded') THEN 1 ELSE 0 END) / COUNT(*), 1) as return_rate
       FROM orders
-      WHERE created_at >= date('now', '-30 days')
+      WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
     `);
-    const returnStats = returnResult.length ? rowsToObjects(returnResult[0])[0] : null;
+    const returnStats = returnResult.rows[0];
 
-    // ── Competitor prijs alerts ───────────────────────────────────────────────
-    const compAlertResult = db.exec(`
-      SELECT competitor, product_name, price, category, url,
-        price_change_pct, price_changed
+    // Competitor prijs alerts
+    const compAlertResult = await pool.query(`
+      SELECT competitor, product_name, price, category, url, price_change_pct, price_changed
       FROM competitor_prices
       WHERE date = (SELECT MAX(date) FROM competitor_prices)
-        AND price_changed = 1
+        AND price_changed = true
       ORDER BY ABS(price_change_pct) DESC
       LIMIT 3
     `);
-    const competitorAlerts = compAlertResult.length ? rowsToObjects(compAlertResult[0]) : [];
 
-    // ── Competitor goedkoper dan Mvolo ────────────────────────────────────────
-    const cheaperCompResult = db.exec(`
+    const cheaperCompResult = await pool.query(`
       SELECT cp.competitor, cp.category, MIN(cp.price) as min_price
       FROM competitor_prices cp
       WHERE cp.date = (SELECT MAX(date) FROM competitor_prices)
@@ -208,45 +185,37 @@ export async function GET() {
       ORDER BY min_price ASC
       LIMIT 5
     `);
-    const cheaperCompetitors = cheaperCompResult.length ? rowsToObjects(cheaperCompResult[0]) : [];
-
-    db.close();
 
     return NextResponse.json({
       wow: {
-        this_week_rev:    wow?.this_week_rev    ?? 0,
-        last_week_rev:    wow?.last_week_rev    ?? 0,
-        this_week_orders: wow?.this_week_orders ?? 0,
-        last_week_orders: wow?.last_week_orders ?? 0,
+        this_week_rev:    parseFloat(wow?.this_week_rev ?? '0'),
+        last_week_rev:    parseFloat(wow?.last_week_rev ?? '0'),
+        this_week_orders: parseInt(wow?.this_week_orders ?? '0'),
+        last_week_orders: parseInt(wow?.last_week_orders ?? '0'),
         rev_change_pct:   revChange,
         order_change_pct: orderChange,
       },
       today: {
-        revenue: today?.today_rev    ?? 0,
-        orders:  today?.today_orders ?? 0,
-        yesterday_revenue: today?.yesterday_rev    ?? 0,
-        yesterday_orders:  today?.yesterday_orders ?? 0,
+        revenue:           parseFloat(today?.today_rev ?? '0'),
+        orders:            parseInt(today?.today_orders ?? '0'),
+        yesterday_revenue: parseFloat(today?.yesterday_rev ?? '0'),
+        yesterday_orders:  parseInt(today?.yesterday_orders ?? '0'),
       },
       critical_products: criticalProducts.slice(0, 5),
       channel_wow:       channelWow,
       email_advice:      emailAdvice,
       today_skus:        todaySkus,
       profit: {
-        revenue_excl:   revenueExcl,
-        cog:            cogEstimate,
-        gross_profit:   grossProfit,
-        opex:           opexTotal,
-        ad_spend:       adSpend,
-        net_profit:     netProfit,
-        net_margin_pct: netMarginPct,
+        revenue_excl: revenueExcl, cog: cogEstimate, gross_profit: grossProfit,
+        opex: opexTotal, ad_spend: adSpend, net_profit: netProfit, net_margin_pct: netMarginPct,
       },
       return_rate: {
-        total_orders: returnStats?.total_orders ?? 0,
-        returns:      returnStats?.returns ?? 0,
-        rate:         returnStats?.return_rate ?? 0,
+        total_orders: parseInt(returnStats?.total_orders ?? '0'),
+        returns:      parseInt(returnStats?.returns ?? '0'),
+        rate:         parseFloat(returnStats?.return_rate ?? '0'),
       },
-      competitor_alerts:    competitorAlerts,
-      cheaper_competitors:  cheaperCompetitors,
+      competitor_alerts:   compAlertResult.rows,
+      cheaper_competitors: cheaperCompResult.rows,
     });
 
   } catch (err: any) {
