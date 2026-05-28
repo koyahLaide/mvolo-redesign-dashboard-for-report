@@ -1,10 +1,8 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import fs from 'fs';
-import initSqlJs from 'sql.js';
-import path from 'path';
-import { DB_PATH } from '../../../../lib/db-path';
+import pool from '../../../../lib/db';
+
 const PAGE_SIZE = 50;
 
 const ALLOWED_SORT_COLS = new Set([
@@ -12,18 +10,8 @@ const ALLOWED_SORT_COLS = new Set([
   'first_touch', 'last_touch', 'utm_campaign', 'utm_content', 'utm_term', 'is_new_customer', 'marketplace',
 ]);
 
-function rowsToObjects(result: { columns: string[]; values: unknown[][] }): unknown[] {
-  return result.values.map((row) =>
-    Object.fromEntries(result.columns.map((col, i) => [col, row[i]]))
-  );
-}
-
 export async function GET(request: Request) {
   try {
-    if (!fs.existsSync(DB_PATH)) {
-      return Response.json({ error: 'Database not found.' }, { status: 503 });
-    }
-
     const { searchParams } = new URL(request.url);
     const page     = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
     const search   = (searchParams.get('search') ?? '').trim();
@@ -33,56 +21,42 @@ export async function GET(request: Request) {
     const platform = searchParams.get('platform') ?? 'all';
     const offset   = (page - 1) * PAGE_SIZE;
 
-    const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
-    const SQL = await initSqlJs({ locateFile: () => wasmPath });
-    const db = new SQL.Database(fs.readFileSync(DB_PATH));
-
-    // Migrate
-    const migrations = [
-      'ALTER TABLE orders ADD COLUMN first_touch TEXT',
-      'ALTER TABLE orders ADD COLUMN last_touch TEXT',
-      'ALTER TABLE orders ADD COLUMN customer_email TEXT',
-      'ALTER TABLE orders ADD COLUMN customer_id TEXT',
-      'ALTER TABLE orders ADD COLUMN is_new_customer INTEGER',
-      "ALTER TABLE orders ADD COLUMN marketplace TEXT DEFAULT 'shopify'",
-    ];
-    for (const sql of migrations) {
-      try { db.run(sql); } catch { /* already exists */ }
-    }
-
-    // Build WHERE clause from search + platform filter
     const conditions: string[] = [];
+    const params: unknown[] = [];
+
     if (search) {
-      const s = search.replace(/'/g, "''");
-      conditions.push(`(order_number LIKE '%${s}%' OR channel LIKE '%${s}%' OR utm_campaign LIKE '%${s}%')`);
+      params.push(`%${search}%`);
+      conditions.push(
+        `(order_number ILIKE $${params.length} OR channel ILIKE $${params.length} OR utm_campaign ILIKE $${params.length})`
+      );
     }
     if (platform === 'shopify') conditions.push(`(marketplace = 'shopify' OR marketplace IS NULL)`);
     if (platform === 'bol')     conditions.push(`marketplace = 'bol'`);
-    const searchClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     // Total count
-    const countResult = db.exec(`SELECT COUNT(*) as total FROM orders ${searchClause}`);
-    const total = countResult.length
-      ? (rowsToObjects(countResult[0])[0] as { total: number }).total
-      : 0;
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total FROM orders ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0]?.total ?? '0', 10);
 
-    // Paginated rows
-    const rowResult = db.exec(`
+    // Paginated rows — append LIMIT/OFFSET params
+    params.push(PAGE_SIZE, offset);
+    const rowResult = await pool.query(`
       SELECT
         id, order_number, created_at, total_price,
         channel, first_touch, last_touch,
         utm_campaign, utm_content, utm_term, is_new_customer, marketplace,
         device_type, browser_language
-      FROM orders ${searchClause}
+      FROM orders ${whereClause}
       ORDER BY ${sort} ${dir}
-      LIMIT ${PAGE_SIZE} OFFSET ${offset}
-    `);
-    const orders = rowResult.length ? rowsToObjects(rowResult[0]) : [];
-
-    db.close();
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `, params);
 
     return Response.json({
-      orders,
+      orders: rowResult.rows,
       total,
       page,
       pageSize: PAGE_SIZE,

@@ -2,26 +2,18 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import initSqlJs from 'sql.js';
-import { DB_PATH } from '../../../lib/db-path';
+import pool from '../../../lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const period = searchParams.get('period') ?? 'all';
 
-  const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
   try {
-    const SQL = await initSqlJs({ locateFile: () => wasmPath });
-    const fileBuffer = fs.readFileSync(DB_PATH);
-    const db = new SQL.Database(fileBuffer);
-
     const dateFilter = period === 'all'
       ? ''
-      : `AND DATE(created_at) >= DATE('now', '-${parseInt(period)} days')`;
+      : `AND DATE(created_at) >= CURRENT_DATE - INTERVAL '${parseInt(period)} days'`;
 
-    const citiesResult = db.exec(`
+    const citiesResult = await pool.query(`
       SELECT
         shipping_city    AS city,
         shipping_country AS country,
@@ -29,26 +21,24 @@ export async function GET(request: Request) {
         SUM(total_price) AS revenue,
         AVG(total_price) AS avg_order_value
       FROM orders
-      WHERE shipping_city IS NOT NULL
-        ${dateFilter}
+      WHERE shipping_city IS NOT NULL ${dateFilter}
       GROUP BY shipping_city, shipping_country
       ORDER BY orders DESC
       LIMIT 100
     `);
 
-    const countriesResult = db.exec(`
+    const countriesResult = await pool.query(`
       SELECT
         shipping_country,
         COUNT(*)         AS orders,
         SUM(total_price) AS revenue
       FROM orders
-      WHERE shipping_country IS NOT NULL
-        ${dateFilter}
+      WHERE shipping_country IS NOT NULL ${dateFilter}
       GROUP BY shipping_country
       ORDER BY orders DESC
     `);
 
-    const totalsResult = db.exec(`
+    const totalsResult = await pool.query(`
       SELECT
         COUNT(*) AS total_orders,
         COUNT(shipping_city) AS orders_with_city,
@@ -57,15 +47,14 @@ export async function GET(request: Request) {
       WHERE 1=1 ${dateFilter}
     `);
 
-    // ── Visitor sessions per land ─────────────────────────────────────────────
-    const visitorGeoResult = db.exec(`
+    const visitorGeoResult = await pool.query(`
       SELECT o.shipping_country as country,
         COUNT(DISTINCT vs.visitor_id) as visitors,
         COUNT(DISTINCT o.id) as orders,
-        ROUND(AVG(vs.session_count), 1) as avg_sessions,
-        ROUND(AVG(vs.sessions_before_purchase), 1) as avg_sessions_before_purchase,
-        SUM(vs.had_rage_click) as rage_clicks,
-        SUM(vs.had_dead_click) as dead_clicks
+        ROUND(AVG(vs.session_count)::numeric, 1) as avg_sessions,
+        ROUND(AVG(vs.sessions_before_purchase)::numeric, 1) as avg_sessions_before_purchase,
+        SUM(CASE WHEN vs.had_rage_click THEN 1 ELSE 0 END) as rage_clicks,
+        SUM(CASE WHEN vs.had_dead_click THEN 1 ELSE 0 END) as dead_clicks
       FROM visitor_sessions vs
       JOIN orders o ON o.id = vs.order_id
       WHERE o.shipping_country IS NOT NULL
@@ -73,21 +62,19 @@ export async function GET(request: Request) {
       ORDER BY visitors DESC
     `);
 
-    // ── Visitor sessie statistieken ────────────────────────────────────────────
-    const sessionStatsResult = db.exec(`
+    const sessionStatsResult = await pool.query(`
       SELECT
         COUNT(*) as total_sessions,
         COUNT(DISTINCT visitor_id) as unique_visitors,
-        ROUND(AVG(session_count), 1) as avg_sessions,
-        ROUND(AVG(sessions_before_purchase), 1) as avg_sessions_before_purchase,
+        ROUND(AVG(session_count)::numeric, 1) as avg_sessions,
+        ROUND(AVG(sessions_before_purchase)::numeric, 1) as avg_sessions_before_purchase,
         MAX(session_count) as max_sessions,
-        SUM(had_rage_click) as total_rage_clicks,
-        SUM(had_dead_click) as total_dead_clicks
+        SUM(CASE WHEN had_rage_click THEN 1 ELSE 0 END) as total_rage_clicks,
+        SUM(CASE WHEN had_dead_click THEN 1 ELSE 0 END) as total_dead_clicks
       FROM visitor_sessions
     `);
 
-    // ── Terugkeer verdeling ────────────────────────────────────────────────────
-    const returnVisitsResult = db.exec(`
+    const returnVisitsResult = await pool.query(`
       SELECT
         CASE
           WHEN session_count = 1 THEN '1 sessie'
@@ -102,31 +89,14 @@ export async function GET(request: Request) {
       ORDER BY MIN(session_count)
     `);
 
-    db.close();
-
-    function rowsToObjects(result: any) {
-      if (!result || !result.columns) return [];
-      return result.values.map((row: any[]) =>
-        Object.fromEntries(result.columns.map((col: string, i: number) => [col, row[i]]))
-      );
-    }
-    const toObjects = (result: any[]) => {
-      if (!result.length) return [];
-      const { columns, values } = result[0];
-      return values.map((row: any[]) =>
-        Object.fromEntries(columns.map((col: string, i: number) => [col, row[i]]))
-      );
-    };
-
-    const cities = toObjects(citiesResult);
-    const countries = toObjects(countriesResult);
-    const totalsArr = toObjects(totalsResult);
-    const totals = totalsArr[0] ?? { total_orders: 0, orders_with_city: 0, total_revenue: 0 };
-
-    const visitorGeo = visitorGeoResult.length ? rowsToObjects(visitorGeoResult[0]) : [];
-    const sessionStats = sessionStatsResult.length ? rowsToObjects(sessionStatsResult[0])[0] : null;
-    const returnVisits = returnVisitsResult.length ? rowsToObjects(returnVisitsResult[0]) : [];
-    return NextResponse.json({ cities, countries, totals, visitorGeo, sessionStats, returnVisits });
+    return NextResponse.json({
+      cities:       citiesResult.rows,
+      countries:    countriesResult.rows,
+      totals:       totalsResult.rows[0] ?? { total_orders: 0, orders_with_city: 0, total_revenue: 0 },
+      visitorGeo:   visitorGeoResult.rows,
+      sessionStats: sessionStatsResult.rows[0] ?? null,
+      returnVisits: returnVisitsResult.rows,
+    });
 
   } catch (err: any) {
     console.error('Geo API error:', err.message);

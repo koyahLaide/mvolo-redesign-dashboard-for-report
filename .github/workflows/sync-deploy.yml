@@ -2,8 +2,8 @@ name: Sync & Deploy
 
 on:
   schedule:
-    - cron: '0 0,6,12,18 * * *'   # every 6 hours
-  workflow_dispatch:                  # manual trigger
+    - cron: '0 0,6,12,18 * * *' # every 6 hours
+  workflow_dispatch: # manual trigger
 
 jobs:
   sync-and-deploy:
@@ -35,7 +35,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
           clean: true
-
 
       # ── 2. Cache database ───────────────────────────────────────────────────
       - name: Restore database cache
@@ -127,11 +126,11 @@ jobs:
         continue-on-error: true
 
       # ── 7d. Sync visitor sessions van Google Sheet ──────────────────────────
-      - name: Sync sessions
-        run: node src/scripts/sync-sessions.js
-        continue-on-error: true
+      # - name: Sync sessions
+      #  run: node src/scripts/sync-sessions.js
+      #  continue-on-error: true
 
-      # ── 8. Run ad spend sync ────────────────────────────────────────────────
+      # ── 7e. Run ad spend sync ────────────────────────────────────────────────
       - name: Run spend sync
         run: node src/index.js sync-spend
         continue-on-error: true

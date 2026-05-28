@@ -1,17 +1,18 @@
 'use strict';
 
 require('dotenv').config();
-const cron  = require('node-cron');
+const cron = require('node-cron');
 const chalk = require('chalk');
-const { initDb }       = require('./db/schema');
-const { runSync }      = require('./etl/sync');
-const { runSpendSync } = require('./etl/spend-sync');
+const { initSupabase } = require('./db/init_schema');
+const { pool } = require('./db/db');
+const { runSync } = require('./etl/syncv2');
+const { runSpendSync } = require('./etl/spend-syncv2');
 
-const CRON_SCHEDULE       = '0 */6 * * *'; // Every 6 hours
-const SPEND_CRON_SCHEDULE = '0 2 * * *';   // Daily at 02:00
+const CRON_SCHEDULE = '0 */6 * * *'; // Every 6 hours
+const SPEND_CRON_SCHEDULE = '0 2 * * *'; // Daily at 02:00
 
 function nextRunTime() {
-  const now  = new Date();
+  const now = new Date();
   const next = new Date(now);
   const nextHour = Math.ceil((now.getHours() + 1) / 6) * 6;
   next.setHours(nextHour % 24, 0, 0, 0);
@@ -23,36 +24,35 @@ async function main() {
   const arg = process.argv[2];
 
   // ── CI / GitHub Actions modus ─────────────────────────────────────────────
-  // node src/index.js sync       → eenmalige sync, dan exit
-  // node src/index.js sync-spend → eenmalige spend sync, dan exit
   if (arg === 'sync') {
     console.log(chalk.bold.white('\n  Mvolo Attribution Dashboard — CI sync\n'));
-    initDb();
-    await runSync();
+    await initSupabase();
+    await runSync(pool);
     process.exit(0);
   }
 
   if (arg === 'sync-spend') {
     console.log(chalk.bold.white('\n  Mvolo Attribution Dashboard — CI spend sync\n'));
-    const db = initDb();
-    await runSpendSync(db);
+    await initSupabase();
+    await runSpendSync(pool);
     process.exit(0);
   }
 
   // ── Lokale server modus (geen argument) ───────────────────────────────────
   console.log(chalk.bold.white('\n  Mvolo Attribution Dashboard'));
-  console.log(chalk.gray('  Initialising database…'));
-  initDb();
-  console.log(chalk.green('  Database ready.\n'));
+  console.log(chalk.gray('  Initialising Supabase connection…'));
+  await initSupabase();
 
   // Run once immediately on startup
-  await runSync();
+  await runSync(pool);
 
   // Schedule subsequent order syncs every 6 hours
   cron.schedule(CRON_SCHEDULE, async () => {
-    console.log(chalk.cyan(`\n  [cron] Scheduled sync triggered at ${new Date().toLocaleString()}`));
+    console.log(
+      chalk.cyan(`\n  [cron] Scheduled sync triggered at ${new Date().toLocaleString()}`),
+    );
     try {
-      await runSync();
+      await runSync(pool);
     } catch (err) {
       console.error(chalk.red(`  [cron] Sync error: ${err.message}`));
     }
@@ -63,7 +63,7 @@ async function main() {
   cron.schedule(SPEND_CRON_SCHEDULE, async () => {
     console.log(chalk.cyan(`\n  [cron] Spend sync triggered at ${new Date().toLocaleString()}`));
     try {
-      await runSpendSync(initDb());
+      await runSpendSync(pool);
     } catch (err) {
       console.error(chalk.red(`  [cron] Spend sync error: ${err.message}`));
     }
