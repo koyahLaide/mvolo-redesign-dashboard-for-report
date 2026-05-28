@@ -6,7 +6,9 @@ const { pool } = require('../db/db');
 const path = require('path');
 const chalk = require('chalk');
 
-const SQLITE_DB_PATH = path.resolve(__dirname, '../../dashboard/data/mvolo.db');
+const SQLITE_DB_PATH = process.env.SQLITE_DB_PATH
+  ?? process.argv[2]
+  ?? path.resolve(__dirname, '../../mvolo.db');
 
 async function migrate() {
   console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
