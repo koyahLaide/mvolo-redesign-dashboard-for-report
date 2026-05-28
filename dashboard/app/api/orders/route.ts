@@ -31,6 +31,10 @@ export async function GET(request: Request) {
 
     const periodClause = periodWhereClause(period);
 
+    const channelClause = channel === 'all' ? '' : 'AND channel = $1';
+    const params = channel === 'all' ? [] : [channel];
+    const whereBase = periodClause || channelClause ? 'WHERE 1=1' : '';
+
     const result = await pool.query(`
       SELECT
         id,
@@ -43,10 +47,10 @@ export async function GET(request: Request) {
         utm_campaign,
         utm_content
       FROM orders
-      WHERE channel = $1 ${periodClause}
+      ${whereBase} ${periodClause} ${channelClause}
       ORDER BY created_at DESC
       LIMIT 200
-    `, [channel]);
+    `, params);
 
     return Response.json({ orders: result.rows });
   } catch (err) {
