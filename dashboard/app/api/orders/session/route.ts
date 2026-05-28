@@ -17,7 +17,11 @@ export async function GET(request: Request) {
       SELECT
         visitor_id, order_id, session_count,
         first_touch_date, last_touch_date, days_to_convert,
-        touch_path, clarity_session_id, created_at
+        touch_path,
+        touch_path AS session_history,
+        clarity_session_id,
+        created_at,
+        created_at AS received_at
       FROM visitor_sessions
       WHERE order_id = $1
       LIMIT 1
