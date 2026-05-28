@@ -26,6 +26,7 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
       KLAVIYO_API_KEY: ${{ secrets.KLAVIYO_API_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     steps:
       # ── 1. Checkout root repo ───────────────────────────────────────────────
@@ -77,6 +78,7 @@ jobs:
           ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           TRIPLEWHALE_API_KEY=${{ secrets.TRIPLEWHALE_API_KEY }}
           KLAVIYO_API_KEY=${{ secrets.KLAVIYO_API_KEY }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
           EOF
 
       # ── 6. Run ETL sync ─────────────────────────────────────────────────────
@@ -146,13 +148,13 @@ jobs:
 
       # ── 9b. Force patch page.tsx op runner ─────────────────────────────────────
       # ── 9. Upload DB snapshot (manual runs only) ───────────────────────────
-      - name: Upload mvolo.db artifact
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mvolo-db-snapshot
-          path: data/mvolo.db
-          retention-days: 7
+      #- name: Upload mvolo.db artifact
+      #  if: github.event_name == 'workflow_dispatch'
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: mvolo-db-snapshot
+      #    path: data/mvolo.db
+      #    retention-days: 7
 
       # ── 10. Install dashboard deps ──────────────────────────────────────────
       - name: Install dashboard dependencies
