@@ -213,7 +213,7 @@ export default function PrijzenPage() {
                                   const isBest = i === 0;
                                   return (
                                     <div key={r.price} className="flex items-center gap-3">
-                                      <span className="text-xs text-gray-400 w-16 text-right flex-shrink-0 tabular-nums">€{r.price.toFixed(2)}</span>
+                                      <span className="text-xs text-gray-400 w-16 text-right flex-shrink-0 tabular-nums">€{Number(r.price).toFixed(2)}</span>
                                       <div className="flex-1 h-5 bg-gray-800 rounded overflow-hidden relative max-w-xs">
                                         <div className="h-full rounded transition-all"
                                           style={{ width: `${barPct}%`, background: isBest ? '#6366f1' : '#374151' }} />
@@ -263,7 +263,7 @@ export default function PrijzenPage() {
                             </div>
                             <div className="flex items-center gap-3 text-xs text-right flex-shrink-0">
                               <span className="text-gray-500">{p.qty}x</span>
-                              <span className="text-gray-400">€{p.avg_price?.toFixed(0)}</span>
+                              <span className="text-gray-400">€{Number(p.avg_price).toFixed(0)}</span>
                               <MarginBadge pct={p.margin_pct} />
                             </div>
                           </div>

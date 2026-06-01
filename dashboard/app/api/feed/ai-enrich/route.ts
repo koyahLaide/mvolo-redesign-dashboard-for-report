@@ -250,12 +250,15 @@ export async function POST(request: Request) {
     season:      string | null;
   };
 
-  // Create batch record
-  const { data: batch } = await getSupabase()
-    .from('feed_enrichment_batches')
-    .insert({ language, field, channel, season, status: 'running', product_count: product_ids.length })
-    .select('id').single();
-  const batchId = batch?.id ?? null;
+  // Create batch record (best-effort — missing table or env vars won't abort the run)
+  let batchId: string | null = null;
+  try {
+    const { data: batch } = await getSupabase()
+      .from('feed_enrichment_batches')
+      .insert({ language, field, channel, season, status: 'running', product_count: product_ids.length })
+      .select('id').single();
+    batchId = batch?.id ?? null;
+  } catch { /* non-fatal */ }
 
   let totalInput  = 0;
   let totalOutput = 0;
@@ -347,10 +350,15 @@ export async function POST(request: Request) {
 
 // ── GET — recent batches ──────────────────────────────────────────────────────
 export async function GET() {
-  const { data } = await getSupabase()
-    .from('feed_enrichment_batches')
-    .select('id,language,field,channel,season,status,product_count,tokens_input,tokens_output,cost_usd,created_at,completed_at')
-    .order('created_at', { ascending: false })
-    .limit(20);
-  return NextResponse.json({ batches: data ?? [] });
+  try {
+    const { data, error } = await getSupabase()
+      .from('feed_enrichment_batches')
+      .select('id,language,field,channel,season,status,product_count,tokens_input,tokens_output,cost_usd,created_at,completed_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ batches: data ?? [] });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message ?? 'Server error' }, { status: 500 });
+  }
 }
