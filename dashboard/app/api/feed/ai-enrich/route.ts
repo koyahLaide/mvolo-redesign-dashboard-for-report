@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase  = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+let _anthropic: Anthropic | null = null;
+function getAnthropic() {
+  if (!_anthropic) _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  return _anthropic;
+}
 
 const MODEL             = 'claude-sonnet-4-5';
 const INPUT_CPM         = 3.00;   // $ per million input tokens
@@ -173,7 +176,7 @@ Genereer EXACT dit JSON zonder andere tekst:
 // ── Fetch competitor titles for category ──────────────────────────────────────
 async function fetchCompetitorTitles(category: string | null): Promise<string[]> {
   if (!category) return [];
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from('competitor_listings')
     .select('title')
     .ilike('category', `%${category}%`)
@@ -184,7 +187,7 @@ async function fetchCompetitorTitles(category: string | null): Promise<string[]>
 // ── Build CTR feedback string ─────────────────────────────────────────────────
 async function buildCtrFeedback(productId: string, language: string, category: string | null): Promise<string | null> {
   // Check if this specific product has CTR data
-  const { data: own } = await supabase
+  const { data: own } = await getSupabase()
     .from('feed_product_content')
     .select('ctr_14d, selected_variant_id, ai_variants')
     .eq('product_id', productId)
@@ -201,7 +204,7 @@ async function buildCtrFeedback(productId: string, language: string, category: s
 
   // Category-level patterns (only if enough data)
   if (category) {
-    const { data: catData, count } = await supabase
+    const { data: catData, count } = await getSupabase()
       .from('feed_product_content')
       .select('ctr_14d, selected_variant_id', { count: 'exact' })
       .not('ctr_14d', 'is', null)
@@ -248,7 +251,7 @@ export async function POST(request: Request) {
   };
 
   // Create batch record
-  const { data: batch } = await supabase
+  const { data: batch } = await getSupabase()
     .from('feed_enrichment_batches')
     .insert({ language, field, channel, season, status: 'running', product_count: product_ids.length })
     .select('id').single();
@@ -262,14 +265,14 @@ export async function POST(request: Request) {
   for (const productId of product_ids) {
     try {
       // Fetch product
-      const { data: product, error: pErr } = await supabase
+      const { data: product, error: pErr } = await getSupabase()
         .from('products')
         .select('id,name_nl,description_nl,category,brand,ean,sku,price_eur,shopify_handle,image_url')
         .eq('id', productId).single();
       if (pErr || !product) { errors.push(`${productId}: product niet gevonden`); continue; }
 
       // Fetch existing content
-      const { data: content } = await supabase
+      const { data: content } = await getSupabase()
         .from('feed_product_content')
         .select('id,title,description,product_url,ctr_14d,selected_variant_id,ai_variants')
         .eq('product_id', productId).eq('language', language).single();
@@ -278,7 +281,7 @@ export async function POST(request: Request) {
       const [competitors, ctrFeedback, learningsRes] = await Promise.all([
         fetchCompetitorTitles(product.category),
         buildCtrFeedback(productId, language, product.category),
-        supabase.from('feed_learnings')
+        getSupabase().from('feed_learnings')
           .select('learning,category,impact_pct,confidence')
           .eq('is_active', true)
           .order('created_at', { ascending: false })
@@ -290,7 +293,7 @@ export async function POST(request: Request) {
 
       // Build prompt & call Claude
       const prompt = buildPrompt({ product, content, language, channel, season, competitors, ctrFeedback, learnings });
-      const msg = await anthropic.messages.create({
+      const msg = await getAnthropic().messages.create({
         model:      MODEL,
         max_tokens: 5120,
         messages:   [{ role: 'user', content: prompt }],
@@ -304,7 +307,7 @@ export async function POST(request: Request) {
       const variants = validateVariants(parsed.variants ?? []);
 
       // Upsert into feed_product_content
-      await supabase.from('feed_product_content').upsert({
+      await getSupabase().from('feed_product_content').upsert({
         product_id:           productId,
         language,
         ai_variants:          variants,
@@ -321,7 +324,7 @@ export async function POST(request: Request) {
   const cost = calcCost(totalInput, totalOutput);
 
   if (batchId) {
-    await supabase.from('feed_enrichment_batches').update({
+    await getSupabase().from('feed_enrichment_batches').update({
       status:        errors.length === product_ids.length ? 'failed' : 'completed',
       tokens_input:  totalInput,
       tokens_output: totalOutput,
@@ -344,7 +347,7 @@ export async function POST(request: Request) {
 
 // ── GET — recent batches ──────────────────────────────────────────────────────
 export async function GET() {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from('feed_enrichment_batches')
     .select('id,language,field,channel,season,status,product_count,tokens_input,tokens_output,cost_usd,created_at,completed_at')
     .order('created_at', { ascending: false })
