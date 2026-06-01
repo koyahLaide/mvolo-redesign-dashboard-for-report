@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const SELECT = 'id,name,type,scope,channel,conditions,actions,priority,active,created_at';
 const ALLOWED_UPDATE = ['name','type','scope','channel','conditions','actions','priority','active'] as const;
 
 export async function GET() {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from('feed_rules')
     .select(SELECT)
@@ -20,6 +17,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action');
 
@@ -88,6 +86,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   if (!body?.id) return NextResponse.json({ error: 'id is verplicht' }, { status: 400 });
 
@@ -127,6 +126,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const supabase = getSupabase();
   const id = new URL(request.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id is verplicht' }, { status: 400 });
   const { error } = await supabase.from('feed_rules').delete().eq('id', id);

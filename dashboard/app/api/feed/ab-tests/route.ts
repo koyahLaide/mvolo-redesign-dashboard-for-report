@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+import { getSupabase } from '@/lib/supabase-server';
 
 // ── Statistical significance: z-test for two proportions ─────────────────────
 function normCDF(z: number): number {
@@ -42,6 +40,7 @@ function aggregateMetrics(rows: any[], testId: string) {
 
 // ── GET — list tests or single test ──────────────────────────────────────────
 export async function GET(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const testId = searchParams.get('test_id');
 
@@ -112,6 +111,7 @@ export async function GET(request: Request) {
 
 // ── POST — create test or add metrics ────────────────────────────────────────
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action');
 
@@ -213,6 +213,7 @@ export async function POST(request: Request) {
 
 // ── PATCH — update test status / declare winner / apply winner ───────────────
 export async function PATCH(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { id, action, winner } = body ?? {};
   if (!id) return NextResponse.json({ error: 'id is verplicht' }, { status: 400 });
@@ -317,6 +318,7 @@ export async function PATCH(request: Request) {
 
 // ── DELETE — remove test ──────────────────────────────────────────────────────
 export async function DELETE(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id is verplicht' }, { status: 400 });

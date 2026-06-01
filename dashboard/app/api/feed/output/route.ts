@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 type Condition = { field: string; operator: string; value?: string | number };
 type Rule = {
@@ -190,6 +186,7 @@ function buildAwinCsv(products: Record<string, any>[]): string {
 }
 
 export async function GET(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const marketCode = (searchParams.get('market') ?? 'NL').toUpperCase();
   const channel    = (searchParams.get('channel') ?? 'google').toLowerCase();

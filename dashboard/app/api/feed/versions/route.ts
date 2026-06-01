@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 // ── GET — list versions ───────────────────────────────────────────────────────
 export async function GET(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const marketCode = searchParams.get('market')?.toUpperCase();
   const channel    = searchParams.get('channel')?.toLowerCase();
@@ -28,6 +28,7 @@ export async function GET(request: Request) {
 
 // ── POST — create snapshot OR rollback ───────────────────────────────────────
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action');
 
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
 
 // ── Create version snapshot ───────────────────────────────────────────────────
 async function handleCreateVersion(marketCode: string, channel: string, note: string | null) {
+  const supabase = getSupabase();
   const { data: market } = await supabase
     .from('markets').select('id,code,name,language_code,storefront_domain').eq('code', marketCode).single();
   if (!market) return NextResponse.json({ error: `Markt ${marketCode} niet gevonden` }, { status: 404 });
@@ -105,6 +107,7 @@ async function handleCreateVersion(marketCode: string, channel: string, note: st
 
 // ── Rollback to version ───────────────────────────────────────────────────────
 async function handleRollback(versionId: string) {
+  const supabase = getSupabase();
   const { data: version, error: vErr } = await supabase
     .from('feed_versions')
     .select('id,version_number,snapshot,market_id,markets(code,language_code)')

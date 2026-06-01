@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE!;
 const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN!;
@@ -103,6 +99,7 @@ function transformProduct(shopifyProduct: any) {
 }
 
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   try {
     // Auth check — only allow with valid secret or from internal calls
     const authHeader = request.headers.get('authorization');
@@ -230,6 +227,7 @@ export async function POST(request: Request) {
 
 // GET = sync status
 export async function GET() {
+  const supabase = getSupabase();
   const { data: lastSync } = await supabase
     .from('feed_changelog')
     .select('created_at, new_value')

@@ -2,16 +2,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 import fs from 'fs';
 import path from 'path';
 import initSqlJs from 'sql.js';
 import { DB_PATH } from '../../../../lib/db-path';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 function rowsToObjects(result: any): Record<string, any>[] {
   if (!result?.columns) return [];
@@ -22,6 +18,7 @@ function rowsToObjects(result: any): Record<string, any>[] {
 
 // ── GET — list all labels (joined with products) ─────────────────────────────
 export async function GET() {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from('feed_custom_labels')
     .select('product_id,custom_label_0,custom_label_1,custom_label_2,custom_label_3,custom_label_4,label_0_override,label_1_override,label_2_override,label_3_override,label_4_override,updated_at');
@@ -31,6 +28,7 @@ export async function GET() {
 
 // ── POST — auto-calculate labels from SQLite + COGS data ─────────────────────
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => ({}));
   if (body?.action !== 'calculate') {
     return NextResponse.json({ error: 'action=calculate is verplicht' }, { status: 400 });
@@ -147,6 +145,7 @@ export async function POST(request: Request) {
 
 // ── PATCH — manual override for a single label ────────────────────────────────
 export async function PATCH(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { product_id, label_key, value } = body ?? {};
   if (!product_id || !label_key) {

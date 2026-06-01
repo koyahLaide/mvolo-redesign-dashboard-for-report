@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 // ── GET — list alerts ─────────────────────────────────────────────────────────
 export async function GET(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const onlyOpen = searchParams.get('open') === 'true';
   const type     = searchParams.get('type');
@@ -37,6 +37,7 @@ export async function GET(request: Request) {
 
 // ── POST — create alert ───────────────────────────────────────────────────────
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { type, severity, message, product_id, channel, market_id } = body ?? {};
   if (!type || !message) {
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
 
 // ── PATCH — acknowledge alert(s) ─────────────────────────────────────────────
 export async function PATCH(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { id, ids, acknowledge_all } = body ?? {};
 

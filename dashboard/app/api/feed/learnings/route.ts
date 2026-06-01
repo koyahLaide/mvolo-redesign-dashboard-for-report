@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const SELECT = 'id,test_id,category,learning,impact_pct,confidence,applies_to_channels,applies_to_markets,applies_to_categories,is_active,created_at';
 
 // ── GET — list learnings ──────────────────────────────────────────────────────
 export async function GET(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const category  = searchParams.get('category');
   const channel   = searchParams.get('channel');
@@ -32,6 +29,7 @@ export async function GET(request: Request) {
 
 // ── POST — create learning manually ──────────────────────────────────────────
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { category, learning, impact_pct, confidence, applies_to_channels, applies_to_markets, applies_to_categories, test_id } = body ?? {};
   if (!category || !learning) return NextResponse.json({ error: 'category en learning zijn verplicht' }, { status: 400 });
@@ -54,6 +52,7 @@ export async function POST(request: Request) {
 
 // ── PATCH — toggle is_active or update ───────────────────────────────────────
 export async function PATCH(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { id, is_active, learning, impact_pct, confidence } = body ?? {};
   if (!id) return NextResponse.json({ error: 'id is verplicht' }, { status: 400 });
@@ -71,6 +70,7 @@ export async function PATCH(request: Request) {
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
 export async function DELETE(request: Request) {
+  const supabase = getSupabase();
   const id = new URL(request.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id is verplicht' }, { status: 400 });
   const { error } = await supabase.from('feed_learnings').delete().eq('id', id);

@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const SELECT = 'id,market_id,channel,feed_name,is_active,last_fetched_at';
 
 export async function GET() {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from('feed_market_configs')
     .select(SELECT)
@@ -18,6 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { market_id, channel, feed_name, is_active, language, product_ids, overwrite } = body ?? {};
   if (!market_id || !channel) {
@@ -88,6 +86,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { id, feed_name, is_active, channel } = body ?? {};
   if (!id) return NextResponse.json({ error: 'id is verplicht' }, { status: 400 });
@@ -109,6 +108,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const supabase = getSupabase();
   const id = new URL(request.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id is verplicht' }, { status: 400 });
   const { error } = await supabase.from('feed_market_configs').delete().eq('id', id);

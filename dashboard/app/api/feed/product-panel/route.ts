@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 // ── GET — fetch all panel data for a product ──────────────────────────────────
 export async function GET(request: Request) {
+  const supabase = getSupabase();
   const { searchParams } = new URL(request.url);
   const productId = searchParams.get('product_id');
   if (!productId) return NextResponse.json({ error: 'product_id is verplicht' }, { status: 400 });
@@ -96,6 +96,7 @@ export async function GET(request: Request) {
 
 // ── POST — save content for a language ───────────────────────────────────────
 export async function POST(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { product_id, language, title, description_short, description_long, description } = body ?? {};
   if (!product_id || !language) {
@@ -134,6 +135,7 @@ export async function POST(request: Request) {
 
 // ── PUT — update ai_variants (manual edit/add) ────────────────────────────────
 export async function PUT(request: Request) {
+  const supabase = getSupabase();
   const body = await request.json().catch(() => null);
   const { product_id, language, ai_variants } = body ?? {};
   if (!product_id || !language || !Array.isArray(ai_variants)) {
