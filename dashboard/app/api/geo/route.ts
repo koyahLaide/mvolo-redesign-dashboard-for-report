@@ -8,10 +8,23 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const period = searchParams.get('period') ?? 'all';
 
+  function periodToDays(p: string): number | null {
+    switch (p) {
+      case 'today':   return 1;
+      case 'week':    return 7;
+      case 'month':   return 30;
+      case 'quarter': return 90;
+      case 'year':    return 365;
+      case 'all':     return null;
+      default: { const n = parseInt(p); return isNaN(n) ? null : n; }
+    }
+  }
+
   try {
-    const dateFilter = period === 'all'
+    const days = periodToDays(period);
+    const dateFilter = days === null
       ? ''
-      : `AND DATE(created_at) >= CURRENT_DATE - INTERVAL '${parseInt(period)} days'`;
+      : `AND DATE(created_at) >= CURRENT_DATE - INTERVAL '${days} days'`;
 
     const citiesResult = await pool.query(`
       SELECT
