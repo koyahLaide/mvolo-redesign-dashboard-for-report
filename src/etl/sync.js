@@ -3,9 +3,15 @@
 const chalk = require('chalk');
 const { initDb } = require('../db/schema');
 const { getLastSyncedAt, insertOrder, logSync, checkIsNewCustomer } = require('../db/queries');
-const { fetchOrders }    = require('../connectors/shopify');
+const { fetchOrders } = require('../connectors/shopify');
 const { fetchBolOrders } = require('../connectors/bol');
-const { fetchGA4Sessions, fetchGA4TopPages, fetchGA4Journeys, fetchGA4PageFunnel, fetchGA4ClarityEvents } = require('../connectors/ga4');
+const {
+  fetchGA4Sessions,
+  fetchGA4TopPages,
+  fetchGA4Journeys,
+  fetchGA4PageFunnel,
+  fetchGA4ClarityEvents,
+} = require('../connectors/ga4');
 const { fetchClarityByChannel, fetchClarityByUrl } = require('../connectors/clarity');
 const { attributeOrder, summarizeAttribution } = require('./attribution');
 const { fetchKlaviyoData } = require('../connectors/klaviyo');
@@ -62,20 +68,23 @@ async function runSync() {
       console.log(chalk.white(`  Orders fetched from Bol.com: ${chalk.bold(bolFetched)}`));
 
       const bolAttribution = {
-        channel:      'bol_marketplace',
-        medium:       'marketplace',
-        utm_source:   'bol',
+        channel: 'bol_marketplace',
+        medium: 'marketplace',
+        utm_source: 'bol',
         utm_campaign: null,
-        utm_content:  null,
-        utm_term:     null,
-        first_touch:  'bol_marketplace',
-        last_touch:   'bol_marketplace',
-        touch_path:   JSON.stringify(['bol_marketplace']),
+        utm_content: null,
+        utm_term: null,
+        first_touch: 'bol_marketplace',
+        last_touch: 'bol_marketplace',
+        touch_path: JSON.stringify(['bol_marketplace']),
       };
 
       for (const order of bolOrders) {
         const isNew = insertOrder(db, order, bolAttribution, 1);
-        if (isNew) { bolNew++; ordersNew++; }
+        if (isNew) {
+          bolNew++;
+          ordersNew++;
+        }
         attributedOrders.push({ ...order, ...bolAttribution });
       }
 
@@ -86,15 +95,22 @@ async function runSync() {
 
     // ── GA4 ───────────────────────────────────────────────────────────────────
     try {
-      const ga4DateFrom = (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().slice(0, 10); })();
-      const ga4DateTo   = new Date().toISOString().slice(0, 10);
+      const ga4DateFrom = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 90);
+        return d.toISOString().slice(0, 10);
+      })();
+      const ga4DateTo = new Date().toISOString().slice(0, 10);
 
       // Sessions per day × channel
       const ga4Sessions = await fetchGA4Sessions({ dateFrom: ga4DateFrom, dateTo: ga4DateTo });
       console.log(chalk.white(`  GA4 sessions fetched: ${chalk.bold(ga4Sessions.length)} rows`));
 
       if (ga4Sessions.length > 0) {
-        db.prepare(`DELETE FROM ga4_sessions WHERE date >= ? AND date <= ?`).run(ga4DateFrom, ga4DateTo);
+        db.prepare(`DELETE FROM ga4_sessions WHERE date >= ? AND date <= ?`).run(
+          ga4DateFrom,
+          ga4DateTo,
+        );
         const insertSess = db.prepare(`
           INSERT OR REPLACE INTO ga4_sessions
             (date, channel, sessions, users, new_users, bounce_rate, avg_session_duration)
@@ -103,12 +119,12 @@ async function runSync() {
         `);
         for (const row of ga4Sessions) {
           insertSess.run({
-            date:                 row.date,
-            channel:              row.channel,
-            sessions:             row.sessions,
-            users:                row.users,
-            new_users:            row.newUsers,
-            bounce_rate:          Math.round(row.bounceRate * 10000) / 10000,
+            date: row.date,
+            channel: row.channel,
+            sessions: row.sessions,
+            users: row.users,
+            new_users: row.newUsers,
+            bounce_rate: Math.round(row.bounceRate * 10000) / 10000,
             avg_session_duration: Math.round(row.avgSessionDuration * 100) / 100,
           });
         }
@@ -119,7 +135,10 @@ async function runSync() {
       console.log(chalk.white(`  GA4 journeys fetched: ${chalk.bold(ga4Journeys.length)} rows`));
 
       if (ga4Journeys.length > 0) {
-        db.prepare(`DELETE FROM ga4_journeys WHERE date >= ? AND date <= ?`).run(ga4DateFrom, ga4DateTo);
+        db.prepare(`DELETE FROM ga4_journeys WHERE date >= ? AND date <= ?`).run(
+          ga4DateFrom,
+          ga4DateTo,
+        );
         const insertJourney = db.prepare(`
           INSERT OR REPLACE INTO ga4_journeys
             (date, first_channel, session_channel, sessions, users)
@@ -133,7 +152,10 @@ async function runSync() {
       try {
         const funnelRows = await fetchGA4PageFunnel({ dateFrom: ga4DateFrom, dateTo: ga4DateTo });
         if (funnelRows.length > 0) {
-          db.prepare(`DELETE FROM ga4_funnel WHERE date >= ? AND date <= ?`).run(ga4DateFrom, ga4DateTo);
+          db.prepare(`DELETE FROM ga4_funnel WHERE date >= ? AND date <= ?`).run(
+            ga4DateFrom,
+            ga4DateTo,
+          );
           const insertFunnel = db.prepare(`
             INSERT OR REPLACE INTO ga4_funnel (date, step, sessions, users)
             VALUES (@date, @step, @sessions, @users)
@@ -147,9 +169,15 @@ async function runSync() {
 
       // Clarity events from GA4 (rage clicks, dead clicks)
       try {
-        const clarityRows = await fetchGA4ClarityEvents({ dateFrom: ga4DateFrom, dateTo: ga4DateTo });
+        const clarityRows = await fetchGA4ClarityEvents({
+          dateFrom: ga4DateFrom,
+          dateTo: ga4DateTo,
+        });
         if (clarityRows.length > 0) {
-          db.prepare(`DELETE FROM clarity_events WHERE date >= ? AND date <= ?`).run(ga4DateFrom, ga4DateTo);
+          db.prepare(`DELETE FROM clarity_events WHERE date >= ? AND date <= ?`).run(
+            ga4DateFrom,
+            ga4DateTo,
+          );
           const insertClarity = db.prepare(`
             INSERT OR REPLACE INTO clarity_events (date, page, event_type, count, channel)
             VALUES (@date, @page, @event_type, @count, @channel)
@@ -157,7 +185,8 @@ async function runSync() {
           for (const row of clarityRows) insertClarity.run(row);
           console.log(chalk.white(`  Clarity events stored: ${chalk.bold(clarityRows.length)}`));
 
-          db.prepare(`
+          db.prepare(
+            `
             UPDATE visitor_sessions
             SET had_rage_click = 1
             WHERE order_id IN (
@@ -166,9 +195,11 @@ async function runSync() {
                 SELECT DISTINCT date FROM clarity_events WHERE event_type = 'rage_click'
               )
             )
-          `).run();
+          `,
+          ).run();
 
-          db.prepare(`
+          db.prepare(
+            `
             UPDATE visitor_sessions
             SET had_dead_click = 1
             WHERE order_id IN (
@@ -177,12 +208,12 @@ async function runSync() {
                 SELECT DISTINCT date FROM clarity_events WHERE event_type = 'dead_click'
               )
             )
-          `).run();
+          `,
+          ).run();
         }
       } catch (err) {
         console.warn(chalk.yellow(`  Clarity events sync skipped: ${err.message}`));
       }
-
     } catch (err) {
       console.warn(chalk.yellow(`  GA4 sync skipped: ${err.message}`));
     }
@@ -202,14 +233,20 @@ async function runSync() {
 
       const byChannel = await fetchClarityByChannel(3);
       if (byChannel.length > 0) {
-        const upsertMany = db.transaction((rows) => { for (const r of rows) insertInsight.run(r); });
+        const upsertMany = db.transaction((rows) => {
+          for (const r of rows) insertInsight.run(r);
+        });
         upsertMany(byChannel);
-        console.log(chalk.white(`  Clarity channel insights stored: ${chalk.bold(byChannel.length)} rows`));
+        console.log(
+          chalk.white(`  Clarity channel insights stored: ${chalk.bold(byChannel.length)} rows`),
+        );
       }
 
       const byUrl = await fetchClarityByUrl(3);
       if (byUrl.length > 0) {
-        const upsertMany = db.transaction((rows) => { for (const r of rows) insertInsight.run(r); });
+        const upsertMany = db.transaction((rows) => {
+          for (const r of rows) insertInsight.run(r);
+        });
         upsertMany(byUrl);
         console.log(chalk.white(`  Clarity URL insights stored: ${chalk.bold(byUrl.length)} rows`));
       }
@@ -235,7 +272,9 @@ async function runSync() {
           for (const r of rows) insertCampaign.run({ ...r, synced_at: syncedAt });
         });
         upsertCampaigns(klaviyoData.campaigns);
-        console.log(chalk.white(`  Klaviyo campaigns synced: ${chalk.bold(klaviyoData.campaigns.length)}`));
+        console.log(
+          chalk.white(`  Klaviyo campaigns synced: ${chalk.bold(klaviyoData.campaigns.length)}`),
+        );
       }
 
       // Flows opslaan
@@ -254,9 +293,10 @@ async function runSync() {
       }
 
       if (klaviyoData.subscriberCount !== null) {
-        console.log(chalk.white(`  Klaviyo subscribers: ${chalk.bold(klaviyoData.subscriberCount)}`));
+        console.log(
+          chalk.white(`  Klaviyo subscribers: ${chalk.bold(klaviyoData.subscriberCount)}`),
+        );
       }
-
     } catch (err) {
       console.warn(chalk.yellow(`  Klaviyo sync skipped: ${err.message}`));
     }
@@ -273,39 +313,42 @@ async function runSync() {
     console.log(chalk.green.bold('  ✔ Sync complete\n'));
     console.log(chalk.white(`  ${'Total orders fetched'.padEnd(30)} ${chalk.bold(ordersFetched)}`));
     console.log(chalk.white(`  ${'New orders saved'.padEnd(30)} ${chalk.bold(ordersNew)}`));
-    console.log(chalk.white(`  ${'Already in DB (skipped)'.padEnd(30)} ${chalk.bold(ordersFetched - ordersNew)}\n`));
+    console.log(
+      chalk.white(
+        `  ${'Already in DB (skipped)'.padEnd(30)} ${chalk.bold(ordersFetched - ordersNew)}\n`,
+      ),
+    );
 
     if (Object.keys(summary).length > 0) {
       console.log(chalk.white.bold('  Channel breakdown:'));
       const total = attributedOrders.length || 1;
 
       const channelColors = {
-        meta_ads:            chalk.magenta,
-        google_search:       chalk.blue,
-        google_shopping:     chalk.cyan,
-        awin_affiliate:      chalk.yellow,
-        ascendia_affiliate:  chalk.yellowBright,
-        email:               chalk.green,
-        organic_search:      chalk.greenBright,
-        organic_social:      chalk.magentaBright,
-        bol_marketplace:     chalk.blueBright,
-        direct:              chalk.white,
-        ai_referral:         chalk.cyanBright,
-        other:               chalk.gray,
+        meta_ads: chalk.magenta,
+        google_search: chalk.blue,
+        google_shopping: chalk.cyan,
+        awin_affiliate: chalk.yellow,
+        ascendia_affiliate: chalk.yellowBright,
+        email: chalk.green,
+        organic_search: chalk.greenBright,
+        organic_social: chalk.magentaBright,
+        bol_marketplace: chalk.blueBright,
+        direct: chalk.white,
+        ai_referral: chalk.cyanBright,
+        other: chalk.gray,
       };
 
       for (const [channel, count] of Object.entries(summary).sort((a, b) => b[1] - a[1])) {
         const pct = ((count / total) * 100).toFixed(1);
-        const bar = '█'.repeat(Math.round(count / total * 20));
+        const bar = '█'.repeat(Math.round((count / total) * 20));
         const color = channelColors[channel] || chalk.white;
         console.log(
-          `  ${color(channel.padEnd(22))}  ${String(count).padStart(4)} orders  ${chalk.gray(pct.padStart(5) + '%')}  ${color(bar)}`
+          `  ${color(channel.padEnd(22))}  ${String(count).padStart(4)} orders  ${chalk.gray(pct.padStart(5) + '%')}  ${color(bar)}`,
         );
       }
     }
 
     console.log(chalk.cyan('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
-
   } catch (err) {
     logSync(db, { syncedAt, ordersFetched, ordersNew, status: 'error', error: err.message });
     console.error(chalk.red(`\n  ✖ Sync failed: ${err.message}\n`));

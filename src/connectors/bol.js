@@ -13,16 +13,16 @@
 const axios = require('axios');
 
 const TOKEN_URL = 'https://login.bol.com/token';
-const BASE_URL  = 'https://api.bol.com/retailer';
-const ACCEPT    = 'application/vnd.retailer.v10+json';
+const BASE_URL = 'https://api.bol.com/retailer';
+const ACCEPT = 'application/vnd.retailer.v10+json';
 
-const CLIENT_ID     = process.env.BOL_CLIENT_ID;
+const CLIENT_ID = process.env.BOL_CLIENT_ID;
 const CLIENT_SECRET = process.env.BOL_CLIENT_SECRET;
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── In-memory token cache ──────────────────────────────────────────────────────
-let _token    = null;
+let _token = null;
 let _tokenExp = 0; // Unix ms
 
 async function getAccessToken() {
@@ -34,19 +34,15 @@ async function getAccessToken() {
 
   const credentials = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
 
-  const res = await axios.post(
-    `${TOKEN_URL}?grant_type=client_credentials`,
-    null,
-    {
-      headers: {
-        Authorization:  `Basic ${credentials}`,
-        'Accept':       'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }
-  );
+  const res = await axios.post(`${TOKEN_URL}?grant_type=client_credentials`, null, {
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
 
-  _token    = res.data.access_token;
+  _token = res.data.access_token;
   _tokenExp = Date.now() + (res.data.expires_in ?? 300) * 1000;
   return _token;
 }
@@ -57,8 +53,8 @@ async function getAccessToken() {
 async function authHeaders() {
   const token = await getAccessToken();
   return {
-    Authorization:  `Bearer ${token}`,
-    Accept:         ACCEPT,
+    Authorization: `Bearer ${token}`,
+    Accept: ACCEPT,
     'Content-Type': ACCEPT,
   };
 }
@@ -75,8 +71,8 @@ async function fetchOrderPage(page) {
     headers,
     params: {
       'fulfilment-method': 'ALL',
-      status:              'ALL',
-      'page-size':         50,
+      status: 'ALL',
+      'page-size': 50,
       page,
     },
   });
@@ -99,7 +95,7 @@ function mapBolOrder(detail) {
   const items = detail.orderItems ?? [];
 
   const totalAmount = items.reduce((sum, item) => {
-    const lineTotal = item.totalPrice ?? (parseFloat(item.unitPrice ?? 0) * (item.quantity ?? 1));
+    const lineTotal = item.totalPrice ?? parseFloat(item.unitPrice ?? 0) * (item.quantity ?? 1);
     return sum + lineTotal;
   }, 0);
 
@@ -108,25 +104,25 @@ function mapBolOrder(detail) {
   const createdAt = detail.orderPlacedDateTime ?? detail.orderDate ?? new Date().toISOString();
 
   return {
-    id:               `bol_${detail.orderId}`,
-    order_number:     String(detail.orderId),
-    created_at:       createdAt,
-    total_price:      Math.round(totalAmount * 100) / 100,
+    id: `bol_${detail.orderId}`,
+    order_number: String(detail.orderId),
+    created_at: createdAt,
+    total_price: Math.round(totalAmount * 100) / 100,
     financial_status: 'paid',
-    landing_site:     null,
-    referring_site:   null,
-    source_name:      'bol',
-    note_attributes:  [],
+    landing_site: null,
+    referring_site: null,
+    source_name: 'bol',
+    note_attributes: [],
     line_items: items.map((item) => ({
       product_id: item.product?.ean ?? null,
-      title:      item.product?.title ?? 'Onbekend product',
-      price:      parseFloat(item.unitPrice ?? 0),
-      quantity:   item.quantity ?? 1,
+      title: item.product?.title ?? 'Onbekend product',
+      price: parseFloat(item.unitPrice ?? 0),
+      quantity: item.quantity ?? 1,
     })),
-    customer_email:   null,
-    customer_id:      null,
-    marketplace:      'bol',
-    shipping_city:    shipment.cityName    ?? null,
+    customer_email: null,
+    customer_id: null,
+    marketplace: 'bol',
+    shipping_city: shipment.cityName ?? null,
     shipping_country: shipment.countryCode ?? null,
   };
 }
@@ -137,7 +133,7 @@ function mapBolOrder(detail) {
  *
  * @returns {Promise<Array>}
  */
-async function fetchBolOrders() {
+async function fetchOrders() {
   if (!CLIENT_ID || !CLIENT_SECRET) {
     throw new Error('BOL_CLIENT_ID and BOL_CLIENT_SECRET must be set in .env');
   }
@@ -151,7 +147,7 @@ async function fetchBolOrders() {
       summaries = await fetchOrderPage(page);
     } catch (err) {
       const status = err.response?.status;
-      const msg    = err.response?.data?.detail ?? err.message;
+      const msg = err.response?.data?.detail ?? err.message;
       if (status === 404 || summaries?.length === 0) break;
       throw new Error(`Bol API error ${status}: ${msg}`);
     }
@@ -176,4 +172,6 @@ async function fetchBolOrders() {
   return allOrders;
 }
 
-module.exports = { fetchBolOrders };
+const fetchBolOrders = fetchOrders;
+
+module.exports = { fetchOrders, fetchBolOrders };
