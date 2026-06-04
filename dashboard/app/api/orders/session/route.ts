@@ -2,10 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import initSqlJs from 'sql.js';
-import { DB_PATH } from '../../../../lib/db-path';
+import pool from '../../../../lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,33 +12,23 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'order_id required' }, { status: 400 });
   }
 
-  const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
   try {
-    const SQL = await initSqlJs({ locateFile: () => wasmPath });
-    const fileBuffer = fs.readFileSync(DB_PATH);
-    const db = new SQL.Database(fileBuffer);
-
-    const result = db.exec(`
+    const result = await pool.query(`
       SELECT
         visitor_id, order_id, session_count,
         first_touch_date, last_touch_date, days_to_convert,
-        touch_path, session_history, received_at
+        touch_path,
+        touch_path AS session_history,
+        clarity_session_id,
+        created_at,
+        created_at AS received_at
       FROM visitor_sessions
-      WHERE order_id = ?
+      WHERE order_id = $1
       LIMIT 1
     `, [order_id]);
 
-    db.close();
-
-    if (!result.length || !result[0].values.length) {
-      return NextResponse.json({ session: null });
-    }
-
-    const { columns, values } = result[0];
-    const session = Object.fromEntries(columns.map((col, i) => [col, values[0][i]]));
-
+    const session = result.rows[0] ?? null;
     return NextResponse.json({ session });
-
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

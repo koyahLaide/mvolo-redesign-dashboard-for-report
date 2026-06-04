@@ -2,32 +2,31 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import pool from '../../../lib/pg-client';
+import pool from '../../../lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const period = searchParams.get('period') ?? '30';
-  const periodInt = period === 'all' ? null : Math.max(1, parseInt(period) || 30);
-
-  const dateFilter = periodInt
-    ? `AND date >= CURRENT_DATE - INTERVAL '${periodInt} days'`
-    : '';
 
   try {
+    const dateFilter = period === 'all'
+      ? ''
+      : `AND date >= CURRENT_DATE - INTERVAL '${parseInt(period)} days'`;
+
     // Totalen per metric
-    const totalsRes = await pool.query(`
+    const totalsResult = await pool.query(`
       SELECT metric_name, SUM(count) as total, ROUND(SUM(revenue)::numeric, 2) as revenue
       FROM klaviyo_metrics
       WHERE 1=1 ${dateFilter}
       GROUP BY metric_name
     `);
     const totals: Record<string, { total: number; revenue: number }> = {};
-    totalsRes.rows.forEach((r: any) => {
-      totals[r.metric_name] = { total: Number(r.total), revenue: Number(r.revenue) };
+    totalsResult.rows.forEach((r: any) => {
+      totals[r.metric_name] = { total: parseInt(r.total), revenue: parseFloat(r.revenue) };
     });
 
-    // Dagelijkse trends voor email funnel (laatste 30 dagen)
-    const emailTrendRes = await pool.query(`
+    // Dagelijkse trends voor email funnel
+    const emailTrendResult = await pool.query(`
       SELECT date,
         SUM(CASE WHEN metric_name = 'received_email'   THEN count ELSE 0 END) as received,
         SUM(CASE WHEN metric_name = 'opened_email'     THEN count ELSE 0 END) as opened,
@@ -40,30 +39,30 @@ export async function GET(request: Request) {
       GROUP BY date
       ORDER BY date ASC
     `);
-    const emailTrend = emailTrendRes.rows;
+    const emailTrend = emailTrendResult.rows;
 
     // Site journey funnel
-    const siteFunnelRes = await pool.query(`
+    const siteFunnelResult = await pool.query(`
       SELECT metric_name, SUM(count) as total
       FROM klaviyo_metrics
       WHERE metric_name IN ('viewed_product','added_to_cart','checkout_started','placed_order')
         ${dateFilter}
       GROUP BY metric_name
     `);
-    const siteFunnel = siteFunnelRes.rows;
+    const siteFunnel = siteFunnelResult.rows;
 
     // Form conversie
-    const formRes = await pool.query(`
+    const formResult = await pool.query(`
       SELECT metric_name, SUM(count) as total
       FROM klaviyo_metrics
       WHERE metric_name IN ('viewed_form','submitted_form','closed_form')
         ${dateFilter}
       GROUP BY metric_name
     `);
-    const formData = formRes.rows;
+    const formData = formResult.rows;
 
-    // Subscriber groei (subscribed vs unsubscribed)
-    const subscriberRes = await pool.query(`
+    // Subscriber groei
+    const subscriberResult = await pool.query(`
       SELECT date,
         SUM(CASE WHEN metric_name = 'subscribed_email'   THEN count ELSE 0 END) as subscribed,
         SUM(CASE WHEN metric_name = 'unsubscribed_email' THEN count ELSE 0 END) as unsubscribed
@@ -73,25 +72,25 @@ export async function GET(request: Request) {
       GROUP BY date
       ORDER BY date ASC
     `);
-    const subscriberTrend = subscriberRes.rows;
+    const subscriberTrend = subscriberResult.rows;
 
     // Campaign lijst
-    const campaignsRes = await pool.query(`
+    const campaignsResult = await pool.query(`
       SELECT id, name, status, sent_at, subject
       FROM klaviyo_campaigns
       ORDER BY sent_at DESC
       LIMIT 20
     `);
-    const campaigns = campaignsRes.rows;
+    const campaigns = campaignsResult.rows;
 
     // Flow lijst
-    const flowsRes = await pool.query(`
+    const flowsResult = await pool.query(`
       SELECT id, name, status, created, trigger_type
       FROM klaviyo_flows
       ORDER BY created DESC
       LIMIT 20
     `);
-    const flows = flowsRes.rows;
+    const flows = flowsResult.rows;
 
     return NextResponse.json({
       totals,

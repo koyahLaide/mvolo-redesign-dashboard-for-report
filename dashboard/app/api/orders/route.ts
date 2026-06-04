@@ -1,120 +1,61 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
-import fs from 'fs';
-import initSqlJs from 'sql.js';
-import path from 'path';
-import { DB_PATH } from '../../../lib/db-path';
+import pool from '../../../lib/db';
 
-function rowsToObjects(result: { columns: string[]; values: unknown[][] }): Record<string, unknown>[] {
-  return result.values.map((row) =>
-    Object.fromEntries(result.columns.map((col, i) => [col, row[i]]))
-  );
+function periodWhereClause(period: string): string {
+  switch (period) {
+    case 'today':   return "AND DATE(created_at) = CURRENT_DATE";
+    case 'week':    return "AND created_at >= CURRENT_DATE - INTERVAL '7 days'";
+    case 'month':   return "AND created_at >= CURRENT_DATE - INTERVAL '30 days'";
+    case 'quarter': {
+      const now = new Date();
+      const qMonth = Math.floor(now.getMonth() / 3) * 3 + 1;
+      const qStart = `${now.getFullYear()}-${String(qMonth).padStart(2, '0')}-01`;
+      return `AND created_at >= '${qStart}'`;
+    }
+    case 'year':    return `AND EXTRACT(YEAR FROM created_at) = ${new Date().getFullYear()}`;
+    default:        return '';
+  }
 }
 
 export async function GET(request: Request) {
   try {
-    if (!fs.existsSync(DB_PATH)) {
-      return NextResponse.json({ error: 'Database not found.' }, { status: 503 });
-    }
-
     const { searchParams } = new URL(request.url);
-    const period   = searchParams.get('period')   || 'all';
-    const platform = searchParams.get('platform') || 'all';
-    const channel  = searchParams.get('channel')  || '';
-    const q        = searchParams.get('q')        || '';
+    const channel = searchParams.get('channel');
+    const period = searchParams.get('period') || 'all';
 
-    const conditions: string[] = [];
-
-    // Period: named labels or numeric days back, 'all' = no filter
-    const PERIOD_MAP: Record<string, number> = { today: 1, week: 7, month: 30, quarter: 90, year: 365 };
-    const periodDays = PERIOD_MAP[period] ?? parseInt(period);
-    if (!isNaN(periodDays)) {
-      conditions.push(`created_at >= date('now', '-${periodDays} days')`);
+    if (!channel) {
+      return Response.json({ error: 'channel param required' }, { status: 400 });
     }
 
-    // Platform (orders page filter)
-    if (platform === 'bol') {
-      conditions.push(`channel = 'bol_marketplace'`);
-    } else if (platform === 'shopify') {
-      conditions.push(`channel != 'bol_marketplace'`);
-    }
+    const periodClause = periodWhereClause(period);
 
-    // Channel (dashboard modal filter)
-    if (channel) {
-      const safeChannel = channel.replace(/'/g, "''");
-      conditions.push(`channel = '${safeChannel}'`);
-    }
+    const channelClause = channel === 'all' ? '' : 'AND channel = $1';
+    const params = channel === 'all' ? [] : [channel];
+    const whereBase = periodClause || channelClause ? 'WHERE 1=1' : '';
 
-    // Search
-    if (q) {
-      const safe = q.replace(/'/g, "''");
-      conditions.push(`(order_number LIKE '%${safe}%' OR customer_email LIKE '%${safe}%')`);
-    }
-
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const wasmPath = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
-    const SQL = await initSqlJs({ locateFile: () => wasmPath });
-    const db = new SQL.Database(fs.readFileSync(DB_PATH));
-
-    // Ensure optional columns exist
-    const migrations = [
-      'ALTER TABLE orders ADD COLUMN first_touch TEXT',
-      'ALTER TABLE orders ADD COLUMN last_touch TEXT',
-      'ALTER TABLE orders ADD COLUMN touch_path TEXT',
-      'ALTER TABLE orders ADD COLUMN customer_email TEXT',
-      'ALTER TABLE orders ADD COLUMN customer_id TEXT',
-      'ALTER TABLE orders ADD COLUMN is_new_customer INTEGER',
-      'ALTER TABLE orders ADD COLUMN financial_status TEXT',
-      'ALTER TABLE orders ADD COLUMN fulfillment_status TEXT',
-      'ALTER TABLE orders ADD COLUMN order_number TEXT',
-    ];
-    for (const sql of migrations) {
-      try { db.run(sql); } catch { /* already exists */ }
-    }
-
-    const result = db.exec(`
+    const result = await pool.query(`
       SELECT
         id,
         order_number,
         created_at,
-        total_price                                                         AS total,
-        channel,
-        customer_email                                                      AS email,
-        financial_status,
-        fulfillment_status,
-        COALESCE(fulfillment_status, financial_status)                      AS status,
-        CASE WHEN channel = 'bol_marketplace' THEN 'bol' ELSE 'shopify' END AS platform
+        total_price,
+        first_touch,
+        last_touch,
+        is_new_customer,
+        utm_campaign,
+        utm_content
       FROM orders
-      ${where}
+      ${whereBase} ${periodClause} ${channelClause}
       ORDER BY created_at DESC
       LIMIT 200
-    `);
+    `, params);
 
-    const orders = result.length ? rowsToObjects(result[0] as { columns: string[]; values: unknown[][] }) : [];
-
-    const totalsResult = db.exec(`
-      SELECT
-        COUNT(*)                            AS total_orders,
-        ROUND(SUM(total_price), 2)          AS total_revenue,
-        ROUND(AVG(total_price), 2)          AS avg_order_value,
-        COUNT(DISTINCT customer_email)      AS unique_customers
-      FROM orders
-      ${where}
-    `);
-
-    const totals = totalsResult.length
-      ? (rowsToObjects(totalsResult[0] as { columns: string[]; values: unknown[][] })[0] ?? {})
-      : {};
-
-    db.close();
-
-    return NextResponse.json({ orders, totals });
+    return Response.json({ orders: result.rows });
   } catch (err) {
     console.error('[/api/orders] Error:', err);
-    return NextResponse.json(
+    return Response.json(
       { error: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     );

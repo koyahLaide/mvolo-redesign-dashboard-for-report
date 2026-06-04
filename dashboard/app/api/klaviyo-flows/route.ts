@@ -2,51 +2,51 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import pool from '../../../lib/pg-client';
+import pool from '../../../lib/db';
 
 export async function GET() {
   try {
-    // ── 1. Flows uit DB ───────────────────────────────────────────────────────
-    const flowsRes = await pool.query(`
+    // 1. Flows
+    const flowsResult = await pool.query(`
       SELECT id, name, status, trigger_type, created
       FROM klaviyo_flows ORDER BY status DESC, name ASC
     `);
-    const flows = flowsRes.rows;
+    const flows = flowsResult.rows;
 
-    // ── 2. Orders per flow (via utm_campaign) ─────────────────────────────────
-    const flowOrdersRes = await pool.query(`
+    // 2. Orders per flow (via utm_campaign)
+    const flowOrdersResult = await pool.query(`
       SELECT utm_campaign, COUNT(*) as orders, ROUND(SUM(total_price)::numeric, 2) as revenue
       FROM orders WHERE utm_campaign IS NOT NULL AND channel = 'email'
       GROUP BY utm_campaign ORDER BY orders DESC
     `);
     const flowOrderMap: Record<string, { orders: number; revenue: number }> = {};
-    flowOrdersRes.rows.forEach((r: any) => {
-      flowOrderMap[r.utm_campaign] = { orders: Number(r.orders), revenue: Number(r.revenue) };
+    flowOrdersResult.rows.forEach((r: any) => {
+      flowOrderMap[r.utm_campaign] = { orders: parseInt(r.orders), revenue: parseFloat(r.revenue) };
     });
 
-    // ── 3. Email metrics totaal (90d) ─────────────────────────────────────────
-    const metricTotalsRes = await pool.query(`
+    // 3. Email metrics totaal (90d)
+    const metricTotals = await pool.query(`
       SELECT metric_name, SUM(count) as total, ROUND(SUM(revenue)::numeric, 2) as revenue
       FROM klaviyo_metrics
       WHERE date >= CURRENT_DATE - INTERVAL '90 days'
       GROUP BY metric_name
     `);
     const metrics: Record<string, { total: number; revenue: number }> = {};
-    metricTotalsRes.rows.forEach((r: any) => {
-      metrics[r.metric_name] = { total: Number(r.total), revenue: Number(r.revenue) };
+    metricTotals.rows.forEach((r: any) => {
+      metrics[r.metric_name] = { total: parseInt(r.total), revenue: parseFloat(r.revenue) };
     });
 
-    // ── 4. Unsubscribe trend per dag ──────────────────────────────────────────
-    const unsubRes = await pool.query(`
+    // 4. Unsubscribe trend per dag
+    const unsubResult = await pool.query(`
       SELECT date, count
       FROM klaviyo_metrics
       WHERE metric_name = 'unsubscribed_email' AND count > 0
       ORDER BY date DESC LIMIT 30
     `);
-    const unsubTrend = unsubRes.rows;
+    const unsubTrend = unsubResult.rows;
 
-    // ── 5. Email volume per dag (verzonden + unsubscribed) ────────────────────
-    const volumeRes = await pool.query(`
+    // 5. Email volume per dag
+    const volumeResult = await pool.query(`
       SELECT date,
         SUM(CASE WHEN metric_name='received_email'     THEN count ELSE 0 END) as sent,
         SUM(CASE WHEN metric_name='opened_email'       THEN count ELSE 0 END) as opened,
@@ -58,11 +58,11 @@ export async function GET() {
       WHERE date >= CURRENT_DATE - INTERVAL '90 days'
       GROUP BY date ORDER BY date ASC
     `);
-    const volumeTrend = volumeRes.rows;
+    const volumeTrend = volumeResult.rows;
 
-    // ── 6. Subscriber groei netto per week ────────────────────────────────────
-    const subscriberRes = await pool.query(`
-      SELECT TO_CHAR(date::date, 'IYYY-"W"IW') as week,
+    // 6. Subscriber groei netto per week
+    const subscriberResult = await pool.query(`
+      SELECT TO_CHAR(date, 'IYYY-"W"IW') as week,
         SUM(CASE WHEN metric_name='subscribed_email'   THEN count ELSE 0 END) as subscribed,
         SUM(CASE WHEN metric_name='unsubscribed_email' THEN count ELSE 0 END) as unsubscribed
       FROM klaviyo_metrics
@@ -70,16 +70,13 @@ export async function GET() {
         AND date >= CURRENT_DATE - INTERVAL '90 days'
       GROUP BY week ORDER BY week ASC
     `);
-    const subscriberGrowth = subscriberRes.rows.map((r: any) => ({
+    const subscriberGrowth = subscriberResult.rows.map((r: any) => ({
       ...r,
-      subscribed: Number(r.subscribed),
-      unsubscribed: Number(r.unsubscribed),
-      net: Number(r.subscribed) - Number(r.unsubscribed),
+      net: parseInt(r.subscribed) - parseInt(r.unsubscribed),
     }));
 
-    // ── 7. Flow analyse — categoriseer per flow ───────────────────────────────
+    // 7. Flow analyse
     const now = new Date();
-
     const knownFlowOrders: Record<string, { orders: number; revenue: number }> = {
       'Welcome Series, Email': flowOrderMap['Welcome Series, Email '] ?? flowOrderMap['Welcome Series, Email'] ?? { orders: 2, revenue: 0 },
       'Abandoned Cart, Email': flowOrderMap['Abandoned Cart, Email '] ?? flowOrderMap['Abandoned Cart, Email'] ?? { orders: 1, revenue: 0 },
@@ -88,7 +85,6 @@ export async function GET() {
     const analyzedFlows = flows.map((f: any) => {
       const createdDate = f.created ? new Date(f.created) : null;
       const daysSinceCreated = createdDate ? Math.round((now.getTime() - createdDate.getTime()) / 86400000) : null;
-
       const flowName = f.name?.trim();
       const orderData = flowOrderMap[flowName] ?? knownFlowOrders[flowName] ?? null;
 
@@ -104,12 +100,10 @@ export async function GET() {
           recommendations.push('Activeer deze flow of verwijder als niet nodig');
         }
       }
-
       if (f.status === 'live' && daysSinceCreated && daysSinceCreated > 365) {
         issues.push(`${daysSinceCreated}d niet aangepast`);
         recommendations.push('Controleer content — mogelijk verouderd na ' + Math.round(daysSinceCreated / 365) + ' jaar');
       }
-
       if (f.status === 'live' && !orderData && f.trigger_type === 'Metric') {
         issues.push('Geen orders via UTM getrackt');
         recommendations.push('Voeg UTM parameters toe aan alle links in deze flow');
@@ -118,7 +112,6 @@ export async function GET() {
       let priority: 'ACTIE NODIG' | 'CONTROLEER' | 'GOED' = 'GOED';
       if (f.status === 'draft' && f.trigger_type !== 'Unconfigured') priority = 'ACTIE NODIG';
       else if (issues.length > 0) priority = 'CONTROLEER';
-      else priority = 'GOED';
 
       const flowType = (() => {
         const n = f.name?.toLowerCase() ?? '';
@@ -149,18 +142,15 @@ export async function GET() {
     const priorityOrder: Record<string, number> = { 'ACTIE NODIG': 0, 'CONTROLEER': 1, 'GOED': 2 };
     analyzedFlows.sort((a: any, b: any) => (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9));
 
-    // ── 8. Email druk analyse ─────────────────────────────────────────────────
+    // 8. Email druk analyse
     const avgDailySent = metrics.received_email?.total
       ? Math.round(metrics.received_email.total / 90)
       : 0;
-
     const totalSent = metrics.received_email?.total ?? 0;
     const totalUnsub = metrics.unsubscribed_email?.total ?? 0;
     const unsubRate = totalSent > 0 ? Math.round((totalUnsub / totalSent) * 1000) / 10 : 0;
+    const highUnsubDays = unsubTrend.filter((r: any) => parseInt(r.count) >= 5);
 
-    const highUnsubDays = unsubTrend.filter((r: any) => Number(r.count) >= 5);
-
-    // ── 9. Subscriber statistieken ────────────────────────────────────────────
     const subStats = {
       total_subscribed_90d: metrics.subscribed_email?.total ?? 0,
       total_unsubscribed_90d: totalUnsub,
