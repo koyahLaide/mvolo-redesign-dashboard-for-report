@@ -49,8 +49,8 @@ const FIELD_MAP: Record<string, keyof Product> = {
   ean:'ean', sku:'sku', category:'category', description:'description_nl', brand:'brand',
 };
 const COMPLIANCE_STYLE: Record<string,string> = {
-  green:  'bg-emerald-950/40 border-emerald-900/50 text-emerald-400',
-  orange: 'bg-amber-950/40 border-amber-900/50 text-amber-400',
+  green:  'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400',
+  orange: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400',
 };
 const BLANK_COND: Condition = { field:'title', operator:'contains', value:'' };
 const LABEL_OPTIONS = [
@@ -62,10 +62,10 @@ const LABEL_OPTIONS = [
 ];
 const LABEL_HEADS = ['Tier','Prijs','Seizoen','Marge','Strategie'];
 const LABEL_STYLES: Record<string,string> = {
-  Hero:'border-yellow-700/60 bg-yellow-950/30 text-yellow-400',
-  Sidekick:'border-blue-700/60 bg-blue-950/20 text-blue-400',
-  Villain:'border-red-700/60 bg-red-950/20 text-red-400',
-  Zombie:'border-gray-700/60 bg-gray-800/30 text-gray-500',
+  Hero:'border-yellow-300 dark:border-yellow-700/60 bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400',
+  Sidekick:'border-blue-300 dark:border-blue-700/60 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400',
+  Villain:'border-red-300 dark:border-red-700/60 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400',
+  Zombie:'border-gray-300 dark:border-gray-700/60 bg-gray-100 dark:bg-gray-800/30 text-gray-500',
   Budget:'border-gray-700/60 text-gray-400',
   Mid:'border-indigo-700/60 text-indigo-400',
   Premium:'border-purple-700/60 text-purple-400',
@@ -694,38 +694,38 @@ export default function FeedSuitePage() {
   const fmtPrice = (p:number|null) => p ? '€'+p.toFixed(2).replace('.',',') : '—';
   const fmtCost  = (c:number) => '$'+Number(c).toFixed(4);
   const sevColor: Record<string,string> = {
-    critical:'text-red-400 bg-red-950/40 border-red-900/50',
-    warning:'text-amber-400 bg-amber-950/40 border-amber-900/50',
-    info:'text-blue-400 bg-blue-950/40 border-blue-900/50',
+    critical:'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50',
+    warning:'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50',
+    info:'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/50',
   };
 
-  if (loading) return <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center"><div className="text-gray-500">Feed Suite laden...</div></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-500">Feed Suite laden...</div></div>;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100 p-6">
+    <div className="min-h-screen text-gray-900 dark:text-gray-100 p-6">
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Feed Suite</h1>
           <p className="text-sm text-gray-500 mt-1">{stats.totalProducts} producten · {feedConfigs.filter(f=>f.is_active).length} feeds live · {rules.filter(r=>r.active).length} regels actief</p>
         </div>
-        <button onClick={handleSync} disabled={syncing} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors">
+        <button onClick={handleSync} disabled={syncing} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors">
           {syncing ? '⟳ Synchroniseren...' : '⟳ Shopify Sync'}
         </button>
       </div>
 
-      {syncResult && <div className={'mb-4 px-4 py-2 rounded-lg text-sm '+(syncResult.includes('Fout')||syncResult.includes('gefaald')?'bg-red-950/40 text-red-400 border border-red-900/50':'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50')}>{syncResult}</div>}
+      {syncResult && <div className={'mb-4 px-4 py-2 rounded-lg text-sm '+(syncResult.includes('Fout')||syncResult.includes('gefaald')?'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50':'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50')}>{syncResult}</div>}
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         {[
-          { label:'Producten',    value:stats.totalProducts,               sub:'actief',               color:'text-white' },
-          { label:'Feed-ready',   value:stats.feedReady,                   sub:'van '+stats.totalProducts, color:'text-emerald-400' },
-          { label:'Met issues',   value:stats.withIssues,                  sub:'producten',            color:stats.withIssues>0?'text-amber-400':'text-gray-500' },
-          { label:'Feeds live',   value:feedConfigs.filter(f=>f.is_active).length, sub:'kanalen',      color:'text-indigo-400' },
-          { label:'AI pending',   value:reviewItems.length,                sub:'te reviewen',          color:reviewItems.length>0?'text-purple-400':'text-gray-500' },
+          { label:'Producten',    value:stats.totalProducts,               sub:'actief',               color:'text-gray-900 dark:text-white' },
+          { label:'Feed-ready',   value:stats.feedReady,                   sub:'van '+stats.totalProducts, color:'text-emerald-600 dark:text-emerald-400' },
+          { label:'Met issues',   value:stats.withIssues,                  sub:'producten',            color:stats.withIssues>0?'text-amber-600 dark:text-amber-400':'text-gray-500' },
+          { label:'Feeds live',   value:feedConfigs.filter(f=>f.is_active).length, sub:'kanalen',      color:'text-indigo-600 dark:text-indigo-400' },
+          { label:'AI pending',   value:reviewItems.length,                sub:'te reviewen',          color:reviewItems.length>0?'text-purple-600 dark:text-purple-400':'text-gray-500' },
         ].map((c,i) => (
-          <div key={i} className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-4">
+          <div key={i} className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-4">
             <div className="text-xs text-gray-500 mb-1">{c.label}</div>
             <div className={'text-2xl font-bold tabular-nums '+c.color}>{c.value}</div>
             <div className="text-xs text-gray-600 mt-0.5">{c.sub}</div>
@@ -736,7 +736,7 @@ export default function FeedSuitePage() {
       {/* ── Tabs ── */}
       <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
         {([['overview','📊 Overzicht'],['products','📦 Producten'],['feeds','🔗 Feeds'],['rules','📋 Regels'],['ai','🤖 AI Enrichments'],['ab_testing','🔬 A/B'],['labels','🏷 Labels'],['versions','🔖 Versies'],['alerts','🔔 Alerts']] as [TabKey,string][]).map(([key,label]) => (
-          <button key={key} onClick={() => setTab(key)} className={'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors '+(tab===key?'bg-gray-800 text-white':'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50')}>
+          <button key={key} onClick={() => setTab(key)} className={'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors '+(tab===key?'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white':'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50')}>
             {label}
             {key==='alerts'&&alerts.length>0&&<span className="ml-1.5 px-1.5 py-0.5 text-xs bg-red-600 text-white rounded-full">{alerts.length}</span>}
             {key==='ai'&&reviewItems.length>0&&<span className="ml-1.5 px-1.5 py-0.5 text-xs bg-purple-600 text-white rounded-full">{reviewItems.length}</span>}
@@ -749,34 +749,34 @@ export default function FeedSuitePage() {
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {tab==='overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Live Feeds</h3>
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Live Feeds</h3>
             {feedConfigs.length===0?<p className="text-sm text-gray-600">Geen feed configuraties.</p>:(
               <div className="space-y-2">{feedConfigs.map(fc => { const mkt=markets.find(m=>m.id===fc.market_id); return (
                 <div key={fc.id} className="flex items-center justify-between py-2">
-                  <div><div className="text-sm font-medium text-gray-200">{fc.feed_name||(mkt?.code+' '+fc.channel)}</div><div className="text-xs text-gray-500">{mkt?.name} · {fc.channel}</div></div>
-                  <span className={'px-2 py-0.5 rounded text-xs font-medium '+(fc.is_active?'bg-emerald-950/50 text-emerald-400 border border-emerald-900/50':'bg-gray-800 text-gray-500 border border-gray-700')}>{fc.is_active?'Live':'Inactief'}</span>
+                  <div><div className="text-sm font-medium text-gray-800 dark:text-gray-200">{fc.feed_name||(mkt?.code+' '+fc.channel)}</div><div className="text-xs text-gray-500">{mkt?.name} · {fc.channel}</div></div>
+                  <span className={'px-2 py-0.5 rounded text-xs font-medium '+(fc.is_active?'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50':'bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-300 dark:border-gray-700')}>{fc.is_active?'Live':'Inactief'}</span>
                 </div>); })}</div>
             )}
           </div>
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Product Readiness</h3>
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Product Readiness</h3>
             <div className="mb-4">
-              <div className="flex items-center justify-between text-sm mb-1"><span className="text-gray-400">Feed-ready</span><span className="text-emerald-400 font-medium">{stats.totalProducts>0?Math.round((stats.feedReady/stats.totalProducts)*100):0}%</span></div>
-              <div className="h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full transition-all" style={{width:(stats.totalProducts>0?(stats.feedReady/stats.totalProducts)*100:0)+'%'}} /></div>
+              <div className="flex items-center justify-between text-sm mb-1"><span className="text-gray-400">Feed-ready</span><span className="text-emerald-600 dark:text-emerald-400 font-medium">{stats.totalProducts>0?Math.round((stats.feedReady/stats.totalProducts)*100):0}%</span></div>
+              <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full transition-all" style={{width:(stats.totalProducts>0?(stats.feedReady/stats.totalProducts)*100:0)+'%'}} /></div>
             </div>
             {stats.withIssues>0&&<div className="space-y-1"><div className="text-xs text-gray-500 mb-2">Issues:</div>
-              {(()=>{ const ic:Record<string,number>={}; products.forEach(p=>p.feed_issues.forEach(i=>{ic[i]=(ic[i]||0)+1;})); return Object.entries(ic).sort(([,a],[,b])=>b-a).map(([issue,count])=><div key={issue} className="flex justify-between text-xs"><span className="text-amber-400">⚠ {issue}</span><span className="text-gray-500">{count}p</span></div>); })()}
+              {(()=>{ const ic:Record<string,number>={}; products.forEach(p=>p.feed_issues.forEach(i=>{ic[i]=(ic[i]||0)+1;})); return Object.entries(ic).sort(([,a],[,b])=>b-a).map(([issue,count])=><div key={issue} className="flex justify-between text-xs"><span className="text-amber-600 dark:text-amber-400">⚠ {issue}</span><span className="text-gray-500">{count}p</span></div>); })()}
             </div>}
           </div>
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Markten</h3>
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Markten</h3>
             <div className="space-y-2">{markets.map(m => { const cfgs=feedConfigs.filter(fc=>fc.market_id===m.id); const ac=cfgs.filter(c=>c.is_active).length; return (
-              <div key={m.id} className="flex items-center justify-between py-1"><div className="flex items-center gap-2"><span className="text-lg">{FLAGS[m.code]??'🌐'}</span><div><div className="text-sm text-gray-200">{m.name}</div><div className="text-xs text-gray-500">{m.language} · {ac} feeds actief</div></div></div>
-              <span className={'text-xs px-2 py-0.5 rounded '+(m.status==='primary'?'bg-emerald-950/50 text-emerald-400':'bg-gray-800 text-gray-500')}>{m.status}</span></div>); })}</div>
+              <div key={m.id} className="flex items-center justify-between py-1"><div className="flex items-center gap-2"><span className="text-lg">{FLAGS[m.code]??'🌐'}</span><div><div className="text-sm text-gray-800 dark:text-gray-200">{m.name}</div><div className="text-xs text-gray-500">{m.language} · {ac} feeds actief</div></div></div>
+              <span className={'text-xs px-2 py-0.5 rounded '+(m.status==='primary'?'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400':'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-500')}>{m.status}</span></div>); })}</div>
           </div>
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-gray-300">Recente Alerts</h3>{alerts.length>0&&<button onClick={()=>setTab('alerts')} className="text-xs text-indigo-400 hover:text-indigo-300">Alle →</button>}</div>
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Recente Alerts</h3>{alerts.length>0&&<button onClick={()=>setTab('alerts')} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">Alle →</button>}</div>
             {alerts.length===0?<p className="text-sm text-gray-600">Geen openstaande alerts.</p>:<div className="space-y-2">{alerts.slice(0,5).map(a=><div key={a.id} className={'px-3 py-2 rounded-lg border text-sm '+(sevColor[a.severity]||sevColor.info)}><div className="flex items-center justify-between"><span>{a.message}</span><span className="text-xs opacity-60 ml-2">{timeAgo(a.created_at)}</span></div></div>)}</div>}
           </div>
         </div>
@@ -788,31 +788,31 @@ export default function FeedSuitePage() {
       {tab==='products' && (
         <div>
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <input type="text" placeholder="Zoek naam, EAN of SKU..." value={search} onChange={e=>setSearch(e.target.value)} className="px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-64" />
-            <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value as any)} className="px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-200">
+            <input type="text" placeholder="Zoek naam, EAN of SKU..." value={search} onChange={e=>setSearch(e.target.value)} className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-64" />
+            <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value as any)} className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200">
               <option value="all">Alle</option><option value="ready">Ready</option><option value="issues">Issues</option>
             </select>
-            <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} className="px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-200">
+            <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200">
               <option value="all">Alle categorieën</option>{categories.map(c=><option key={c} value={c}>{c}</option>)}
             </select>
             <span className="text-xs text-gray-500 ml-auto">{filtered.length} producten</span>
           </div>
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead><tr className="border-b border-gray-800">{['Product','EAN / SKU','Prijs','Foto\'s','Talen','Status'].map(h=><th key={h} className={'px-4 py-3 text-xs font-medium text-gray-500 uppercase text-left'}>{h}</th>)}</tr></thead>
-                <tbody className="divide-y divide-gray-800/50">
+                <thead><tr className="border-b border-gray-200 dark:border-gray-800">{['Product','EAN / SKU','Prijs','Foto\'s','Talen','Status'].map(h=><th key={h} className={'px-4 py-3 text-xs font-medium text-gray-500 uppercase text-left'}>{h}</th>)}</tr></thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-800/50">
                   {filtered.map(p => (
-                    <tr key={p.id} onClick={()=>openPanel(p.id)} className="hover:bg-gray-800/30 cursor-pointer transition-colors">
+                    <tr key={p.id} onClick={()=>openPanel(p.id)} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer transition-colors">
                       <td className="px-4 py-3"><div className="flex items-center gap-3">
-                        {p.image_url?<img src={p.image_url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-800"/>:<div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-600 text-xs">?</div>}
-                        <div><div className="text-sm font-medium text-gray-200">{p.name_nl}</div><div className="text-xs text-gray-500">{p.category||'—'}</div></div>
+                        {p.image_url?<img src={p.image_url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-800"/>:<div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 text-xs">?</div>}
+                        <div><div className="text-sm font-medium text-gray-800 dark:text-gray-200">{p.name_nl}</div><div className="text-xs text-gray-500">{p.category||'—'}</div></div>
                       </div></td>
-                      <td className="px-4 py-3"><div className="text-xs text-gray-300 font-mono">{p.ean||<span className="text-red-400">—</span>}</div><div className="text-xs text-gray-500 font-mono">{p.sku||<span className="text-red-400">geen SKU</span>}</div></td>
-                      <td className="px-4 py-3 text-right"><div className="text-sm text-gray-200">{fmtPrice(p.price_eur)}</div></td>
+                      <td className="px-4 py-3"><div className="text-xs text-gray-700 dark:text-gray-300 font-mono">{p.ean||<span className="text-red-400">—</span>}</div><div className="text-xs text-gray-500 font-mono">{p.sku||<span className="text-red-400">geen SKU</span>}</div></td>
+                      <td className="px-4 py-3 text-right"><div className="text-sm text-gray-800 dark:text-gray-200">{fmtPrice(p.price_eur)}</div></td>
                       <td className="px-4 py-3 text-center"><span className={'text-sm '+((p.additional_images?.length||0)+(p.image_url?1:0)>3?'text-emerald-400':'text-amber-400')}>{(p.additional_images?.length||0)+(p.image_url?1:0)}</span></td>
-                      <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1">{['nl','en','de','fr'].map(lang=>{const has=p.content_languages.some(c=>c.language===lang);return<span key={lang} className={'text-xs px-1.5 py-0.5 rounded '+(has?'bg-indigo-950/50 text-indigo-400':'bg-gray-800/50 text-gray-600')}>{lang.toUpperCase()}</span>;})}</div></td>
-                      <td className="px-4 py-3 text-center">{p.feed_ready?<span className="px-2 py-0.5 text-xs font-medium bg-emerald-950/50 text-emerald-400 border border-emerald-900/50 rounded">✓ Ready</span>:<span className="px-2 py-0.5 text-xs font-medium bg-amber-950/50 text-amber-400 border border-amber-900/50 rounded">{p.feed_issues.length} issues</span>}</td>
+                      <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1">{['nl','en','de','fr'].map(lang=>{const has=p.content_languages.some(c=>c.language===lang);return<span key={lang} className={'text-xs px-1.5 py-0.5 rounded '+(has?'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400':'bg-gray-100 dark:bg-gray-800/50 text-gray-500')}>{lang.toUpperCase()}</span>;})}</div></td>
+                      <td className="px-4 py-3 text-center">{p.feed_ready?<span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 rounded">✓ Ready</span>:<span className="px-2 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 rounded">{p.feed_issues.length} issues</span>}</td>
                     </tr>
                   ))}
                   {filtered.length===0&&<tr><td colSpan={6} className="px-4 py-12 text-center text-gray-600">{products.length===0?'Geen producten. Klik "Shopify Sync".':'Geen producten voor filters.'}</td></tr>}
@@ -830,14 +830,14 @@ export default function FeedSuitePage() {
         <div className="space-y-5">
           {/* Header row */}
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-300">Feed configuraties</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Feed configuraties</h2>
             <button onClick={()=>{setNewFeedOpen(o=>{if(!o){setNewFeedProductIds(new Set(products.map(p=>p.id)));}return !o;});setFeedError(null);}} className="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">+ Nieuwe Feed</button>
           </div>
 
           {/* New feed form */}
           {newFeedOpen && (
-            <div className="bg-gray-900/70 border border-indigo-800/50 rounded-xl p-5 space-y-4">
-              <h3 className="text-sm font-semibold text-gray-200">Nieuwe feed aanmaken</h3>
+            <div className="bg-gray-50 dark:bg-gray-900/70 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-5 space-y-4">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Nieuwe feed aanmaken</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Markt</label>
@@ -845,14 +845,14 @@ export default function FeedSuitePage() {
                     setNewFeedMarket(e.target.value);
                     const mkt=markets.find(m=>m.id===e.target.value);
                     if (mkt?.language_code) setNewFeedLang(mkt.language_code);
-                  }} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                  }} className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-indigo-500">
                     <option value="">— kies markt —</option>
                     {markets.map(m=><option key={m.id} value={m.id}>{FLAGS[m.code]??'🌐'} {m.name} ({m.code})</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Kanaal</label>
-                  <select value={newFeedChannel} onChange={e=>setNewFeedChannel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                  <select value={newFeedChannel} onChange={e=>setNewFeedChannel(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-indigo-500">
                     <option value="google">Google Shopping</option>
                     <option value="meta">Meta Catalog</option>
                     <option value="awin">Awin Affiliate</option>
@@ -862,11 +862,11 @@ export default function FeedSuitePage() {
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Feed naam</label>
-                  <input value={newFeedName} onChange={e=>setNewFeedName(e.target.value)} placeholder={newFeedChannel} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500" />
+                  <input value={newFeedName} onChange={e=>setNewFeedName(e.target.value)} placeholder={newFeedChannel} className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Taal <span className="text-gray-600">(auto van markt)</span></label>
-                  <select value={newFeedLang} onChange={e=>setNewFeedLang(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                  <select value={newFeedLang} onChange={e=>setNewFeedLang(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-indigo-500">
                     <option value="nl">Nederlands (nl)</option>
                     <option value="de">Duits (de)</option>
                     <option value="fr">Frans (fr)</option>
@@ -888,15 +888,15 @@ export default function FeedSuitePage() {
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs text-gray-500">Producten in feed <span className="text-gray-600">({newFeedProductIds.size} van {products.length} geselecteerd)</span></label>
                   <div className="flex gap-2">
-                    <button onClick={()=>setNewFeedProductIds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-400 hover:text-indigo-300">Alles</button>
+                    <button onClick={()=>setNewFeedProductIds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">Alles</button>
                     <button onClick={()=>setNewFeedProductIds(new Set())} className="text-xs text-gray-500 hover:text-gray-400">Geen</button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1 border border-gray-800 rounded-lg p-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1 border border-gray-200 dark:border-gray-800 rounded-lg p-2">
                   {products.map(p=>(
-                    <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer '+(newFeedProductIds.has(p.id)?'bg-indigo-950/40 border border-indigo-900/50':'bg-gray-800/40 border border-transparent hover:bg-gray-800')}>
+                    <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer '+(newFeedProductIds.has(p.id)?'bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50':'bg-gray-50 dark:bg-gray-800/40 border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800')}>
                       <input type="checkbox" checked={newFeedProductIds.has(p.id)} onChange={e=>{const s=new Set(newFeedProductIds);e.target.checked?s.add(p.id):s.delete(p.id);setNewFeedProductIds(s);}} className="accent-indigo-500 shrink-0"/>
-                      <span className="text-xs text-gray-300 truncate">{p.name_nl}</span>
+                      <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{p.name_nl}</span>
                     </label>
                   ))}
                   {products.length===0&&<p className="text-xs text-gray-600 col-span-4 py-4 text-center">Eerst Shopify Sync uitvoeren</p>}
@@ -905,17 +905,17 @@ export default function FeedSuitePage() {
 
               {feedError && (
                 <div>
-                  <p className="text-xs text-red-400">{feedError}</p>
+                  <p className="text-xs text-red-500 dark:text-red-400">{feedError}</p>
                   {newFeedOverwrite && (
-                    <button onClick={createFeedConfig} disabled={savingFeed} className="mt-1.5 text-xs px-3 py-1.5 bg-amber-900/40 hover:bg-amber-900/60 text-amber-400 rounded-lg border border-amber-900/50 disabled:opacity-50">
+                    <button onClick={createFeedConfig} disabled={savingFeed} className="mt-1.5 text-xs px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-400 rounded-lg border border-amber-200 dark:border-amber-900/50 disabled:opacity-50">
                       {savingFeed ? '...' : 'Ja, overschrijven'}
                     </button>
                   )}
                 </div>
               )}
               <div className="flex gap-2">
-                <button onClick={createFeedConfig} disabled={savingFeed} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{savingFeed?'Aanmaken...':'Feed aanmaken'}</button>
-                <button onClick={()=>{setNewFeedOpen(false);setNewFeedOverwrite(false);setFeedError(null);}} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
+                <button onClick={createFeedConfig} disabled={savingFeed} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg">{savingFeed?'Aanmaken...':'Feed aanmaken'}</button>
+                <button onClick={()=>{setNewFeedOpen(false);setNewFeedOverwrite(false);setFeedError(null);}} className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">Annuleer</button>
               </div>
             </div>
           )}
@@ -924,8 +924,8 @@ export default function FeedSuitePage() {
             const cfgs = feedConfigs.filter(fc=>fc.market_id===mkt.id);
             if (!cfgs.length) return null;
             return (
-              <div key={mkt.id} className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
-                <div className="flex items-center gap-2 mb-4"><span className="text-xl">{FLAGS[mkt.code]??'🌐'}</span><h3 className="font-semibold text-gray-200">{mkt.name}</h3><span className="text-xs text-gray-500">{mkt.language_code?.toUpperCase()}</span></div>
+              <div key={mkt.id} className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-4"><span className="text-xl">{FLAGS[mkt.code]??'🌐'}</span><h3 className="font-semibold text-gray-800 dark:text-gray-200">{mkt.name}</h3><span className="text-xs text-gray-500">{mkt.language_code?.toUpperCase()}</span></div>
                 <div className="space-y-3">
                   {cfgs.map(cfg => {
                     const feedPath = `/api/feed/output?market=${mkt.code}&channel=${cfg.channel}`;
@@ -933,44 +933,44 @@ export default function FeedSuitePage() {
                     const preview  = feedPreviews[key] as any;
                     const isLoad   = prevLoading===key;
                     return (
-                      <div key={cfg.id} className="border border-gray-800 rounded-lg p-4">
+                      <div key={cfg.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs font-bold flex items-center justify-center">{CHANNEL_ICONS[cfg.channel]??cfg.channel[0].toUpperCase()}</span>
-                              <span className="font-medium text-gray-200 capitalize">{cfg.feed_name||cfg.channel}</span>
-                              <span className={'text-xs px-1.5 py-0.5 rounded '+(cfg.is_active?'bg-emerald-950/50 text-emerald-400':'bg-gray-800 text-gray-500')}>{cfg.is_active?'Live':'Inactief'}</span>
+                              <span className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center justify-center">{CHANNEL_ICONS[cfg.channel]??cfg.channel[0].toUpperCase()}</span>
+                              <span className="font-medium text-gray-800 dark:text-gray-200 capitalize">{cfg.feed_name||cfg.channel}</span>
+                              <span className={'text-xs px-1.5 py-0.5 rounded '+(cfg.is_active?'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400':'bg-gray-100 dark:bg-gray-800 text-gray-500')}>{cfg.is_active?'Live':'Inactief'}</span>
                             </div>
                             <div className="flex items-center gap-2 mt-2">
-                              <code className="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400 font-mono truncate max-w-xs">{feedPath}</code>
-                              <button onClick={()=>copyUrl(feedPath,key)} className={'text-xs px-2 py-1 rounded transition-colors '+(copied===key?'bg-emerald-900/40 text-emerald-400':'bg-gray-800 text-gray-400 hover:text-gray-200')}>{copied===key?'✓ Gekopieerd':'Kopieer'}</button>
-                              <a href={feedPath} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 hover:text-gray-200">Open ↗</a>
+                              <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono truncate max-w-xs">{feedPath}</code>
+                              <button onClick={()=>copyUrl(feedPath,key)} className={'text-xs px-2 py-1 rounded transition-colors '+(copied===key?'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400':'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200')}>{copied===key?'✓ Gekopieerd':'Kopieer'}</button>
+                              <a href={feedPath} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">Open ↗</a>
                             </div>
                             {cfg.last_fetched_at&&<div className="text-xs text-gray-600 mt-1">Opgehaald: {timeAgo(cfg.last_fetched_at)} geleden</div>}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <button onClick={()=>loadFeedPreview(mkt.code,cfg.channel)} disabled={isLoad} className="text-xs px-3 py-1.5 bg-indigo-900/40 text-indigo-400 hover:bg-indigo-900/60 disabled:opacity-50 rounded-lg">{isLoad?'...':'Preview'}</button>
+                            <button onClick={()=>loadFeedPreview(mkt.code,cfg.channel)} disabled={isLoad} className="text-xs px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 disabled:opacity-50 rounded-lg">{isLoad?'...':'Preview'}</button>
                             {confirmDeleteFeed===cfg.id ? (
                               <div className="flex items-center gap-1">
-                                <span className="text-xs text-red-400">Zeker?</span>
-                                <button onClick={()=>deleteFeedConfig(cfg.id)} disabled={deletingFeedId===cfg.id} className="text-xs px-2 py-1 bg-red-900/60 hover:bg-red-900/80 text-red-300 rounded border border-red-900/50 disabled:opacity-50">{deletingFeedId===cfg.id?'...':'Ja'}</button>
-                                <button onClick={()=>setConfirmDeleteFeed(null)} className="text-xs px-2 py-1 bg-gray-800 text-gray-400 rounded">Nee</button>
+                                <span className="text-xs text-red-500 dark:text-red-400">Zeker?</span>
+                                <button onClick={()=>deleteFeedConfig(cfg.id)} disabled={deletingFeedId===cfg.id} className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/60 hover:bg-red-200 dark:hover:bg-red-900/80 text-red-600 dark:text-red-300 rounded border border-red-200 dark:border-red-900/50 disabled:opacity-50">{deletingFeedId===cfg.id?'...':'Ja'}</button>
+                                <button onClick={()=>setConfirmDeleteFeed(null)} className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded">Nee</button>
                               </div>
                             ) : (
-                              <button onClick={()=>setConfirmDeleteFeed(cfg.id)} className="text-xs px-2 py-1.5 bg-red-950/30 hover:bg-red-950/50 text-red-500 rounded-lg border border-red-900/30">Verwijder</button>
+                              <button onClick={()=>setConfirmDeleteFeed(cfg.id)} className="text-xs px-2 py-1.5 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:bg-red-950/50 text-red-500 rounded-lg border border-red-200 dark:border-red-900/30">Verwijder</button>
                             )}
                           </div>
                         </div>
                         {preview && (
-                          <div className="mt-4 pt-4 border-t border-gray-800">
-                            {preview._error?<p className="text-xs text-red-400">{preview._error}</p>:(
+                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                            {preview._error?<p className="text-xs text-red-500 dark:text-red-400">{preview._error}</p>:(
                               <>
-                                <div className="flex gap-4 text-xs mb-3"><span className="text-gray-500">{preview.total_before_rules} totaal</span><span className="text-amber-400">−{preview.excluded} uitgesloten</span><span className="text-emerald-400 font-medium">{preview.total_after_rules} in feed</span></div>
+                                <div className="flex gap-4 text-xs mb-3"><span className="text-gray-500">{preview.total_before_rules} totaal</span><span className="text-amber-600 dark:text-amber-400">−{preview.excluded} uitgesloten</span><span className="text-emerald-600 dark:text-emerald-400 font-medium">{preview.total_after_rules} in feed</span></div>
                                 <div className="grid grid-cols-5 gap-2">
                                   {preview.products.map((p:any) => (
-                                    <div key={p.id} className="bg-gray-800/50 rounded-lg p-2">
-                                      {p.image?<img src={p.image} alt="" className="w-full h-14 object-cover rounded mb-1.5"/>:<div className="w-full h-14 bg-gray-700 rounded mb-1.5"/>}
-                                      <div className="text-xs text-gray-300 truncate">{p.title}</div>
+                                    <div key={p.id} className="bg-gray-100 dark:bg-gray-800/50 rounded-lg p-2">
+                                      {p.image?<img src={p.image} alt="" className="w-full h-14 object-cover rounded mb-1.5"/>:<div className="w-full h-14 bg-gray-200 dark:bg-gray-700 rounded mb-1.5"/>}
+                                      <div className="text-xs text-gray-700 dark:text-gray-300 truncate">{p.title}</div>
                                       <div className="text-xs text-gray-500">{p.price!=null?'€'+Number(p.price).toFixed(2):'—'}</div>
                                     </div>
                                   ))}
@@ -988,24 +988,24 @@ export default function FeedSuitePage() {
           })}
 
           {/* Supplemental Feeds */}
-          <div className="mt-6 pt-6 border-t border-gray-800/50">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Supplemental Feeds (Custom Labels)</h3>
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800/50">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Supplemental Feeds (Custom Labels)</h3>
             <div className="space-y-2">
               {markets.map(mkt => {
                 const suppUrl = `/api/feed/output/supplemental?market=${mkt.code}`;
                 const suppKey = `supp_${mkt.code}`;
                 return (
-                  <div key={mkt.id} className="flex items-center justify-between px-4 py-3 border border-gray-800 rounded-lg">
+                  <div key={mkt.id} className="flex items-center justify-between px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg">
                     <div className="flex items-center gap-3">
                       <span className="text-base">{FLAGS[mkt.code]??'🌐'}</span>
                       <div>
-                        <div className="text-sm text-gray-200">{mkt.name} — Supplemental</div>
+                        <div className="text-sm text-gray-800 dark:text-gray-200">{mkt.name} — Supplemental</div>
                         <code className="text-xs text-gray-500 font-mono">{suppUrl}</code>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={()=>copyUrl(suppUrl,suppKey)} className={'text-xs px-2 py-1 rounded transition-colors '+(copied===suppKey?'bg-emerald-900/40 text-emerald-400':'bg-gray-800 text-gray-400 hover:text-gray-200')}>{copied===suppKey?'✓':'Kopieer'}</button>
-                      <a href={suppUrl} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 hover:text-gray-200">Open ↗</a>
+                      <button onClick={()=>copyUrl(suppUrl,suppKey)} className={'text-xs px-2 py-1 rounded transition-colors '+(copied===suppKey?'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400':'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200')}>{copied===suppKey?'✓':'Kopieer'}</button>
+                      <a href={suppUrl} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">Open ↗</a>
                     </div>
                   </div>
                 );
@@ -1026,19 +1026,19 @@ export default function FeedSuitePage() {
           const a = r.actions??{};
           const at = a.action_type;
           if (r.type==='filter') return <span className="text-amber-500">→ Uitsluit van feed</span>;
-          if (at==='find_replace') return <span className="text-indigo-400">→ Vervang <span className="font-mono text-xs">"{a.find}"</span> door <span className="font-mono text-xs">"{a.replace}"</span>{a.use_regex?' (regex)':''} in {FIELD_NL[a.field]??a.field}</span>;
-          if (at==='prepend_if_missing') return <span className="text-indigo-400">→ Prepend <span className="font-mono text-xs">"{a.value}"</span> in {FIELD_NL[a.field]??a.field}</span>;
-          if (at==='append_if_missing') return <span className="text-indigo-400">→ Append <span className="font-mono text-xs">"{a.value}"</span> in {FIELD_NL[a.field]??a.field}</span>;
-          if (at==='copy_field') return <span className="text-indigo-400">→ Kopieer {FIELD_NL[a.from_field]??a.from_field} → {FIELD_NL[a.to_field]??a.to_field}</span>;
+          if (at==='find_replace') return <span className="text-indigo-600 dark:text-indigo-400">→ Vervang <span className="font-mono text-xs">"{a.find}"</span> door <span className="font-mono text-xs">"{a.replace}"</span>{a.use_regex?' (regex)':''} in {FIELD_NL[a.field]??a.field}</span>;
+          if (at==='prepend_if_missing') return <span className="text-indigo-600 dark:text-indigo-400">→ Prepend <span className="font-mono text-xs">"{a.value}"</span> in {FIELD_NL[a.field]??a.field}</span>;
+          if (at==='append_if_missing') return <span className="text-indigo-600 dark:text-indigo-400">→ Append <span className="font-mono text-xs">"{a.value}"</span> in {FIELD_NL[a.field]??a.field}</span>;
+          if (at==='copy_field') return <span className="text-indigo-600 dark:text-indigo-400">→ Kopieer {FIELD_NL[a.from_field]??a.from_field} → {FIELD_NL[a.to_field]??a.to_field}</span>;
           const sf = a.set_field??a.field; const val = a.value;
-          if (sf) return <span className="text-indigo-400">→ Stel <span className="font-mono text-xs">{FIELD_NL[sf]??sf}</span> op <span className="font-mono text-xs">"{val}"</span></span>;
+          if (sf) return <span className="text-indigo-600 dark:text-indigo-400">→ Stel <span className="font-mono text-xs">{FIELD_NL[sf]??sf}</span> op <span className="font-mono text-xs">"{val}"</span></span>;
           return <span className="text-gray-500">—</span>;
         };
 
         const RuleCard = ({ rule, isLast, isFirst }: { rule:Rule; isLast:boolean; isFirst:boolean }) => {
           const aff = products.filter(p=>(rule.conditions??[]).every(c=>evalCond(p,c))).length;
           return (
-            <div className={'border rounded-lg p-3 transition-all '+(rule.active?'bg-gray-900/60 border-gray-700/60':'bg-gray-900/20 border-gray-800/30 opacity-50')}>
+            <div className={'border rounded-lg p-3 transition-all '+(rule.active?'bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-700/60':'bg-gray-50 dark:bg-gray-900/20 border-gray-100 dark:border-gray-800/30 opacity-50')}>
               <div className="flex items-start gap-2">
                 {/* Toggle */}
                 <button onClick={()=>toggleRule(rule.id,!rule.active)} className={'relative w-8 h-4 rounded-full shrink-0 mt-0.5 transition-colors '+(rule.active?'bg-indigo-600':'bg-gray-700')}>
@@ -1047,12 +1047,12 @@ export default function FeedSuitePage() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-sm font-medium text-gray-200 truncate">{rule.name}</span>
-                    <span className={'text-xs px-1.5 py-0.5 rounded shrink-0 '+(rule.type==='filter'?'bg-amber-950/50 text-amber-400':'bg-indigo-950/50 text-indigo-400')}>{rule.type==='filter'?'Filter':'Transform'}</span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{rule.name}</span>
+                    <span className={'text-xs px-1.5 py-0.5 rounded shrink-0 '+(rule.type==='filter'?'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400':'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400')}>{rule.type==='filter'?'Filter':'Transform'}</span>
                     <span className="text-xs text-gray-600 shrink-0">#{rule.priority}</span>
                   </div>
                   <div className="mt-0.5 text-xs text-gray-500 truncate">
-                    {(rule.conditions??[]).map((c,i)=><span key={i}>{i>0&&<span className="text-gray-700 mx-1">EN</span>}<span className="text-gray-400">{FIELD_NL[c.field]??c.field}</span> {OPS.find(o=>o.v===c.operator)?.l??c.operator}{c.value&&<span className="text-indigo-400"> "{c.value}"</span>}</span>)}
+                    {(rule.conditions??[]).map((c,i)=><span key={i}>{i>0&&<span className="text-gray-700 mx-1">EN</span>}<span className="text-gray-400">{FIELD_NL[c.field]??c.field}</span> {OPS.find(o=>o.v===c.operator)?.l??c.operator}{c.value&&<span className="text-indigo-600 dark:text-indigo-400"> "{c.value}"</span>}</span>)}
                   </div>
                   <div className="mt-0.5 text-xs">{describeAction(rule)}{aff>0&&<span className="text-gray-600 ml-1">· {aff}p</span>}</div>
                 </div>
@@ -1060,12 +1060,12 @@ export default function FeedSuitePage() {
                 <div className="flex items-center gap-0.5 shrink-0">
                   <button onClick={()=>moveRule(rule,'up')} disabled={isFirst} className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-300 disabled:opacity-20 text-xs">↑</button>
                   <button onClick={()=>moveRule(rule,'down')} disabled={isLast} className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-300 disabled:opacity-20 text-xs">↓</button>
-                  <button onClick={()=>openEditRule(rule)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-indigo-400 text-xs rounded hover:bg-indigo-950/30" title="Bewerken">✎</button>
-                  <button onClick={()=>duplicateRule(rule)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-300 text-xs rounded hover:bg-gray-800" title="Dupliceer">⎘</button>
+                  <button onClick={()=>openEditRule(rule)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-indigo-400 text-xs rounded hover:bg-indigo-50 dark:bg-indigo-950/30" title="Bewerken">✎</button>
+                  <button onClick={()=>duplicateRule(rule)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="Dupliceer">⎘</button>
                   {(rule.scope??'master')==='master'
-                    ? <button onClick={()=>duplicateRule(rule,'partner',partnerCh)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-amber-400 text-xs rounded hover:bg-amber-950/20" title={`Kopieer naar ${partnerCh}`}>→P</button>
-                    : <button onClick={()=>duplicateRule(rule,'master')} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-blue-400 text-xs rounded hover:bg-blue-950/20" title="Kopieer naar Master">→M</button>}
-                  <button onClick={()=>deleteRule(rule.id)} disabled={deletingRule===rule.id} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-red-400 disabled:opacity-50 text-xs rounded hover:bg-red-950/20">✕</button>
+                    ? <button onClick={()=>duplicateRule(rule,'partner',partnerCh)} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-amber-400 text-xs rounded hover:bg-amber-50 dark:bg-amber-950/20" title={`Kopieer naar ${partnerCh}`}>→P</button>
+                    : <button onClick={()=>duplicateRule(rule,'master')} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-blue-400 text-xs rounded hover:bg-blue-50 dark:bg-blue-950/20" title="Kopieer naar Master">→M</button>}
+                  <button onClick={()=>deleteRule(rule.id)} disabled={deletingRule===rule.id} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-red-400 disabled:opacity-50 text-xs rounded hover:bg-red-50 dark:bg-red-950/20">✕</button>
                 </div>
               </div>
             </div>
@@ -1076,42 +1076,42 @@ export default function FeedSuitePage() {
           <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <div><h3 className="font-semibold text-gray-200">{rules.length} regels totaal</h3><p className="text-xs text-gray-500 mt-0.5">{rules.filter(r=>r.active).length} actief · {masterRules.length} master · {rules.filter(r=>r.scope==='partner').length} partner</p></div>
+              <div><h3 className="font-semibold text-gray-800 dark:text-gray-200">{rules.length} regels totaal</h3><p className="text-xs text-gray-500 mt-0.5">{rules.filter(r=>r.active).length} actief · {masterRules.length} master · {rules.filter(r=>r.scope==='partner').length} partner</p></div>
               <button onClick={()=>{resetRuleForm();setNewRuleOpen(o=>!o);}} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">{newRuleOpen&&!editingRule?'✕ Annuleer':'+ Nieuwe Regel'}</button>
             </div>
 
             {/* Rule form */}
             {(newRuleOpen||editingRule) && (
-              <div className="mb-5 bg-gray-900/70 border border-indigo-900/50 rounded-xl p-5">
-                <h4 className="text-sm font-semibold text-gray-200 mb-4">{editingRule?'Regel bewerken':'Nieuwe Feed Regel'}</h4>
+              <div className="mb-5 bg-gray-50 dark:bg-gray-900/70 border border-indigo-200 dark:border-indigo-200 dark:border-indigo-900/50 rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">{editingRule?'Regel bewerken':'Nieuwe Feed Regel'}</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <div><label className="text-xs text-gray-400 mb-1 block">Naam *</label><input value={ruleName} onChange={e=>setRuleName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" /></div>
-                  <div><label className="text-xs text-gray-400 mb-1 block">Type</label><select value={ruleType} onChange={e=>setRuleType(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="filter">Filter — uitsluit</option><option value="transform">Transform</option></select></div>
-                  <div><label className="text-xs text-gray-400 mb-1 block">Scope</label><select value={ruleScope} onChange={e=>setRuleScope(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="master">Master (alle feeds)</option><option value="partner">Partner (per kanaal)</option></select></div>
-                  {ruleScope==='partner'&&<div><label className="text-xs text-gray-400 mb-1 block">Kanaal</label><select value={ruleCh} onChange={e=>setRuleCh(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="google">Google Shopping</option><option value="meta">Meta Catalog</option><option value="awin">Awin</option></select></div>}
+                  <div><label className="text-xs text-gray-400 mb-1 block">Naam *</label><input value={ruleName} onChange={e=>setRuleName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500" /></div>
+                  <div><label className="text-xs text-gray-400 mb-1 block">Type</label><select value={ruleType} onChange={e=>setRuleType(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200"><option value="filter">Filter — uitsluit</option><option value="transform">Transform</option></select></div>
+                  <div><label className="text-xs text-gray-400 mb-1 block">Scope</label><select value={ruleScope} onChange={e=>setRuleScope(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200"><option value="master">Master (alle feeds)</option><option value="partner">Partner (per kanaal)</option></select></div>
+                  {ruleScope==='partner'&&<div><label className="text-xs text-gray-400 mb-1 block">Kanaal</label><select value={ruleCh} onChange={e=>setRuleCh(e.target.value)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200"><option value="google">Google Shopping</option><option value="meta">Meta Catalog</option><option value="awin">Awin</option></select></div>}
                 </div>
                 {/* Conditions */}
                 <div className="mb-4">
                   <label className="text-xs text-gray-400 mb-2 block">Als (alle condities gelden)</label>
                   {ruleConds.map((c,i)=>(
                     <div key={i} className="flex items-center gap-2 mb-2">
-                      <select value={c.field} onChange={e=>updateCond(i,'field',e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 w-28">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
-                      <select value={c.operator} onChange={e=>updateCond(i,'operator',e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 w-36">{OPS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select>
-                      {!NO_VAL_OPS.includes(c.operator)&&<input value={c.value??''} onChange={e=>updateCond(i,'value',e.target.value)} placeholder="waarde..." className="flex-1 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>}
+                      <select value={c.field} onChange={e=>updateCond(i,'field',e.target.value)} className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200 w-28">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                      <select value={c.operator} onChange={e=>updateCond(i,'operator',e.target.value)} className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200 w-36">{OPS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select>
+                      {!NO_VAL_OPS.includes(c.operator)&&<input value={c.value??''} onChange={e=>updateCond(i,'value',e.target.value)} placeholder="waarde..." className="flex-1 px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>}
                       {ruleConds.length>1&&<button onClick={()=>setRuleConds(prev=>prev.filter((_,j)=>j!==i))} className="text-gray-600 hover:text-red-400">×</button>}
                       <span className="text-xs text-gray-600 w-8 shrink-0">{products.filter(p=>evalCond(p,c)).length}p</span>
                     </div>
                   ))}
-                  <button onClick={()=>setRuleConds(prev=>[...prev,{...BLANK_COND}])} className="text-xs text-indigo-400 hover:text-indigo-300">+ EN-conditie</button>
+                  <button onClick={()=>setRuleConds(prev=>[...prev,{...BLANK_COND}])} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">+ EN-conditie</button>
                 </div>
                 {/* Action */}
                 <div className="mb-4">
                   {ruleType==='filter'
-                    ? <div className="flex items-center gap-2"><span className="text-xs text-gray-400">Dan:</span><span className="px-2 py-1 bg-red-950/40 text-red-400 border border-red-900/50 rounded text-xs">Uitsluit van feed</span></div>
+                    ? <div className="flex items-center gap-2"><span className="text-xs text-gray-400">Dan:</span><span className="px-2 py-1 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded text-xs">Uitsluit van feed</span></div>
                     : <div>
                         <label className="text-xs text-gray-400 mb-2 block">Dan</label>
                         <div className="flex flex-wrap items-start gap-2">
-                          <select value={ruleActionType} onChange={e=>setRuleActionType(e.target.value as ActionType)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">
+                          <select value={ruleActionType} onChange={e=>setRuleActionType(e.target.value as ActionType)} className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200">
                             <option value="set_field">Stel veld in op waarde</option>
                             <option value="find_replace">Find &amp; Replace in veld</option>
                             <option value="prepend_if_missing">Prepend als niet aanwezig</option>
@@ -1119,29 +1119,29 @@ export default function FeedSuitePage() {
                             <option value="copy_field">Kopieer veld naar veld</option>
                           </select>
                           {ruleActionType==='copy_field' ? <>
-                            <select value={ruleCopyFrom} onChange={e=>setRuleCopyFrom(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                            <select value={ruleCopyFrom} onChange={e=>setRuleCopyFrom(e.target.value)} className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
                             <span className="text-gray-500 text-sm py-1.5">→</span>
-                            <select value={ruleCopyTo} onChange={e=>setRuleCopyTo(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                            <select value={ruleCopyTo} onChange={e=>setRuleCopyTo(e.target.value)} className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
                           </> : ruleActionType==='find_replace' ? <>
                             <span className="text-xs text-gray-400 py-1.5">in</span>
-                            <select value={ruleSetField} onChange={e=>setRuleSetField(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
-                            <input value={ruleFindVal} onChange={e=>setRuleFindVal(e.target.value)} placeholder="zoek..." className="w-28 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                            <select value={ruleSetField} onChange={e=>setRuleSetField(e.target.value)} className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                            <input value={ruleFindVal} onChange={e=>setRuleFindVal(e.target.value)} placeholder="zoek..." className="w-28 px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>
                             <span className="text-gray-500 text-sm py-1.5">→</span>
-                            <input value={ruleReplaceVal} onChange={e=>setRuleReplaceVal(e.target.value)} placeholder="vervang..." className="w-28 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                            <input value={ruleReplaceVal} onChange={e=>setRuleReplaceVal(e.target.value)} placeholder="vervang..." className="w-28 px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>
                             <label className="flex items-center gap-1 text-xs text-gray-400 py-1.5 cursor-pointer"><input type="checkbox" checked={ruleUseRegex} onChange={e=>setRuleUseRegex(e.target.checked)} className="accent-indigo-500"/>regex</label>
                           </> : <>
                             <span className="text-xs text-gray-400 py-1.5">veld</span>
-                            <select value={ruleSetField} onChange={e=>setRuleSetField(e.target.value)} className="px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
+                            <select value={ruleSetField} onChange={e=>setRuleSetField(e.target.value)} className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200">{FIELDS.map(f=><option key={f} value={f}>{FIELD_NL[f]}</option>)}</select>
                             <span className="text-xs text-gray-400 py-1.5">{ruleActionType==='set_field'?'op':ruleActionType==='prepend_if_missing'?'prepend':'append'}</span>
-                            <input value={ruleSetValue} onChange={e=>setRuleSetValue(e.target.value)} placeholder="waarde..." className="flex-1 min-w-32 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                            <input value={ruleSetValue} onChange={e=>setRuleSetValue(e.target.value)} placeholder="waarde..." className="flex-1 min-w-32 px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>
                           </>}
                         </div>
                       </div>}
                 </div>
                 {ruleError&&<p className="text-xs text-red-400 mb-3">{ruleError}</p>}
                 <div className="flex gap-2">
-                  <button onClick={saveRule} disabled={savingRule} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{savingRule?'Opslaan...':(editingRule?'Bijwerken':'Opslaan')}</button>
-                  <button onClick={resetRuleForm} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
+                  <button onClick={saveRule} disabled={savingRule} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg">{savingRule?'Opslaan...':(editingRule?'Bijwerken':'Opslaan')}</button>
+                  <button onClick={resetRuleForm} className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">Annuleer</button>
                 </div>
               </div>
             )}
@@ -1152,13 +1152,13 @@ export default function FeedSuitePage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-200">Master Feed</h4>
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Master Feed</h4>
                     <p className="text-xs text-gray-500">{masterRules.length} regels · geldt voor alle kanalen</p>
                   </div>
-                  <button onClick={()=>{resetRuleForm();setRuleScope('master');setNewRuleOpen(true);}} className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">+ Regel</button>
+                  <button onClick={()=>{resetRuleForm();setRuleScope('master');setNewRuleOpen(true);}} className="text-xs px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">+ Regel</button>
                 </div>
                 <div className="space-y-2">
-                  {masterRules.length===0&&<div className="bg-gray-900/30 border border-gray-800/30 rounded-lg p-6 text-center text-xs text-gray-600">Geen master regels</div>}
+                  {masterRules.length===0&&<div className="bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-800/30 rounded-lg p-6 text-center text-xs text-gray-600">Geen master regels</div>}
                   {masterRules.map((r,i)=><RuleCard key={r.id} rule={r} isFirst={i===0} isLast={i===masterRules.length-1}/>)}
                 </div>
               </div>
@@ -1167,23 +1167,23 @@ export default function FeedSuitePage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-200">Partner Feed</h4>
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Partner Feed</h4>
                     <p className="text-xs text-gray-500">{partnerRules.length} regels · kanaal-specifiek</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <select value={partnerCh} onChange={e=>setPartnerCh(e.target.value)} className="text-xs px-2 py-1 bg-gray-800 border border-gray-700 rounded-lg text-gray-300">
+                    <select value={partnerCh} onChange={e=>setPartnerCh(e.target.value)} className="text-xs px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-300">
                       <option value="google">Google Shopping</option>
                       <option value="meta">Meta Catalog</option>
                       <option value="awin">Awin</option>
                     </select>
-                    <button onClick={()=>{resetRuleForm();setRuleScope('partner');setRuleCh(partnerCh);setNewRuleOpen(true);}} className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">+ Regel</button>
+                    <button onClick={()=>{resetRuleForm();setRuleScope('partner');setRuleCh(partnerCh);setNewRuleOpen(true);}} className="text-xs px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">+ Regel</button>
                   </div>
                 </div>
                 <div className="space-y-2">
                   {partnerRules.length===0&&(
-                    <div className="bg-gray-900/30 border border-gray-800/30 border-dashed rounded-lg p-6 text-center">
+                    <div className="bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-800/30 border-dashed rounded-lg p-6 text-center">
                       <p className="text-xs text-gray-600 mb-3">Geen {partnerCh} partner regels</p>
-                      <button onClick={copyAllToPartner} disabled={copyingAll||masterRules.length===0} className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 rounded-lg">
+                      <button onClick={copyAllToPartner} disabled={copyingAll||masterRules.length===0} className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300 rounded-lg">
                         {copyingAll?'Kopiëren...`':'⎘ Kopieer alle Master regels'}
                       </button>
                     </div>
@@ -1209,16 +1209,16 @@ export default function FeedSuitePage() {
       {tab==='ai' && (
         <div className="space-y-5">
           {/* Controls */}
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-gray-300 mb-4">Genereer AI-titels en beschrijvingen</h3>
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Genereer AI-titels en beschrijvingen</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <div><label className="text-xs text-gray-400 mb-1 block">Taal</label>
-                <select value={aiLang} onChange={e=>setAiLang(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200">
+                <select value={aiLang} onChange={e=>setAiLang(e.target.value)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200">
                   {[['nl','Nederlands'],['de','Deutsch'],['fr','Français'],['en','English']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
               <div><label className="text-xs text-gray-400 mb-1 block">Kanaal</label>
-                <select value={aiChannel} onChange={e=>setAiChannel(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200">
+                <select value={aiChannel} onChange={e=>setAiChannel(e.target.value)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200">
                   <option value="all">Alle kanalen</option>
                   <option value="google">Google Shopping</option>
                   <option value="meta">Meta Catalog</option>
@@ -1226,7 +1226,7 @@ export default function FeedSuitePage() {
                 </select>
               </div>
               <div><label className="text-xs text-gray-400 mb-1 block">Seizoen (optioneel)</label>
-                <select value={aiSeason} onChange={e=>setAiSeason(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200">
+                <select value={aiSeason} onChange={e=>setAiSeason(e.target.value)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200">
                   <option value="">— geen seizoen —</option>
                   <option value="winter">❄️ Winter</option>
                   <option value="summer">☀️ Zomer</option>
@@ -1235,13 +1235,13 @@ export default function FeedSuitePage() {
                 </select>
               </div>
               <div className="flex items-end">
-                <button onClick={runEnrichment} disabled={enriching||selectedProds.size===0} className="w-full px-4 py-1.5 text-sm bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors font-medium">
+                <button onClick={runEnrichment} disabled={enriching||selectedProds.size===0} className="w-full px-4 py-1.5 text-sm bg-purple-600 hover:bg-purple-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg transition-colors font-medium">
                   {enriching ? '⟳ Genereren...' : `🤖 Optimaliseer ${selectedProds.size>0?`(${selectedProds.size})`:''}`}
                 </button>
               </div>
             </div>
             {enrichResult && (
-              <div className={'px-4 py-2 rounded-lg text-sm '+(enrichResult.enriched>0?'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50':'bg-red-950/40 text-red-400 border border-red-900/50')}>
+              <div className={'px-4 py-2 rounded-lg text-sm '+(enrichResult.enriched>0?'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50':'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50')}>
                 {enrichResult.enriched}/{enrichResult.total} producten verrijkt · {enrichResult.tokens_input+enrichResult.tokens_output} tokens · kosten {fmtCost(enrichResult.cost_usd)}
               </div>
             )}
@@ -1250,15 +1250,15 @@ export default function FeedSuitePage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-400">{selectedProds.size} geselecteerd</span>
                 <div className="flex gap-2">
-                  <button onClick={()=>setSelectedProds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-400 hover:text-indigo-300">Alles</button>
+                  <button onClick={()=>setSelectedProds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">Alles</button>
                   <button onClick={()=>setSelectedProds(new Set())} className="text-xs text-gray-500 hover:text-gray-300">Geen</button>
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1">
                 {products.map(p => (
-                  <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors '+(selectedProds.has(p.id)?'bg-purple-950/40 border border-purple-900/50':'bg-gray-800/50 border border-transparent hover:bg-gray-800')}>
+                  <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors '+(selectedProds.has(p.id)?'bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/50':'bg-gray-50 dark:bg-gray-800/50 border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800')}>
                     <input type="checkbox" checked={selectedProds.has(p.id)} onChange={e=>{const s=new Set(selectedProds);e.target.checked?s.add(p.id):s.delete(p.id);setSelectedProds(s);}} className="accent-purple-500" />
-                    <div className="min-w-0"><div className="text-xs text-gray-300 truncate">{p.name_nl}</div><div className="text-xs text-gray-600">{p.category||'—'}</div></div>
+                    <div className="min-w-0"><div className="text-xs text-gray-700 dark:text-gray-300 truncate">{p.name_nl}</div><div className="text-xs text-gray-600">{p.category||'—'}</div></div>
                   </label>
                 ))}
               </div>
@@ -1268,28 +1268,28 @@ export default function FeedSuitePage() {
           {/* Review queue */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-300">{reviewItems.length} pending suggesties</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{reviewItems.length} pending suggesties</h3>
               <div className="flex gap-2">
-                {reviewItems.length>0&&<button onClick={bulkApproveAll} className="text-xs px-3 py-1.5 bg-emerald-900/40 text-emerald-400 hover:bg-emerald-900/60 rounded-lg border border-emerald-900/50">✓ Alles goedkeuren (variant A)</button>}
-                <button onClick={loadReviewQueue} disabled={reviewLoading} className="text-xs px-3 py-1.5 bg-gray-800 text-gray-400 hover:text-gray-200 rounded-lg">{reviewLoading?'...':'↻ Vernieuwen'}</button>
+                {reviewItems.length>0&&<button onClick={bulkApproveAll} className="text-xs px-3 py-1.5 bg-emerald-900/40 text-emerald-400 hover:bg-emerald-900/60 rounded-lg border border-emerald-200 dark:border-emerald-900/50">✓ Alles goedkeuren (variant A)</button>}
+                <button onClick={loadReviewQueue} disabled={reviewLoading} className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded-lg">{reviewLoading?'...':'↻ Vernieuwen'}</button>
               </div>
             </div>
-            {reviewItems.length===0&&!reviewLoading&&<div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-6 text-center"><div className="text-2xl mb-2">✓</div><p className="text-sm text-gray-500">Geen pending suggesties{enriching?' — genereren...':''}.</p></div>}
+            {reviewItems.length===0&&!reviewLoading&&<div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-6 text-center"><div className="text-2xl mb-2">✓</div><p className="text-sm text-gray-500">Geen pending suggesties{enriching?' — genereren...':''}.</p></div>}
             <div className="space-y-4">
               {reviewItems.map(item => {
                 const variants = item.ai_variants ?? [];
                 return (
-                  <div key={item.id} className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-4">
+                  <div key={item.id} className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-4">
                     <div className="flex items-start gap-3 mb-3">
                       {item.product?.image_url&&<img src={item.product.image_url} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-800 shrink-0"/>}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-200">{item.product?.name_nl ?? item.product_id}</div>
+                        <div className="font-medium text-gray-800 dark:text-gray-200">{item.product?.name_nl ?? item.product_id}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{item.product?.category||'—'} · {item.language.toUpperCase()}{item.channel_optimized_for&&item.channel_optimized_for!=='all'?` · ${item.channel_optimized_for}`:''}{item.season?` · ${item.season}`:''}</div>
                         {item.title&&<div className="text-xs text-gray-600 mt-1 truncate">Huidig: "{item.title}"</div>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={()=>addManualVariant(item)} className="text-xs text-gray-600 hover:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-950/20">+ Variant</button>
-                        <button onClick={()=>rejectAll(item)} className="text-xs text-gray-600 hover:text-red-400 px-2 py-1 rounded hover:bg-red-950/20">✕ Afwijzen</button>
+                        <button onClick={()=>addManualVariant(item)} className="text-xs text-gray-600 hover:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-50 dark:bg-indigo-950/20">+ Variant</button>
+                        <button onClick={()=>rejectAll(item)} className="text-xs text-gray-600 hover:text-red-400 px-2 py-1 rounded hover:bg-red-50 dark:bg-red-950/20">✕ Afwijzen</button>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1298,30 +1298,30 @@ export default function FeedSuitePage() {
                         const isApp = approving===key;
                         const isEditing = editingVariant?.itemId===item.product_id && editingVariant?.variantId===v.id;
                         return (
-                          <div key={v.id} className={'border rounded-lg p-3 '+(v.compliance==='green'?'border-emerald-900/40 bg-emerald-950/10':'border-amber-900/40 bg-amber-950/10')}>
+                          <div key={v.id} className={'border rounded-lg p-3 '+(v.compliance==='green'?'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/10':'border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/10')}>
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-gray-400">{v.id}</span>
                                 <span className={'text-xs px-1.5 py-0.5 rounded border '+COMPLIANCE_STYLE[v.compliance]}>{v.compliance==='green'?'✓ Veilig':'⚠ Grens'}</span>
-                                {v.season&&<span className="text-xs px-1.5 py-0.5 rounded bg-blue-950/40 text-blue-400 border border-blue-900/50">🍂 {v.season}</span>}
+                                {v.season&&<span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50">🍂 {v.season}</span>}
                               </div>
                               <div className="flex items-center gap-1">
-                                <button onClick={()=>{if(isEditing){setEditingVariant(null);}else{setEditingVariant({itemId:item.product_id,variantId:v.id});setEditVariantVal(v.title);}}} className="text-xs w-6 h-6 flex items-center justify-center text-gray-600 hover:text-indigo-400 rounded hover:bg-indigo-950/20">✎</button>
-                                <button onClick={()=>approveVariant(item, v.id)} disabled={isApp} className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium">{isApp?'...':'✓'}</button>
+                                <button onClick={()=>{if(isEditing){setEditingVariant(null);}else{setEditingVariant({itemId:item.product_id,variantId:v.id});setEditVariantVal(v.title);}}} className="text-xs w-6 h-6 flex items-center justify-center text-gray-600 hover:text-indigo-400 rounded hover:bg-indigo-50 dark:bg-indigo-950/20">✎</button>
+                                <button onClick={()=>approveVariant(item, v.id)} disabled={isApp} className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg font-medium">{isApp?'...':'✓'}</button>
                               </div>
                             </div>
                             <div className="text-xs text-gray-400 mb-1 font-medium">{v.label}</div>
                             {isEditing ? (
                               <div>
-                                <input value={editVariantVal} onChange={e=>setEditVariantVal(e.target.value)} className="w-full px-2 py-1.5 bg-gray-800 border border-indigo-600 rounded text-sm text-gray-200 focus:outline-none mb-2" autoFocus />
+                                <input value={editVariantVal} onChange={e=>setEditVariantVal(e.target.value)} className="w-full px-2 py-1.5 bg-white dark:bg-gray-800 border border-indigo-500 rounded text-sm text-gray-900 dark:text-gray-200 focus:outline-none mb-2" autoFocus />
                                 <div className="flex gap-2">
                                   <button onClick={()=>saveVariantEdit(item)} disabled={savingVariant} className="text-xs px-2 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded">{savingVariant?'...':'Opslaan'}</button>
-                                  <button onClick={()=>setEditingVariant(null)} className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded">Annuleer</button>
+                                  <button onClick={()=>setEditingVariant(null)} className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">Annuleer</button>
                                 </div>
                               </div>
                             ) : (
                               <>
-                                <div className="text-sm text-gray-200 font-medium leading-snug mb-2">"{v.title}"</div>
+                                <div className="text-sm text-gray-800 dark:text-gray-200 font-medium leading-snug mb-2">"{v.title}"</div>
                                 {v.description_short&&<div className="text-xs text-gray-500 mb-1.5 italic">Short: {v.description_short}</div>}
                                 {v.description_long&&<div className="text-xs text-gray-600 line-clamp-3">{v.description_long.substring(0,200)}...</div>}
                               </>
@@ -1338,13 +1338,13 @@ export default function FeedSuitePage() {
 
           {/* Batch costs */}
           {batches.length>0&&(
-            <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-gray-300 mb-3">Recente batches</h3>
+            <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Recente batches</h3>
               <div className="space-y-2">
                 {batches.slice(0,5).map(b => (
                   <div key={b.id} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-3">
-                      <span className={'px-1.5 py-0.5 rounded '+(b.status==='completed'?'bg-emerald-950/50 text-emerald-400':b.status==='failed'?'bg-red-950/50 text-red-400':'bg-amber-950/50 text-amber-400')}>{b.status}</span>
+                      <span className={'px-1.5 py-0.5 rounded '+(b.status==='completed'?'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400':b.status==='failed'?'bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400':'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400')}>{b.status}</span>
                       <span className="text-gray-400">{b.product_count}p · {b.language.toUpperCase()}{b.channel!=='all'?` · ${b.channel}`:''}{b.season?` · ${b.season}`:''}</span>
                     </div>
                     <div className="flex items-center gap-4 text-gray-500">
@@ -1355,7 +1355,7 @@ export default function FeedSuitePage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-500 flex justify-between">
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500 flex justify-between">
                 <span>Totaal {batches.length} batches</span>
                 <span className="text-amber-400">Totaal {fmtCost(batches.reduce((s,b)=>s+Number(b.cost_usd),0))}</span>
               </div>
@@ -1368,17 +1368,17 @@ export default function FeedSuitePage() {
               <span>{changelogOpen?'▲':'▼'}</span><span>Wijzigingslog ({changelog.length>0?changelog.length:'laden...'})</span>
             </button>
             {changelogOpen&&(
-              <div className="mt-3 bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
+              <div className="mt-3 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
                 <table className="w-full">
-                  <thead><tr className="border-b border-gray-800">{['Tijd','Product','Veld','Bron','Nieuw'].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-500">{h}</th>)}</tr></thead>
+                  <thead><tr className="border-b border-gray-200 dark:border-gray-800">{['Tijd','Product','Veld','Bron','Nieuw'].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-500">{h}</th>)}</tr></thead>
                   <tbody className="divide-y divide-gray-800/30">
                     {changelog.slice(0,20).map(e=>(
                       <tr key={e.id} className="text-xs">
                         <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{timeAgo(e.created_at)}</td>
-                        <td className="px-3 py-2 text-gray-300 truncate max-w-xs">{e.product_name??e.product_id?.substring(0,8)??'—'}</td>
+                        <td className="px-3 py-2 text-gray-700 dark:text-gray-300 truncate max-w-xs">{e.product_name??e.product_id?.substring(0,8)??'—'}</td>
                         <td className="px-3 py-2 text-gray-400">{e.field}</td>
-                        <td className="px-3 py-2"><span className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{e.source}</span></td>
-                        <td className="px-3 py-2 text-gray-300 truncate max-w-sm">{e.new_value?.substring(0,80)??'—'}</td>
+                        <td className="px-3 py-2"><span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{e.source}</span></td>
+                        <td className="px-3 py-2 text-gray-700 dark:text-gray-300 truncate max-w-sm">{e.new_value?.substring(0,80)??'—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1395,51 +1395,51 @@ export default function FeedSuitePage() {
       {tab==='versions' && (
         <div className="space-y-5">
           {/* Create snapshot */}
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-gray-300 mb-4">Nieuwe Feed Snapshot</h3>
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Nieuwe Feed Snapshot</h3>
             <div className="flex flex-wrap items-end gap-3">
               <div><label className="text-xs text-gray-400 mb-1 block">Markt</label>
-                <select value={snapMarket} onChange={e=>setSnapMarket(e.target.value)} className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200">
+                <select value={snapMarket} onChange={e=>setSnapMarket(e.target.value)} className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200">
                   {markets.map(m=><option key={m.code} value={m.code}>{FLAGS[m.code]} {m.name}</option>)}
                 </select>
               </div>
               <div><label className="text-xs text-gray-400 mb-1 block">Kanaal</label>
-                <select value={snapChannel} onChange={e=>setSnapChannel(e.target.value)} className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200">
+                <select value={snapChannel} onChange={e=>setSnapChannel(e.target.value)} className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200">
                   <option value="google">Google Shopping</option>
                   <option value="meta">Meta Catalog</option>
                   <option value="awin">Awin</option>
                 </select>
               </div>
               <div className="flex-1 min-w-48"><label className="text-xs text-gray-400 mb-1 block">Notitie (optioneel)</label>
-                <input value={snapNote} onChange={e=>setSnapNote(e.target.value)} placeholder="bv. na AI enrichment batch 3" className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" />
+                <input value={snapNote} onChange={e=>setSnapNote(e.target.value)} placeholder="bv. na AI enrichment batch 3" className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500" />
               </div>
-              <button onClick={createSnapshot} disabled={snapshotting} className="px-4 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium">
+              <button onClick={createSnapshot} disabled={snapshotting} className="px-4 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg font-medium">
                 {snapshotting?'Opslaan...':'📸 Snapshot maken'}
               </button>
             </div>
-            {rollbackResult&&<div className={'mt-3 px-3 py-2 rounded-lg text-sm '+(rollbackResult.includes('Fout')?'bg-red-950/40 text-red-400 border border-red-900/50':'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50')}>{rollbackResult}</div>}
+            {rollbackResult&&<div className={'mt-3 px-3 py-2 rounded-lg text-sm '+(rollbackResult.includes('Fout')?'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50':'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50')}>{rollbackResult}</div>}
           </div>
 
           {/* Versions list */}
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
             {versionsLoading ? <div className="p-8 text-center text-gray-500">Laden...</div>
             : versions.length===0 ? <div className="p-8 text-center"><div className="text-2xl mb-2">🔖</div><p className="text-sm text-gray-500">Nog geen versies. Maak een snapshot aan.</p></div>
             : (
               <table className="w-full">
-                <thead><tr className="border-b border-gray-800">{['Versie','Markt','Kanaal','Producten','Notitie','Aangemaakt','Actie'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
-                <tbody className="divide-y divide-gray-800/50">
+                <thead><tr className="border-b border-gray-200 dark:border-gray-800">{['Versie','Markt','Kanaal','Producten','Notitie','Aangemaakt','Actie'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-800/50">
                   {versions.map(v => {
                     const mkt = v.markets as any;
                     return (
-                      <tr key={v.id} className="hover:bg-gray-800/20">
+                      <tr key={v.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
                         <td className="px-4 py-3"><span className="text-sm font-bold text-indigo-400">v{v.version_number}</span></td>
-                        <td className="px-4 py-3 text-sm text-gray-300">{mkt?<span>{FLAGS[mkt.code]??''} {mkt.code}</span>:'—'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{mkt?<span>{FLAGS[mkt.code]??''} {mkt.code}</span>:'—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-400 capitalize">{v.channel}</td>
                         <td className="px-4 py-3 text-sm text-gray-400 tabular-nums">{v.product_count}</td>
                         <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{v.note||'—'}</td>
                         <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{timeAgo(v.created_at)} geleden</td>
                         <td className="px-4 py-3">
-                          <button onClick={()=>rollback(v.id, v.version_number)} disabled={rollingBack===v.id} className="text-xs px-3 py-1.5 bg-amber-900/40 text-amber-400 hover:bg-amber-900/60 disabled:opacity-50 rounded-lg border border-amber-900/50">
+                          <button onClick={()=>rollback(v.id, v.version_number)} disabled={rollingBack===v.id} className="text-xs px-3 py-1.5 bg-amber-900/40 text-amber-400 hover:bg-amber-900/60 disabled:opacity-50 rounded-lg border border-amber-200 dark:border-amber-900/50">
                             {rollingBack===v.id?'...':'↩ Herstel'}
                           </button>
                         </td>
@@ -1468,24 +1468,24 @@ export default function FeedSuitePage() {
           </div>
 
           {newTestOpen && (
-            <div className="bg-gray-900/70 border border-indigo-900/50 rounded-xl p-5">
-              <h4 className="text-sm font-semibold text-gray-200 mb-4">Nieuwe A/B Test</h4>
+            <div className="bg-gray-50 dark:bg-gray-900/70 border border-indigo-200 dark:border-indigo-200 dark:border-indigo-900/50 rounded-xl p-5">
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Nieuwe A/B Test</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                <div><label className="text-xs text-gray-400 mb-1 block">Testnaam *</label><input value={testName} onChange={e=>setTestName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="bv. Titels zomer 2025"/></div>
-                <div><label className="text-xs text-gray-400 mb-1 block">Veld</label><select value={testField} onChange={e=>setTestField(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="title">Titel</option><option value="description">Beschrijving</option><option value="image">Afbeelding</option></select></div>
-                <div><label className="text-xs text-gray-400 mb-1 block">Platform / kanaal</label><select value={testChannel} onChange={e=>setTestChannel(e.target.value)} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="google">Google Shopping</option><option value="meta">Meta Catalog</option><option value="awin">Awin Affiliate</option><option value="bol">Bol.com</option><option value="shopify">Shopify</option></select></div>
-                <div><label className="text-xs text-gray-400 mb-1 block">Categorie</label><select value={typeof hypothesisEdit?.category==='string'?hypothesisEdit.category:''} onChange={e=>setHypothesisEdit(h=>h?{...h,category:e.target.value}:{id:'new',hypothesis:'',category:e.target.value,tags:''})} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200"><option value="">— selecteer —</option>{['branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+                <div><label className="text-xs text-gray-400 mb-1 block">Testnaam *</label><input value={testName} onChange={e=>setTestName(e.target.value)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="bv. Titels zomer 2025"/></div>
+                <div><label className="text-xs text-gray-400 mb-1 block">Veld</label><select value={testField} onChange={e=>setTestField(e.target.value as any)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200"><option value="title">Titel</option><option value="description">Beschrijving</option><option value="image">Afbeelding</option></select></div>
+                <div><label className="text-xs text-gray-400 mb-1 block">Platform / kanaal</label><select value={testChannel} onChange={e=>setTestChannel(e.target.value)} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200"><option value="google">Google Shopping</option><option value="meta">Meta Catalog</option><option value="awin">Awin Affiliate</option><option value="bol">Bol.com</option><option value="shopify">Shopify</option></select></div>
+                <div><label className="text-xs text-gray-400 mb-1 block">Categorie</label><select value={typeof hypothesisEdit?.category==='string'?hypothesisEdit.category:''} onChange={e=>setHypothesisEdit(h=>h?{...h,category:e.target.value}:{id:'new',hypothesis:'',category:e.target.value,tags:''})} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200"><option value="">— selecteer —</option>{['branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c}</option>)}</select></div>
               </div>
               <div className="mb-3">
                 <label className="text-xs text-gray-400 mb-1 block">Hypothese <span className="text-gray-600">(bv. "Merknaam vooraan verhoogt CTR met 10%")</span></label>
-                <input value={hypothesisEdit?.id==='new'?hypothesisEdit.hypothesis:''} onChange={e=>setHypothesisEdit(h=>h?{...h,hypothesis:e.target.value}:{id:'new',hypothesis:e.target.value,category:'',tags:''})} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="Wat verwacht je te meten?"/>
+                <input value={hypothesisEdit?.id==='new'?hypothesisEdit.hypothesis:''} onChange={e=>setHypothesisEdit(h=>h?{...h,hypothesis:e.target.value}:{id:'new',hypothesis:e.target.value,category:'',tags:''})} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="Wat verwacht je te meten?"/>
               </div>
 
               {/* Variant labels + content */}
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-blue-950/20 border border-blue-900/30 rounded-lg p-3 space-y-2">
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 rounded-lg p-3 space-y-2">
                   <div className="text-xs font-semibold text-blue-400">Variant A (huidig)</div>
-                  <input value={testVariantALabel} onChange={e=>setTestVariantALabel(e.target.value)} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-blue-500" placeholder="Label variant A"/>
+                  <input value={testVariantALabel} onChange={e=>setTestVariantALabel(e.target.value)} className="w-full px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500" placeholder="Label variant A"/>
                   {testField==='image' ? (
                     (()=>{
                       const imgProds = [...testProductIds].slice(0,4).map(pid=>products.find(p=>p.id===pid)).filter((p): p is Product => !!p?.image_url);
@@ -1504,16 +1504,16 @@ export default function FeedSuitePage() {
                     <p className="text-xs text-gray-600">Huidige content wordt automatisch ingeladen vanuit feed_product_content</p>
                   )}
                 </div>
-                <div className="bg-purple-950/20 border border-purple-900/30 rounded-lg p-3 space-y-2">
+                <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/30 rounded-lg p-3 space-y-2">
                   <div className="text-xs font-semibold text-purple-400">Variant B (nieuw)</div>
-                  <input value={testVariantBLabel} onChange={e=>setTestVariantBLabel(e.target.value)} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-purple-500" placeholder="Label variant B"/>
-                  {testField!=='image'&&<textarea value={testVariantBVal} onChange={e=>setTestVariantBVal(e.target.value)} rows={2} className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-purple-500 resize-none" placeholder={testField==='title'?'Alternatieve titel (leeg = AI-variant)':'Alternatieve beschrijving (leeg = AI-variant)'}/>}
+                  <input value={testVariantBLabel} onChange={e=>setTestVariantBLabel(e.target.value)} className="w-full px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-200 focus:outline-none focus:border-purple-500" placeholder="Label variant B"/>
+                  {testField!=='image'&&<textarea value={testVariantBVal} onChange={e=>setTestVariantBVal(e.target.value)} rows={2} className="w-full px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-gray-200 focus:outline-none focus:border-purple-500 resize-none" placeholder={testField==='title'?'Alternatieve titel (leeg = AI-variant)':'Alternatieve beschrijving (leeg = AI-variant)'}/>}
                   {testField==='image' && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <p className="text-xs text-gray-500 flex-1">Klik op afbeelding om te selecteren als Variant B</p>
                         {[...testProductIds][0] && (
-                          <button onClick={()=>loadTestImages([...testProductIds][0])} disabled={testImgLoading} className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded disabled:opacity-50">
+                          <button onClick={()=>loadTestImages([...testProductIds][0])} disabled={testImgLoading} className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded disabled:opacity-50">
                             {testImgLoading ? '...' : 'Laad images'}
                           </button>
                         )}
@@ -1543,19 +1543,19 @@ export default function FeedSuitePage() {
 
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2"><label className="text-xs text-gray-400">Producten selecteren *</label><div className="flex gap-2"><button onClick={()=>setTestProductIds(new Set(products.map(p=>p.id)))} className="text-xs text-indigo-400">Alles</button><button onClick={()=>setTestProductIds(new Set())} className="text-xs text-gray-500">Geen</button></div></div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1 border border-gray-800 rounded-lg p-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1 border border-gray-200 dark:border-gray-800 rounded-lg p-2">
                   {products.map(p=>(
-                    <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer '+(testProductIds.has(p.id)?'bg-indigo-950/40 border border-indigo-900/50':'bg-gray-800/50 border border-transparent hover:bg-gray-800')}>
+                    <label key={p.id} className={'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer '+(testProductIds.has(p.id)?'bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50':'bg-gray-50 dark:bg-gray-800/50 border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800')}>
                       <input type="checkbox" checked={testProductIds.has(p.id)} onChange={e=>{const s=new Set(testProductIds);e.target.checked?s.add(p.id):s.delete(p.id);setTestProductIds(s);}} className="accent-indigo-500"/>
-                      <span className="text-xs text-gray-300 truncate">{p.name_nl}</span>
+                      <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{p.name_nl}</span>
                     </label>
                   ))}
                 </div>
               </div>
               {testError&&<p className="text-xs text-red-400 mb-3">{testError}</p>}
               <div className="flex gap-2">
-                <button onClick={createTest} disabled={creatingTest} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{creatingTest?'Aanmaken...':'Test aanmaken'}</button>
-                <button onClick={()=>setNewTestOpen(false)} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Annuleer</button>
+                <button onClick={createTest} disabled={creatingTest} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg">{creatingTest?'Aanmaken...':'Test aanmaken'}</button>
+                <button onClick={()=>setNewTestOpen(false)} className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">Annuleer</button>
               </div>
             </div>
           )}
@@ -1563,60 +1563,60 @@ export default function FeedSuitePage() {
           {abSubTab==='tests' && abLoading ? (
             <div className="text-center py-8 text-gray-500">Laden...</div>
           ) : abSubTab==='tests' && abTests.length===0 ? (
-            <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><div className="text-3xl mb-3">🔬</div><p className="text-sm text-gray-500">Nog geen A/B tests. Maak een test aan.</p></div>
+            <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-8 text-center"><div className="text-3xl mb-3">🔬</div><p className="text-sm text-gray-500">Nog geen A/B tests. Maak een test aan.</p></div>
           ) : (
             <div className="space-y-3">
               {(Array.isArray(abTests) ? abTests : []).filter(Boolean).map(test => {
                 const grpA = test?.metrics?.A ?? null;
                 const grpB = test?.metrics?.B ?? null;
-                const statusColor: Record<string,string> = { draft:'text-gray-400 bg-gray-800', active:'text-emerald-400 bg-emerald-950/50 border border-emerald-900/50', completed:'text-blue-400 bg-blue-950/50 border border-blue-900/50', paused:'text-amber-400 bg-amber-950/50 border border-amber-900/50' };
+                const statusColor: Record<string,string> = { draft:'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800', active:'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/50', completed:'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/50', paused:'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/50' };
                 return (
-                  <div key={test.id} className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
+                  <div key={test.id} className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-5">
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-gray-200">{test.name}</span>
+                          <span className="font-medium text-gray-800 dark:text-gray-200">{test.name}</span>
                           <span className={`text-xs px-2 py-0.5 rounded ${statusColor[test.status]??statusColor.draft}`}>{test.status}</span>
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{test.field}</span>
-                          {test.channel&&<span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-500">{test.channel}</span>}
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{test.field}</span>
+                          {test.channel&&<span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">{test.channel}</span>}
                           <span className="text-xs text-gray-600">{test.product_count}p</span>
                         </div>
                         <div className="text-xs text-gray-600 mt-0.5">{timeAgo(test.created_at)} geleden aangemaakt{test.started_at&&` · gestart ${timeAgo(test.started_at)} geleden`}</div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {test.status==='draft' && <button onClick={()=>patchTest(test.id,{action:'start'})} className="text-xs px-3 py-1.5 bg-emerald-900/40 text-emerald-400 hover:bg-emerald-900/60 rounded-lg border border-emerald-900/50">▶ Start</button>}
-                        {test.status==='active' && <button onClick={()=>patchTest(test.id,{action:'stop'})} className="text-xs px-3 py-1.5 bg-amber-900/40 text-amber-400 hover:bg-amber-900/60 rounded-lg border border-amber-900/50">⏹ Stop</button>}
+                        {test.status==='draft' && <button onClick={()=>patchTest(test.id,{action:'start'})} className="text-xs px-3 py-1.5 bg-emerald-900/40 text-emerald-400 hover:bg-emerald-900/60 rounded-lg border border-emerald-200 dark:border-emerald-900/50">▶ Start</button>}
+                        {test.status==='active' && <button onClick={()=>patchTest(test.id,{action:'stop'})} className="text-xs px-3 py-1.5 bg-amber-900/40 text-amber-400 hover:bg-amber-900/60 rounded-lg border border-amber-200 dark:border-amber-900/50">⏹ Stop</button>}
                       </div>
                     </div>
 
                     {/* Variant content preview */}
                     {(test.sample_value_a || test.sample_value_b) && (
                       <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="bg-blue-950/15 border border-blue-900/30 rounded-lg p-3">
+                        <div className="bg-blue-50 dark:bg-blue-950/15 border border-blue-200 dark:border-blue-900/30 rounded-lg p-3">
                           <div className="text-xs font-semibold text-blue-400 mb-1">{test.variant_a_label||'Variant A'}</div>
                           {test.field==='image'
                             ? test.sample_value_a ? <img src={test.sample_value_a} alt="A" className="w-full h-20 object-contain rounded"/> : <span className="text-xs text-gray-600">—</span>
-                            : <p className="text-xs text-gray-300 line-clamp-3 leading-relaxed">{test.sample_value_a||'—'}</p>}
+                            : <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-3 leading-relaxed">{test.sample_value_a||'—'}</p>}
                         </div>
-                        <div className="bg-purple-950/15 border border-purple-900/30 rounded-lg p-3">
+                        <div className="bg-purple-50 dark:bg-purple-950/15 border border-purple-200 dark:border-purple-900/30 rounded-lg p-3">
                           <div className="text-xs font-semibold text-purple-400 mb-1">{test.variant_b_label||'Variant B'}</div>
                           {test.field==='image'
                             ? test.sample_value_b ? <img src={test.sample_value_b} alt="B" className="w-full h-20 object-contain rounded"/> : <span className="text-xs text-gray-600">—</span>
-                            : <p className="text-xs text-gray-300 line-clamp-3 leading-relaxed">{test.sample_value_b||'—'}</p>}
+                            : <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-3 leading-relaxed">{test.sample_value_b||'—'}</p>}
                         </div>
                       </div>
                     )}
 
                     {(grpA||grpB) && (
                       <div className="grid grid-cols-2 gap-3 mb-3">
-                        {[{grp:grpA,label:test.variant_a_label||'Variant A',col:'text-blue-400'},{grp:grpB,label:test.variant_b_label||'Variant B',col:'text-purple-400'}].map(({grp,label,col})=>(
-                          <div key={label} className="bg-gray-800/50 rounded-lg p-3">
+                        {[{grp:grpA,label:test.variant_a_label||'Variant A',col:'text-blue-700 dark:text-blue-400'},{grp:grpB,label:test.variant_b_label||'Variant B',col:'text-purple-700 dark:text-purple-400'}].map(({grp,label,col})=>(
+                          <div key={label} className="bg-gray-100 dark:bg-gray-800/50 rounded-lg p-3">
                             <div className={`text-xs font-semibold mb-2 ${col}`}>{label}</div>
                             {grp ? (
                               <div className="space-y-1 text-xs">
-                                <div className="flex justify-between"><span className="text-gray-500">Impressies</span><span className="text-gray-300 tabular-nums">{grp.impressions.toLocaleString()}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500">Kliks</span><span className="text-gray-300 tabular-nums">{grp.clicks.toLocaleString()}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500">CTR</span><span className="font-bold text-gray-200 tabular-nums">{grp.impressions>0?((grp.clicks/grp.impressions)*100).toFixed(2):'0.00'}%</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500">Impressies</span><span className="text-gray-700 dark:text-gray-300 tabular-nums">{grp.impressions.toLocaleString()}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500">Kliks</span><span className="text-gray-700 dark:text-gray-300 tabular-nums">{grp.clicks.toLocaleString()}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500">CTR</span><span className="font-bold text-gray-800 dark:text-gray-200 tabular-nums">{grp.impressions>0?((grp.clicks/grp.impressions)*100).toFixed(2):'0.00'}%</span></div>
                               </div>
                             ) : <div className="text-xs text-gray-600">Geen data</div>}
                           </div>
@@ -1625,17 +1625,17 @@ export default function FeedSuitePage() {
                     )}
 
                     {test.significance?.significant && (
-                      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-950/30 border border-emerald-900/50 mb-3">
-                        <div><span className="text-xs font-semibold text-emerald-400">✓ Statistisch significant</span>{test.significance.p_value!=null&&<span className="text-xs text-gray-500 ml-2">p={test.significance.p_value.toFixed(3)}</span>}</div>
+                      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 mb-3">
+                        <div><span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">✓ Statistisch significant</span>{test.significance.p_value!=null&&<span className="text-xs text-gray-500 ml-2">p={test.significance.p_value.toFixed(3)}</span>}</div>
                         {test.winner ? (
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-400">Winnaar: <span className="text-emerald-400 font-bold">{test.winner==='A'?(test.variant_a_label||'Variant A'):(test.variant_b_label||'Variant B')}</span></span>
-                            {test.status!=='completed' && <button onClick={()=>doApplyWinner(test.id)} disabled={applyingWinner===test.id} className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg">{applyingWinner===test.id?'...':'Toepassen'}</button>}
+                            {test.status!=='completed' && <button onClick={()=>doApplyWinner(test.id)} disabled={applyingWinner===test.id} className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg">{applyingWinner===test.id?'...':'Toepassen'}</button>}
                           </div>
                         ) : (
                           <div className="flex gap-2">
-                            <button onClick={()=>patchTest(test.id,{action:'declare_winner',winner:'A'})} className="text-xs px-2 py-1 bg-blue-900/40 text-blue-400 hover:bg-blue-900/60 rounded border border-blue-900/50">A</button>
-                            <button onClick={()=>patchTest(test.id,{action:'declare_winner',winner:'B'})} className="text-xs px-2 py-1 bg-purple-900/40 text-purple-400 hover:bg-purple-900/60 rounded border border-purple-900/50">B</button>
+                            <button onClick={()=>patchTest(test.id,{action:'declare_winner',winner:'A'})} className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded border border-blue-200 dark:border-blue-900/50">A</button>
+                            <button onClick={()=>patchTest(test.id,{action:'declare_winner',winner:'B'})} className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/60 rounded border border-purple-200 dark:border-purple-900/50">B</button>
                           </div>
                         )}
                       </div>
@@ -1643,38 +1643,38 @@ export default function FeedSuitePage() {
 
                     {/* Hypothesis display / edit */}
                     {hypothesisEdit?.id===test.id ? (
-                      <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
-                        <input value={hypothesisEdit.hypothesis} onChange={e=>setHypothesisEdit(h=>h?{...h,hypothesis:e.target.value}:h)} placeholder="Hypothese..." className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                        <input value={hypothesisEdit.hypothesis} onChange={e=>setHypothesisEdit(h=>h?{...h,hypothesis:e.target.value}:h)} placeholder="Hypothese..." className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>
                         <div className="flex gap-2">
-                          <select value={hypothesisEdit.category} onChange={e=>setHypothesisEdit(h=>h?{...h,category:e.target.value}:h)} className="px-2 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-200">{['','branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c||'— categorie —'}</option>)}</select>
-                          <input value={hypothesisEdit.tags} onChange={e=>setHypothesisEdit(h=>h?{...h,tags:e.target.value}:h)} placeholder="tags (komma-gescheiden)" className="flex-1 px-2 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                          <select value={hypothesisEdit.category} onChange={e=>setHypothesisEdit(h=>h?{...h,category:e.target.value}:h)} className="px-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-200">{['','branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c||'— categorie —'}</option>)}</select>
+                          <input value={hypothesisEdit.tags} onChange={e=>setHypothesisEdit(h=>h?{...h,tags:e.target.value}:h)} placeholder="tags (komma-gescheiden)" className="flex-1 px-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>
                           <button onClick={saveHypothesis} className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg">Opslaan</button>
-                          <button onClick={()=>setHypothesisEdit(null)} className="text-xs px-2 py-1.5 bg-gray-700 text-gray-300 rounded-lg">✕</button>
+                          <button onClick={()=>setHypothesisEdit(null)} className="text-xs px-2 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">✕</button>
                         </div>
                       </div>
                     ) : (
-                      <div className="mt-3 pt-3 border-t border-gray-800 flex items-start justify-between gap-2">
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800 flex items-start justify-between gap-2">
                         {test.hypothesis
-                          ? <div><div className="flex items-center gap-1.5 mb-0.5"><span className="text-xs text-gray-500">Hypothese</span>{test.hypothesis_category&&<span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{test.hypothesis_category}</span>}</div><p className="text-xs text-gray-300 italic">"{test.hypothesis}"</p>{test.learning&&<p className="text-xs text-emerald-400 mt-1">Les: {test.learning}</p>}</div>
+                          ? <div><div className="flex items-center gap-1.5 mb-0.5"><span className="text-xs text-gray-500">Hypothese</span>{test.hypothesis_category&&<span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{test.hypothesis_category}</span>}</div><p className="text-xs text-gray-700 dark:text-gray-300 italic">"{test.hypothesis}"</p>{test.learning&&<p className="text-xs text-emerald-400 mt-1">Les: {test.learning}</p>}</div>
                           : <p className="text-xs text-gray-600">Geen hypothese geformuleerd.</p>}
                         <div className="flex gap-1 shrink-0">
-                          <button onClick={()=>setHypothesisEdit({id:test.id,hypothesis:test.hypothesis??'',category:test.hypothesis_category??'',tags:(test.hypothesis_tags??[]).join(', ')})} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-400 rounded">✎ Hypothese</button>
-                          {['active','ended'].includes(test.status) && !test.learning && <button onClick={()=>setClosingTest({id:test.id,conclusion:'',learning:'',impact:'',confidence:'medium'})} className="text-xs px-2 py-1 bg-purple-900/40 text-purple-400 hover:bg-purple-900/60 rounded border border-purple-900/50">+ Afsluiten</button>}
+                          <button onClick={()=>setHypothesisEdit({id:test.id,hypothesis:test.hypothesis??'',category:test.hypothesis_category??'',tags:(test.hypothesis_tags??[]).join(', ')})} className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">✎ Hypothese</button>
+                          {['active','ended'].includes(test.status) && !test.learning && <button onClick={()=>setClosingTest({id:test.id,conclusion:'',learning:'',impact:'',confidence:'medium'})} className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/60 rounded border border-purple-200 dark:border-purple-900/50">+ Afsluiten</button>}
                         </div>
                       </div>
                     )}
 
                     {/* Close-with-learning form */}
                     {closingTest?.id===test.id && (
-                      <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
-                        <h5 className="text-xs font-semibold text-gray-300">Test afsluiten + Learning vastleggen</h5>
-                        <textarea value={closingTest.conclusion} onChange={e=>setClosingTest(c=>c?{...c,conclusion:e.target.value}:c)} placeholder="Conclusie (wat heb je geleerd?)" rows={2} className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
-                        <input value={closingTest.learning} onChange={e=>setClosingTest(c=>c?{...c,learning:e.target.value}:c)} placeholder="Kernles in één zin (bv. Merknaam +14% CTR)" className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                        <h5 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Test afsluiten + Learning vastleggen</h5>
+                        <textarea value={closingTest.conclusion} onChange={e=>setClosingTest(c=>c?{...c,conclusion:e.target.value}:c)} placeholder="Conclusie (wat heb je geleerd?)" rows={2} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
+                        <input value={closingTest.learning} onChange={e=>setClosingTest(c=>c?{...c,learning:e.target.value}:c)} placeholder="Kernles in één zin (bv. Merknaam +14% CTR)" className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>
                         <div className="flex gap-2">
-                          <input type="number" value={closingTest.impact} onChange={e=>setClosingTest(c=>c?{...c,impact:e.target.value}:c)} placeholder="Impact % (bv. 14)" className="w-24 px-2 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-200 focus:outline-none focus:border-indigo-500"/>
-                          <select value={closingTest.confidence} onChange={e=>setClosingTest(c=>c?{...c,confidence:e.target.value}:c)} className="px-2 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-200"><option value="high">Hoog vertrouwen</option><option value="medium">Medium</option><option value="low">Laag</option></select>
+                          <input type="number" value={closingTest.impact} onChange={e=>setClosingTest(c=>c?{...c,impact:e.target.value}:c)} placeholder="Impact % (bv. 14)" className="w-24 px-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                          <select value={closingTest.confidence} onChange={e=>setClosingTest(c=>c?{...c,confidence:e.target.value}:c)} className="px-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-200"><option value="high">Hoog vertrouwen</option><option value="medium">Medium</option><option value="low">Laag</option></select>
                           <button onClick={closeWithLearning} disabled={closingTestId===test.id} className="flex-1 text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{closingTestId===test.id?'Opslaan...':'Opslaan & Afsluiten'}</button>
-                          <button onClick={()=>setClosingTest(null)} className="text-xs px-2 py-1.5 bg-gray-700 text-gray-300 rounded-lg">✕</button>
+                          <button onClick={()=>setClosingTest(null)} className="text-xs px-2 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">✕</button>
                         </div>
                       </div>
                     )}
@@ -1689,7 +1689,7 @@ export default function FeedSuitePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-500">{learnings.filter(l=>l.is_active).length} actieve learnings · {learnings.length} totaal</p>
-                <select value={lcFilter} onChange={e=>setLcFilter(e.target.value)} className="text-xs px-2 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-300">
+                <select value={lcFilter} onChange={e=>setLcFilter(e.target.value)} className="text-xs px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-300">
                   <option value="all">Alle categorieën</option>
                   {['branding','pricing','claims','keywords','images','seasonal','description_length'].map(c=><option key={c} value={c}>{c}</option>)}
                 </select>
@@ -1697,19 +1697,19 @@ export default function FeedSuitePage() {
               {learningsLoad ? <div className="text-center py-8 text-gray-500">Laden...</div>
               : (()=>{
                 const vis = lcFilter==='all' ? learnings : learnings.filter(l=>l.category===lcFilter);
-                if (!vis.length) return <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center"><p className="text-sm text-gray-500">Nog geen learnings. Sluit een A/B test af met een kernles.</p></div>;
+                if (!vis.length) return <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-8 text-center"><p className="text-sm text-gray-500">Nog geen learnings. Sluit een A/B test af met een kernles.</p></div>;
                 return (
                   <div className="space-y-2">
                     {vis.map(l=>(
-                      <div key={l.id} className={`flex items-start gap-3 px-4 py-3 rounded-xl border transition-opacity ${l.is_active?'border-gray-700/60 bg-gray-900/50':'border-gray-800/30 bg-gray-900/20 opacity-40'}`}>
+                      <div key={l.id} className={`flex items-start gap-3 px-4 py-3 rounded-xl border transition-opacity ${l.is_active?'border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-900/50':'border-gray-200 dark:border-gray-800/30 bg-gray-50 dark:bg-gray-900/20 opacity-40'}`}>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{l.category}</span>
-                            {l.impact_pct!=null&&<span className={`text-xs px-1.5 py-0.5 rounded font-medium ${l.impact_pct>0?'text-emerald-400 bg-emerald-950/40':'text-red-400 bg-red-950/40'}`}>{l.impact_pct>0?'+':''}{l.impact_pct}%</span>}
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${l.confidence==='high'?'text-emerald-400 bg-emerald-950/30':l.confidence==='medium'?'text-amber-400 bg-amber-950/30':'text-gray-400 bg-gray-800'}`}>{l.confidence}</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{l.category}</span>
+                            {l.impact_pct!=null&&<span className={`text-xs px-1.5 py-0.5 rounded font-medium ${l.impact_pct>0?'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40':'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40'}`}>{l.impact_pct>0?'+':''}{l.impact_pct}%</span>}
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${l.confidence==='high'?'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30':l.confidence==='medium'?'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30':'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'}`}>{l.confidence}</span>
                             {l.applies_to_channels?.length>0&&l.applies_to_channels.map(c=><span key={c} className="text-xs text-gray-600">{c}</span>)}
                           </div>
-                          <p className="text-sm text-gray-200">{l.learning}</p>
+                          <p className="text-sm text-gray-800 dark:text-gray-200">{l.learning}</p>
                           <p className="text-xs text-gray-600 mt-0.5">{timeAgo(l.created_at)} geleden</p>
                         </div>
                         <button onClick={()=>toggleLearning(l.id,!l.is_active)} className={`shrink-0 text-xs px-2 py-1 rounded ${l.is_active?'bg-gray-800 text-gray-400 hover:text-red-400':'bg-emerald-900/30 text-emerald-400'}`}>{l.is_active?'Deactiveer':'Activeer'}</button>
@@ -1726,26 +1726,26 @@ export default function FeedSuitePage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-200">Alerts</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200">Alerts</h3>
               <p className="text-xs text-gray-500 mt-0.5">{alerts.length} openstaand</p>
             </div>
             <div className="flex items-center gap-3">
-              <select value={alertTypeFilter} onChange={e=>setAlertTypeFilter(e.target.value)} className="text-xs px-2 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-300">
+              <select value={alertTypeFilter} onChange={e=>setAlertTypeFilter(e.target.value)} className="text-xs px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-300">
                 <option value="all">Alle types</option>
                 <option value="missing_ean">Geen EAN</option>
                 <option value="missing_image">Geen afbeelding</option>
                 <option value="low_ctr">Lage CTR</option>
                 <option value="feed_error">Feed fout</option>
               </select>
-              {alerts.length>0&&<button onClick={acknowledgeAll} disabled={acknowledging==='all'} className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 rounded-lg">{acknowledging==='all'?'...':'✓ Alles bevestigen'}</button>}
+              {alerts.length>0&&<button onClick={acknowledgeAll} disabled={acknowledging==='all'} className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300 rounded-lg">{acknowledging==='all'?'...':'✓ Alles bevestigen'}</button>}
             </div>
           </div>
           {(()=>{
             const filtered=alertTypeFilter==='all'?alerts:alerts.filter(a=>a.type===alertTypeFilter);
             if (filtered.length===0) return (
-              <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-8 text-center">
+              <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl p-8 text-center">
                 <div className="text-3xl mb-3">✓</div>
-                <h3 className="text-lg font-semibold text-gray-300 mb-1">{alerts.length===0?'Geen openstaande alerts':'Geen alerts voor dit filter'}</h3>
+                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1">{alerts.length===0?'Geen openstaande alerts':'Geen alerts voor dit filter'}</h3>
                 <p className="text-sm text-gray-600">{alerts.length===0?'Feed Suite loopt zonder problemen.':'Wijzig het filter om andere alerts te zien.'}</p>
               </div>
             );
@@ -1779,36 +1779,36 @@ export default function FeedSuitePage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-200">Custom Labels</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200">Custom Labels</h3>
               <p className="text-xs text-gray-500 mt-0.5">Google Shopping supplemental feed · gele ster = handmatig override</p>
             </div>
             <div className="flex items-center gap-3">
-              <a href="/api/feed/output/supplemental?market=NL" target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-700">↗ CSV</a>
-              <button onClick={calculateLabels} disabled={calculatingLbls} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium">
+              <a href="/api/feed/output/supplemental?market=NL" target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-700">↗ CSV</a>
+              <button onClick={calculateLabels} disabled={calculatingLbls} className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg font-medium">
                 {calculatingLbls?'⟳ Berekenen...':'⟳ Herbereken'}
               </button>
             </div>
           </div>
-          {calcResult&&<div className={'px-4 py-2 rounded-lg text-sm '+(calcResult.startsWith('Fout')?'bg-red-950/40 text-red-400 border border-red-900/50':'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50')}>{calcResult}</div>}
+          {calcResult&&<div className={'px-4 py-2 rounded-lg text-sm '+(calcResult.startsWith('Fout')?'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50':'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50')}>{calcResult}</div>}
 
           {labelsLoading ? <div className="text-center py-8 text-gray-500">Laden...</div> : (
-            <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead><tr className="border-b border-gray-800">
+                  <thead><tr className="border-b border-gray-200 dark:border-gray-800">
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
                     {LABEL_HEADS.map(h=><th key={h} className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}
                   </tr></thead>
-                  <tbody className="divide-y divide-gray-800/50">
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800/50">
                     {products.map(p => {
                       const lbl = customLabels.find(l=>l.product_id===p.id);
                       const vals = [lbl?.custom_label_0, lbl?.custom_label_1, lbl?.custom_label_2, lbl?.custom_label_3, lbl?.custom_label_4];
                       const overrides = [lbl?.label_0_override, lbl?.label_1_override, lbl?.label_2_override, lbl?.label_3_override, lbl?.label_4_override];
                       const keys = ['custom_label_0','custom_label_1','custom_label_2','custom_label_3','custom_label_4'];
                       return (
-                        <tr key={p.id} className="hover:bg-gray-800/20">
+                        <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
                           <td className="px-4 py-3">
-                            <div className="text-sm text-gray-200 truncate max-w-[180px]">{p.name_nl}</div>
+                            <div className="text-sm text-gray-800 dark:text-gray-200 truncate max-w-[180px]">{p.name_nl}</div>
                             <div className="text-xs text-gray-600 font-mono">{p.sku||p.ean||'—'}</div>
                           </td>
                           {vals.map((val, idx) => {
@@ -1819,7 +1819,7 @@ export default function FeedSuitePage() {
                               <td key={key} className="px-3 py-3">
                                 {isEdit ? (
                                   <div className="flex items-center gap-1">
-                                    <select value={editLblValue} onChange={e=>setEditLblValue(e.target.value)} className="px-1.5 py-1 text-xs bg-gray-800 border border-indigo-600 rounded text-gray-200 focus:outline-none">
+                                    <select value={editLblValue} onChange={e=>setEditLblValue(e.target.value)} className="px-1.5 py-1 text-xs bg-white dark:bg-gray-800 border border-indigo-500 rounded text-gray-900 dark:text-gray-200 focus:outline-none">
                                       <option value="">— leeg —</option>
                                       {LABEL_OPTIONS[idx].map(o=><option key={o} value={o}>{o}</option>)}
                                     </select>
@@ -1845,7 +1845,7 @@ export default function FeedSuitePage() {
             </div>
           )}
           <div className="text-xs text-gray-600 px-1">
-            Supplemental feed URL: <code className="bg-gray-800 px-1.5 py-0.5 rounded">/api/feed/output/supplemental?market=NL</code> — koppel dit als aparte data source in Google Merchant Center.
+            Supplemental feed URL: <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">/api/feed/output/supplemental?market=NL</code> — koppel dit als aparte data source in Google Merchant Center.
           </div>
         </div>
       )}
@@ -1858,12 +1858,12 @@ export default function FeedSuitePage() {
           <div className="fixed inset-0 bg-black/50 z-40" onClick={closePanel} />
           <div className="fixed right-0 top-0 h-full w-[520px] bg-[#0f0f17] border-l border-gray-800 z-50 flex flex-col shadow-2xl">
             {/* Panel header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
               {panelProd ? (
                 <div className="flex items-center gap-3 min-w-0">
                   {panelProd.image_url&&<img src={panelProd.image_url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-800 shrink-0"/>}
                   <div className="min-w-0">
-                    <div className="font-semibold text-gray-200 truncate">{panelProd.name_nl}</div>
+                    <div className="font-semibold text-gray-800 dark:text-gray-200 truncate">{panelProd.name_nl}</div>
                     <div className="text-xs text-gray-500">{panelProd.category||'—'} · {fmtPrice(panelProd.price_eur)}</div>
                   </div>
                 </div>
@@ -1872,7 +1872,7 @@ export default function FeedSuitePage() {
             </div>
 
             {/* Panel sub-tabs */}
-            <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-800 overflow-x-auto shrink-0">
+            <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-200 dark:border-gray-800 overflow-x-auto shrink-0">
               {(['status','content','rules','images','changelog'] as PanelTab[]).map(t=>(
                 <button key={t} onClick={()=>setPanelTab(t)} className={`px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-colors ${panelTab===t?'bg-gray-800 text-white':'text-gray-500 hover:text-gray-300'}`}>
                   {t==='status'?'📊 Status':t==='content'?'✏️ Content':t==='rules'?'📋 Regels':t==='images'?'🖼 Foto\'s':'📝 Log'}
@@ -1891,9 +1891,9 @@ export default function FeedSuitePage() {
                       <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Feed Status per kanaal</h4>
                       {panelData.feed_status.length===0 ? <p className="text-sm text-gray-600">Geen actieve feeds.</p>
                       : panelData.feed_status.map((s:any)=>(
-                        <div key={s.config_id} className={`flex items-center justify-between px-3 py-2.5 rounded-lg border ${s.included?'border-emerald-900/50 bg-emerald-950/20':'border-red-900/50 bg-red-950/20'}`}>
+                        <div key={s.config_id} className={`flex items-center justify-between px-3 py-2.5 rounded-lg border ${s.included?'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/20':'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20'}`}>
                           <div>
-                            <div className="text-sm text-gray-200">{s.feed_name}</div>
+                            <div className="text-sm text-gray-800 dark:text-gray-200">{s.feed_name}</div>
                             <div className="text-xs text-gray-500 mt-0.5">{s.market_code} · {s.channel}</div>
                             {!s.included&&<div className="text-xs text-red-400 mt-0.5">Uitgesloten door: {s.excluded_by}</div>}
                           </div>
@@ -1903,7 +1903,7 @@ export default function FeedSuitePage() {
                       {panelProd&&panelProd.feed_issues.length>0&&(
                         <div className="mt-4">
                           <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Issues</h4>
-                          {panelProd.feed_issues.map(issue=><div key={issue} className="px-3 py-2 rounded-lg border border-amber-900/50 bg-amber-950/20 text-xs text-amber-400 mb-1">⚠ {issue}</div>)}
+                          {panelProd.feed_issues.map(issue=><div key={issue} className="px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 text-xs text-amber-400 mb-1">⚠ {issue}</div>)}
                         </div>
                       )}
                     </div>
@@ -1922,13 +1922,13 @@ export default function FeedSuitePage() {
                         return (
                           <>
                             {panelLang !== 'nl' && !curr.title && !edit.title && (
-                              <div className="mb-4 p-3 border border-indigo-900/40 rounded-lg bg-indigo-950/20">
+                              <div className="mb-4 p-3 border border-indigo-200 dark:border-indigo-900/40 rounded-lg bg-indigo-50 dark:bg-indigo-950/20">
                                 <p className="text-xs text-gray-400 mb-2">Geen {panelLang.toUpperCase()} content gevonden.</p>
                                 <div className="flex gap-2">
                                   <button
                                     onClick={()=>translatePanelContent(panelProductId!, panelLang)}
                                     disabled={panelTranslating}
-                                    className="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg"
+                                    className="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg"
                                   >{panelTranslating ? '⟳ Vertalen...' : `🤖 Vertaal vanuit NL naar ${panelLang.toUpperCase()}`}</button>
                                   {(['en','de','fr'] as const).filter(l=>l!==panelLang&&!panelData.content[l]?.title).length > 0 && (
                                     <button
@@ -1938,7 +1938,7 @@ export default function FeedSuitePage() {
                                         }
                                       }}
                                       disabled={panelTranslating}
-                                      className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 rounded-lg"
+                                      className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300 rounded-lg"
                                     >Vertaal alle lege talen</button>
                                   )}
                                 </div>
@@ -1947,24 +1947,24 @@ export default function FeedSuitePage() {
                           <div className="space-y-3">
                             <div>
                               <label className="text-xs text-gray-400 mb-1 block">Titel</label>
-                              <input value={edit.title??curr.title??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],title:e.target.value}}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500"/>
+                              <input value={edit.title??curr.title??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],title:e.target.value}}))} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500"/>
                             </div>
                             <div>
                               <label className="text-xs text-gray-400 mb-1 block">Korte beschrijving</label>
-                              <textarea value={edit.description_short??curr.description_short??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],description_short:e.target.value}}))} rows={2} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
+                              <textarea value={edit.description_short??curr.description_short??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],description_short:e.target.value}}))} rows={2} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
                             </div>
                             <div>
                               <label className="text-xs text-gray-400 mb-1 block">Lange beschrijving</label>
-                              <textarea value={edit.description_long??curr.description_long??curr.description??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],description_long:e.target.value}}))} rows={6} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
+                              <textarea value={edit.description_long??curr.description_long??curr.description??''} onChange={e=>setPanelEdit(prev=>({...prev,[panelLang]:{...prev[panelLang],description_long:e.target.value}}))} rows={6} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:border-indigo-500 resize-none"/>
                             </div>
-                            <button onClick={()=>savePanelContent(panelLang)} disabled={panelSaving} className="w-full px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium">{panelSaving?'Opslaan...':'💾 Opslaan'}</button>
+                            <button onClick={()=>savePanelContent(panelLang)} disabled={panelSaving} className="w-full px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg font-medium">{panelSaving?'Opslaan...':'💾 Opslaan'}</button>
                             {curr.ai_variants&&curr.ai_variants.length>0&&(
-                              <div className="mt-4 pt-4 border-t border-gray-800">
+                              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                                 <h5 className="text-xs font-semibold text-gray-400 mb-2">AI Varianten</h5>
                                 {curr.ai_variants.map((v:any)=>(
-                                  <div key={v.id} className="px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700/50 mb-2">
+                                  <div key={v.id} className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 mb-2">
                                     <div className="text-xs text-gray-400 font-medium mb-0.5">{v.label} ({v.id})</div>
-                                    <div className="text-xs text-gray-200">"{v.title}"</div>
+                                    <div className="text-xs text-gray-800 dark:text-gray-200">"{v.title}"</div>
                                   </div>
                                 ))}
                               </div>
@@ -1983,10 +1983,10 @@ export default function FeedSuitePage() {
                         const matching=rules.filter(r=>r.active&&panelProd&&(r.conditions??[]).every(c=>evalCond(panelProd,c)));
                         if (!matching.length) return <p className="text-sm text-gray-600">Geen actieve regels van toepassing op dit product.</p>;
                         return matching.map(r=>(
-                          <div key={r.id} className={`px-3 py-2 rounded-lg border ${r.type==='filter'?'border-red-900/50 bg-red-950/10':'border-indigo-900/50 bg-indigo-950/10'}`}>
+                          <div key={r.id} className={`px-3 py-2 rounded-lg border ${r.type==='filter'?'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/10':'border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-950/10'}`}>
                             <div className="flex items-center gap-2">
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${r.type==='filter'?'bg-amber-950/50 text-amber-400':'bg-indigo-950/50 text-indigo-400'}`}>{r.type}</span>
-                              <span className="text-sm text-gray-200">{r.name}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${r.type==='filter'?'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400':'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400'}`}>{r.type}</span>
+                              <span className="text-sm text-gray-800 dark:text-gray-200">{r.name}</span>
                             </div>
                             <div className="text-xs text-gray-500 mt-1">{(r.scope??'master')==='master'?'Master':'Partner '+r.channel}</div>
                           </div>
@@ -2006,7 +2006,7 @@ export default function FeedSuitePage() {
                         </div>
                       ))}</div>}
                       {panelProd?.image_url&&(
-                        <div className="mt-4 pt-4 border-t border-gray-800">
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                           <div className="text-xs text-gray-500 mb-2">Shopify hoofdafbeelding</div>
                           <img src={panelProd.image_url} alt="" className="w-24 h-24 rounded-lg object-cover"/>
                         </div>
@@ -2023,9 +2023,9 @@ export default function FeedSuitePage() {
                           <div className="shrink-0 text-gray-600 w-14">{timeAgo(e.created_at)}</div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{e.field}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{e.field}</span>
                               {e.language&&<span className="text-gray-600">{e.language.toUpperCase()}</span>}
-                              <span className="px-1.5 py-0.5 rounded bg-gray-800/50 text-gray-500">{e.source}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800/50 text-gray-500">{e.source}</span>
                             </div>
                             {e.new_value&&<div className="text-gray-300 mt-0.5 truncate">"{e.new_value.substring(0,80)}"</div>}
                           </div>

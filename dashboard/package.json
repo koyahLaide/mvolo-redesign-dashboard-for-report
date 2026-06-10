@@ -14,6 +14,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/pg": "^8.20.0",
     "better-sqlite3": "^12.8.0",
+    "cheerio": "^1.2.0",
     "geist": "^1.7.0",
     "googleapis": "^171.4.0",
     "lucide-react": "^1.14.0",

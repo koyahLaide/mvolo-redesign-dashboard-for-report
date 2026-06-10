@@ -13,7 +13,10 @@ export async function GET() {
       : null;
 
     if (!latestDate) {
-      return NextResponse.json({ products: [], priceChanges: [], summary: {}, categories: [] });
+      return NextResponse.json({
+        products: [], priceChanges: [], priceHistory: [], categorySummary: [],
+        mvoloPrices: [], alerts: [], totalProducts: 0, totalCompetitors: 0, lastSync: null,
+      });
     }
 
     // Current competitor prices
@@ -115,6 +118,13 @@ export async function GET() {
     });
 
   } catch (err: any) {
+    if (err.message?.includes('does not exist') || err.code === '42P01') {
+      return NextResponse.json({
+        products: [], priceChanges: [], priceHistory: [], categorySummary: [],
+        mvoloPrices: [], alerts: [], totalProducts: 0, totalCompetitors: 0,
+        lastSync: null, _tablesMissing: true,
+      });
+    }
     console.error('Competitor prices API error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

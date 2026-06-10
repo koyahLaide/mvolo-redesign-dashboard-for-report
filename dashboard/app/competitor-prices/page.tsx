@@ -9,7 +9,9 @@ function formatEuro(v: number) {
 const CATEGORY_LABELS: Record<string, string> = {
   led_face_mask:        '😷 LED Face Mask',
   infrared_double_head: '💡 Infrarood Dubbel',
+  infrared_double:      '💡 Infrarood Dubbel',
   infrared_single_head: '💡 Infrarood Enkel',
+  infrared_single:      '💡 Infrarood Enkel',
   rlt_panel:            '🔴 RLT Panel',
   infrared_rugband:     '🎽 Infrarood Rugband',
   sauna_blanket:        '🧖 Sauna Deken',
@@ -39,6 +41,9 @@ function compColor(name: string) {
 export default function CompetitorPrijzenPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [syncDebug, setSyncDebug] = useState<string[] | null>(null);
   const [tab, setTab] = useState<'overzicht' | 'wijzigingen' | 'analyse'>('overzicht');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -52,14 +57,38 @@ export default function CompetitorPrijzenPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const syncNow = async () => {
+    setSyncing(true);
+    setSyncMsg(null);
+    setSyncDebug(null);
+    try {
+      const res = await fetch('/api/competitor-prices/sync', { method: 'POST' });
+      const json = await res.json();
+      if (json.error) {
+        setSyncMsg(`Fout: ${json.error}`);
+      } else if (json.synced === 0) {
+        setSyncMsg(`Bol.com: 0 producten gevonden. Zie debug hieronder.`);
+        setSyncDebug(json.debug ?? []);
+      } else {
+        setSyncMsg(`✓ ${json.synced} producten gesynchroniseerd van Bol.com`);
+        setSyncDebug(null);
+        await load();
+      }
+    } catch (e: any) {
+      setSyncMsg(`Fout: ${e.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const products = data?.products ?? [];
   const priceChanges = data?.priceChanges ?? [];
   const alerts = data?.alerts ?? [];
   const mvoloPrices = data?.mvoloPrices ?? [];
+  const tablesMissing = data?._tablesMissing;
+  const apiError = data?.error;
 
   const categories = [...new Set(products.map((p: any) => p.category))].filter(Boolean) as string[];
-  const filteredProducts = selectedCategory === 'all' ? products : products.filter((p: any) => p.category === selectedCategory);
-
   const byCategory: Record<string, any[]> = {};
   products.forEach((p: any) => {
     if (!p.category) return;
@@ -71,6 +100,32 @@ export default function CompetitorPrijzenPage() {
     <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
 
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+
+        {/* Page header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Competitor Prijzen</h1>
+            {data?.lastSync && <p className="text-xs text-gray-500 mt-0.5">Laatste sync: {data.lastSync}</p>}
+          </div>
+          <div className="flex items-center gap-3">
+            {syncMsg && <span className={`text-xs ${syncMsg.startsWith('Fout') ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{syncMsg}</span>}
+            <button
+              onClick={syncNow}
+              disabled={syncing}
+              className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white rounded-lg transition-colors"
+            >
+              {syncing ? '⟳ Bezig met scrapen…' : '⟳ Sync van Bol.com'}
+            </button>
+          </div>
+        </div>
+
+        {/* Sync debug output (shown when 0 products found) */}
+        {syncDebug && syncDebug.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl px-5 py-3">
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">Scraper diagnose (stuur dit naar je developer):</p>
+            <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-5">{syncDebug.join('\n')}</pre>
+          </div>
+        )}
 
         {/* Alerts banner */}
         {!loading && alerts.length > 0 && (
@@ -155,7 +210,24 @@ export default function CompetitorPrijzenPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-16 text-gray-600 animate-pulse">Laden…</div>
+          <div className="text-center py-16 text-gray-500 animate-pulse">Laden…</div>
+        ) : apiError ? (
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl px-6 py-8 text-center">
+            <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-1">API fout</p>
+            <p className="text-xs text-gray-500">{apiError}</p>
+          </div>
+        ) : tablesMissing ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-6 py-12 text-center space-y-3">
+            <p className="text-2xl">🔍</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Geen competitor data gevonden</p>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto">De <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">competitor_prices</code> tabel bestaat nog niet in de database. Voer de SQL-migratie uit in Supabase om te beginnen met het tracken van competitor prijzen.</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-6 py-12 text-center space-y-3">
+            <p className="text-3xl">📭</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nog geen competitor prijzen</p>
+            <p className="text-xs text-gray-500 max-w-md mx-auto">Klik op <strong>Sync from Bol.com</strong> om prijzen op te halen van Bol.com.</p>
+          </div>
         ) : (
           <>
             {/* OVERZICHT TAB */}
@@ -346,7 +418,7 @@ export default function CompetitorPrijzenPage() {
                         {mvoloPrice && <span className="text-gray-500">Mvolo: <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{formatEuro(mvoloPrice)}</span></span>}
                       </div>
                       <div className="relative h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-visible">
-                        <div className="absolute inset-y-0 left-0 right-0 bg-gradient-to-r from-green-900/40 to-red-900/40 rounded-full" />
+                        <div className="absolute inset-y-0 left-0 right-0 bg-linear-to-r from-green-900/40 to-red-900/40 rounded-full" />
                         {positionPct !== null && positionPct >= 0 && positionPct <= 100 && (
                           <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white dark:border-gray-900 z-10"
                             style={{ left: `${positionPct}%` }}
